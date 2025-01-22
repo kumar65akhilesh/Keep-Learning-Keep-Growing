@@ -1,0 +1,30 @@
+version: "3.7"
+
+services:
+
+  app:
+    build: .
+    ports:
+      - "8090:8090"
+    networks:
+      - s-network
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: kumar
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: kumar
+    ports:
+     - 5432:5432
+    networks:
+      - s-network
+    volumes:
+      - postgres-s-data:/var/lib/postgresql/data
+
+networks:
+  s-network:
+    driver: bridge
+
+volumes:
+  postgres-s-data:
