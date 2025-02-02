@@ -1,0 +1,32 @@
+
+#include<vector>
+#include "RIFF.h"
+
+using namespace std;
+
+class AudioSignal{
+ public:
+  int sampleRate;
+  short bitsPerSample;
+  vector<Sample> wave;
+ public:
+  AudioSignal(const int sampleRate = 22050 , const short bitsPerSample = 16 );
+  AudioSignal(RIFFReader& inputWaveFile);//check
+  //copy constructor
+  AudioSignal(const AudioSignal& other);//check
+  AudioSignal(const AudioSignal&& other);
+  //move constructor
+  //assignment operator
+  AudioSignal& operator=(const AudioSignal& src); //check
+  AudioSignal(const int freq, const int lenInMills, const int amplitude,
+	      const int sampleRate = 22050, const short bitsPerSample = 16,
+	      const bool decay = true); 
+  AudioSignal operator+(const AudioSignal& other) const;//check
+  AudioSignal& operator&(const AudioSignal& other);
+  AudioSignal& operator*(const double factor);//check
+  AudioSignal operator>>(long timeInMillis) const;//check
+  AudioSignal operator<<(long timeInMillis) const;//check
+  long duration() const;//check
+  void write(const std::string& fileName) const throw (std::exception);//check
+  void changeDurationTo(const int timeInMillis);//check
+};

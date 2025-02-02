@@ -1,0 +1,150 @@
+#include<iostream>
+#include<algorithm>
+#include<cmath>
+#include<functional>
+#include "AudioSignal.h"
+
+
+
+using namespace std;
+const double pie = 3.14159;
+
+AudioSignal::AudioSignal(const int sampleRate , const short bitsPerSample ){
+  this->sampleRate = sampleRate;
+  this->bitsPerSample = bitsPerSample;
+}
+
+AudioSignal::AudioSignal(RIFFReader& inputWaveFile){
+  Sample data;
+  sampleRate = inputWaveFile.getSampleRate();
+  bitsPerSample = inputWaveFile.getBitsPerSample();
+  while ((inputWaveFile >> data)) {
+    wave.push_back(data);
+  }
+}
+
+AudioSignal::AudioSignal(const AudioSignal& other): sampleRate(other.sampleRate), bitsPerSample(other.bitsPerSample){
+  wave.assign(other.wave.begin(), other.wave.end());
+}
+
+AudioSignal::AudioSignal(const AudioSignal&& other): sampleRate(move(other.sampleRate)), bitsPerSample(move(other.bitsPerSample)), wave(move(other.wave)) { }
+
+AudioSignal& AudioSignal::operator=(const AudioSignal& src) {
+  sampleRate = src.sampleRate;
+  bitsPerSample = src.bitsPerSample;
+  wave.assign(src.wave.begin(), src.wave.end());
+  return *this;
+}
+
+AudioSignal& AudioSignal::operator*(const double factor){
+  
+  transform(wave.begin(), wave.end(), wave.begin(), [&factor](Sample s){return s*factor;});
+  return *this;
+}
+
+AudioSignal AudioSignal::operator>>(long timeInMillis) const{
+  unsigned int num = sampleRate*timeInMillis/1000;
+  AudioSignal music(*this);
+  music.wave.insert(music.wave.begin(), num, 0);
+  return music;
+}
+
+AudioSignal AudioSignal::operator<<(long timeInMillis) const{
+  int num = sampleRate*timeInMillis/1000;
+  AudioSignal music(*this);
+  music.wave.erase(music.wave.begin(), music.wave.begin()+num);
+  return music;
+}
+
+long AudioSignal::duration() const{
+  long num = wave.size();
+  return num/sampleRate;
+}
+
+//implement this
+void AudioSignal::changeDurationTo(const int timeInMillis){
+  unsigned  int thisLen = wave.size();
+  vector<Sample> dupe(wave);
+  unsigned int numOfSamples = timeInMillis*sampleRate/1000;
+
+  if(thisLen > numOfSamples) {
+    //truncate
+    wave.erase(wave.begin()+numOfSamples, wave.end());
+  } else {
+    //repeat
+    while(wave.size() < numOfSamples) {
+      copy(dupe.begin(), dupe.end(), back_inserter(wave));
+    };
+    wave.erase(wave.begin()+numOfSamples, wave.end());
+  }
+}
+
+//This is incorrect implementation. something is missing.
+
+AudioSignal::AudioSignal(const int freq, const int lenInMills, const int amplitude,
+			 const int sampleRate , const short bitsPerSample,
+			 const bool decay ){
+  this->sampleRate = sampleRate;
+  this->bitsPerSample = bitsPerSample;
+  for(int j = 0; j < lenInMills * sampleRate /1000; j++){
+    double t = ((double) j * ((double) lenInMills/1000)) / ((double) lenInMills*sampleRate/1000);
+    double height = amplitude * (exp((double) -t/ (sampleRate*lenInMills/1000)/ 0.5));   
+    Sample s = height * sin(2 * pie * freq * t);
+    wave.push_back(s);
+  }
+}
+
+
+AudioSignal& AudioSignal::operator&(const AudioSignal& other){
+  copy(other.wave.begin(), other.wave.end(), back_inserter(wave));
+  return *this;
+}
+
+//This is incorrect implementation. bitsPerSample must be initialized
+
+AudioSignal AudioSignal::operator+(const AudioSignal& other) const{
+  AudioSignal supSignal(*this);
+  int len1 = wave.size();
+  int len2 = other.wave.size();
+  if(len1 < len2) {
+    transform(wave.begin(), wave.end(), other.wave.begin(), supSignal.wave.begin(), plus<int>());
+    copy(other.wave.begin()+len1 , other.wave.end(), back_inserter(supSignal.wave));
+  } else {
+    transform(other.wave.begin(), other.wave.end(), wave.begin(), supSignal.wave.begin(), plus<Sample>());
+    copy(wave.begin()+len2, wave.end(), back_inserter(supSignal.wave));
+  }
+  return supSignal;
+}
+
+void AudioSignal::write(const std::string& fileName) const throw (std::exception){
+  
+  RIFFWriter wavFile(fileName, 22050, 16);
+  for(unsigned int i = 0; i < wave.size(); i++){
+    wavFile <<  wave[i];
+  }
+}
+/*
+  int main(){
+   
+  RIFFReader check("save1.wav");
+  RIFFReader check1("save1.wav");
+  //AudioSignal file1(check);  
+  AudioSignal file(check1); 
+  AudioSignal file1(file);
+  // AudioSignal fileless = file >> 5000;
+  //file.changeDurationTo(35000);
+  //file = file >> 1;
+  file  =file & file1;
+  file.write("save2.wav");
+  //file.changeDurationTo(25000);
+  cout << "File 1 duration " << file.duration() << "here" << endl;
+  cout << "File1 size " <<file.wave.size() << endl;
+  cout << "File 2 duration " << file1.duration() << "here" << endl;
+  cout << "File 2 size " <<file1.wave.size() << endl;
+  getchar();
+  for(unsigned int i = 0; i < file.wave.size(); i++){
+  cout << file.wave[i] << endl;
+  }
+  return 0;
+  }
+*/

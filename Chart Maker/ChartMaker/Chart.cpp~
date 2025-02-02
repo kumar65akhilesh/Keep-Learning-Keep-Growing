@@ -1,0 +1,78 @@
+#include "Chart.h"
+#include<iterator>
+#include<vector>
+#include<algorithm>
+#include<functional>
+
+using namespace std;
+
+Chart& Chart::operator=(const Chart& src){
+  pointList.assign(src.pointList.begin(), src.pointList.end());
+  return *this;
+}
+
+bool Chart::contains(const Point& p) const{  
+  return pointList.end() != find(pointList.begin(), pointList.end(), p);
+}
+
+
+Chart Chart::operator+(const Chart& other) const{
+  Chart c(*this);
+  std::copy_if(other.pointList.begin(), other.pointList.end(),
+	       std::back_inserter(c.pointList), 
+	       [&c](const Point& p) { return !c.contains(p); });
+  return c;
+}
+
+
+
+Chart Chart::operator-(const Chart& other)const{
+  Chart c;
+  copy_if(pointList.begin(), pointList.end(), back_inserter(c.pointList), [&c](const Point& p) {return !c.contains(p); });
+  auto it = remove_if(c.pointList.begin(), c.pointList.end(), [&other](const Point& p) {return other.contains(p);});
+  c.pointList.assign(c.pointList.begin(), it);
+  return c;
+}
+
+Chart Chart::operator*(const Point& Scale) const{
+  Chart c(*this);
+  transform(pointList.begin(),pointList.end(), c.pointList.begin(),[&] (Point p){ Point a( p.getX() * Scale.getX(), p.getY() * Scale.getY()); return a; });
+  return c;
+}
+
+Chart Chart::operator/(const Point& Scale) const{
+  Chart c(*this);
+  transform(pointList.begin(), pointList.end(), c.pointList.begin(), [&] (Point p){ Point a( p.getX() / Scale.getX(), p.getY() / Scale.getY()); return a; });
+  return c;
+}
+
+Chart Chart::operator>>(int value) const{
+  Chart c(*this);
+  Point a(0, 0);
+  c.pointList.insert(c.pointList.begin(), value, a);
+  return c;
+}
+
+Chart Chart::operator<<(int value) const{
+  Chart c(*this);
+  c.pointList.erase(c.pointList.begin(), c.pointList.begin()+value);
+  return c;
+}
+
+void Chart::analyze(ostream& os, const int scale) const{
+  int first, second, third, fourth; 
+  first=second=third=fourth=0;
+  Chart x(*this), c;
+  copy_if(pointList.begin(), pointList.end(), back_inserter(c.pointList), [&c](const Point& p) {return !(c.contains(p)); });
+  vector<int> quad (c.pointList.size());
+  transform(c.pointList.begin(), c.pointList.end(), quad.begin(), mem_fun_ref(&Point::getQuadrant));
+  first = count_if(quad.begin(), quad.end(), bind2nd(equal_to<int>(),1));
+  second = count_if(quad.begin(), quad.end(), bind2nd(equal_to<int>(),2));
+  third = count_if(quad.begin(), quad.end(), bind2nd(equal_to<int>(),3));
+  fourth = count_if(quad.begin(), quad.end(), bind2nd(equal_to<int>(),4));
+  int largest = max(first,(max(second,max(third,fourth))));
+  os << "I   : " << string(first*scale/largest, '*') << "\n";
+  os << "II  : " << string(second*scale/largest, '*') << "\n";
+  os << "III : " << string(third*scale/largest, '*') << "\n"; 
+  os << "IV  : " << string(fourth*scale/largest, '*') << "\n";  
+}

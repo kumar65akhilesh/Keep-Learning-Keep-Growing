@@ -1,0 +1,5 @@
+This paper builds a protocol using the building blocks we have discussed so far 
+. Implement a version of their protocol ( the more features in the protocol the 
+better ) .  Also , create a guide on how to use your code .  The guide should 
+include a walk through of all of the features of your software .  You should 
+also turn in the supporting files so that the walk through could be duplicated .

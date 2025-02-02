@@ -1,0 +1,100 @@
+#include<iostream>
+#include "MusicComposer.h"
+#include <string>
+#include<iterator>
+#include<algorithm>
+
+bool fileOn = false;
+
+MusicComposer::MusicComposer(){  
+  music = AudioSignal(22050, 16);
+  note = NoteMaker(120, 15,4, 15000 );
+  
+}
+
+const AudioSignal& MusicComposer::getMusic(){
+  return music;
+}
+
+void MusicComposer::addAll(){
+  for(unsigned int i = 0; i < multiTrack.size(); i++) {
+    music & multiTrack[i];
+  }
+}
+
+void MusicComposer::longDuration(string ent){
+
+}
+
+void MusicComposer::smallDuration(string ent){
+
+}
+
+void MusicComposer::echo(string ent){
+
+}
+
+void MusicComposer::changeTrack(string ent){
+
+}
+// add a new track before and after loading file
+AudioSignal& MusicComposer::loadFile(string filename){
+  string fileN = filename.substr(2);
+  RIFFReader input(fileN);
+  AudioSignal track = AudioSignal(input);
+  multiTrack.push_back(track);
+  fileOn = true;
+  return (music & track);
+}
+
+AudioSignal& MusicComposer::operator()(const std::string& ent){
+  string word = ent;
+  char first = word.at(0);
+  if(first == '*') {
+    char second = word.at(1);
+    switch(second) {
+    case 't': changeTrack(ent);
+      break;
+    case 'l': return loadFile(ent);
+      break;
+    case 'e': echo(ent);
+      break;
+    case '~': smallDuration(ent);
+      break;
+    case '=': longDuration(ent);
+      break;
+    case '.': addAll(); // maybe can ignore if addAll is called in the end
+      break;
+    default : cout << "Oops!!!! There was an invalid character " << endl;
+    }
+  } else {
+    NoteMaker x; 
+    AudioSignal y = x(ent);
+    if(fileOn == true){
+      fileOn = false;
+      multiTrack.push_back(y);
+      return (music & y);
+    } 
+    if(!multiTrack.empty()){
+      AudioSignal track = multiTrack.at(multiTrack.size()-1);
+      multiTrack.pop_back();
+      track & y;
+      multiTrack.push_back(track);
+      music & track;
+    } else {      
+      multiTrack.push_back(y);
+      music = y;
+    }
+  }
+
+//addAll(); SEE WHAT TO RETURN AFTER EACH WORK.
+return music;
+}
+
+int main(int argc, char *argv[]) {
+  MusicComposer mc;
+  std::istream_iterator<std::string> noteStream(std::cin), eof;
+  mc = std::for_each(noteStream, eof, mc);
+  mc.getMusic().write(argv[1]);
+  return 0;
+}
