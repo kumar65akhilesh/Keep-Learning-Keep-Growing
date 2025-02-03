@@ -1,0 +1,38 @@
+ <%- include("partials/header.ejs")%>
+ <div class="container my-5">
+ <table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Time</th>
+      <th scope="col">UV Index</th>
+      <th scope="col">Sunscreen advisable?</th>
+      
+    </tr>
+  </thead>
+  <tbody>
+   
+      
+       
+   
+   <% locals.uvdata.result.forEach( (data) => { %>
+    <tr>
+    <th scope="row"> <%=new Date(data.uv_time)%> </th>
+    <td><%=data.uv %></td>
+      <td><% if(data.uv > 6) {%>
+       Yes
+       <% } else { %>
+        No
+        <% }  %>
+      </td>  
+    </tr>
+  <% })  %>
+
+  
+
+    
+  </tbody>
+</table> 
+</div>
+  <%- include("partials/footer.ejs")%> 
+
+  

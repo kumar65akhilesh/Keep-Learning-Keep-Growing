@@ -1,0 +1,31 @@
+.gradient-fill{
+    background:linear-gradient(190deg, rgb(205, 255, 216) 0%, rgb(148, 185, 255) 100%);
+}
+.cursive {
+    font-family: "Dancing Script", cursive;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+}
+.white-text{
+    color:azure !important;     
+}
+.back{
+    background-color: aliceblue;
+}
+.match-color{
+    color:rgb(148, 185, 255) !important;
+    font-size: 70px;
+}
+#education, #footer{
+    background-color: rgb(248, 249, 250);
+    
+}
+
+.carousel-control-next,
+.carousel-control-prev , .carousel-indicators  {
+    filter: invert(100%);
+}
+.circle{
+    border-radius: 50%;
+}

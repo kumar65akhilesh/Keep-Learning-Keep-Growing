@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mondrian Project</title>
+  <style>
+    /* 
+    Write your CSS here 
+    Gap Colour: #000
+    White: #F0F1EC
+    Red: #E72F24
+    Black: #232629
+    Blue: #004592
+    Yellow: #F9D01E
+
+    For dimensions, see dimensions.png image.
+    HINT: Remember you can't change the properties of grid lines.
+    But grid lines are transparent!
+    */
+    .container {
+      display: grid;
+      grid-template-rows: 414px 285px 20px;
+      grid-template-columns: 320px 349px 50px;
+     
+    }
+    
+    body {
+      display: flex;
+      height: 100vh;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container > div {
+      
+      border-style: solid;
+      border-color: black;
+     
+    }
+    
+    .one {
+      border-left-width: 0px;
+      border-top-width: 0px;
+    }
+    .two, .three {      
+      border-top-width: 0px;
+    }
+    .two, .six, .nine {
+      border-right-width: 0px;;
+    }
+    .seven, .eight, .nine {
+      border-bottom-width: 0px;
+    }
+    .four, .seven {
+      border-left-width: 0px;
+    }
+    .two {
+      grid-column: span 2;
+    }
+    .one {
+      background-color: #E72F24;
+    }
+    .two , .three , .four, .five, .seven, .nine{
+      background-color: #F0F1EC;
+    }
+    
+   
+    .six {
+      display: flex;
+      flex-direction: column;
+      border-bottom-width: 0px;
+    }
+    .nine {
+      border-top-width:0px
+    }
+    .sixa {
+      height:130px;
+      background-color: #004592;
+      border-style: solid;
+      border-color: black;
+      border-bottom-width: 10px;
+      border-right-width: 0px;
+    }
+    .sixb{
+      background-color: #F0F1EC;
+      height:155px;
+      /* border-bottom-width: 0px; */
+    }
+    .eight {
+      display: flex;
+      
+      border-bottom-width: 0px;
+    }
+    .eighta {
+      width:198px;
+      background-color:#F9D01E;
+     
+
+    }
+    .eightb {
+      width:153px;
+      background-color:#232629;
+      border-color: black;
+      border-style: solid;
+      border-left-width: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Write your HTML here -->
+  
+    <div class="container">
+      <div class="one"></div>
+      <div class="two"></div>
+      <!-- <div class="three"></div> -->
+      <div class="four"></div>
+      <div class="five"></div>
+      <div class="six">
+        <div class="sixa"></div>
+        <div class="sixb"></div>
+      </div>
+      <div class="seven"></div>
+      <div class="eight">
+        <div class="eighta"></div>
+        <div class="eightb"></div>
+      </div>
+      <div class="nine"></div>
+   
+</div>
+</body>
+
+</html>

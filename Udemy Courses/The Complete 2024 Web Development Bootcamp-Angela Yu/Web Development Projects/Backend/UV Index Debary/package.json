@@ -1,0 +1,23 @@
+{
+  "name": "uv-index-debary",
+  "version": "1.0.0",
+  "description": "Is sunscreen needed today?",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "UV",
+    "Debary"
+  ],
+  "author": "Akhilesh Kumar",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "body-parser": "^1.20.2",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "static": "^2.0.0"
+  }
+}

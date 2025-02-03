@@ -1,0 +1,50 @@
+<%- include("partials/header.ejs")%>
+  <form action="/submit" method="POST">
+    <section id="newPost">
+      <div class="container mb-5">
+        <div class="mb-3">
+          <label for="createPost" class="form-label">What's on your mind?</label>
+          <textarea class="form-control" id="createPost" name="createPost" rows="3"></textarea>          
+        </div>
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-end">
+          <input class="btn btn-primary" type="submit" >
+        </div>
+      </div>
+    </section>
+  </form>
+  <form action="/save" method="POST">
+    <section id="oldPosts" class="mb-5">      
+        <div class="container" id="allPosts">
+        <% if(locals.dbData != undefined) { %>
+          <%
+                  var postFormat = `<div id="div1" class="posts">
+                                    <div class="mb-3">
+                                      <label for="tarea1" class="form-label" id="label1">ReplaceTimeStamp</label>
+                                      <textarea class="form-control" id="tarea1" name="tarea1" rows="3"></textarea>
+                                    </div>
+                                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-end">
+                                      <button class="btn btn-primary" id="sav1" name="save"  value="1"  type="submit">Save</button>
+                                      <button id="del1" class="btn btn-danger" name="del"  value="1"  onclick="del(1)" type="submit" >Delete</button>
+                                    </div>
+                                    </div>`;
+                  var htmlContent = "";
+                  var postsMap = locals.dbData;
+                  for( const[key, val] of postsMap.entries()) {                  
+                    var retVal = postFormat.replaceAll('1',key);
+                    retVal = retVal.replace('ReplaceTimeStamp', val["dateVal"]);
+                    retVal = retVal.replace('rows="3"></textarea>','rows="3">'+val["postContent"]+'</textarea>'); 
+                    //console.log('retval '+retVal);
+                    htmlContent= htmlContent+retVal;                  
+                  }
+                  
+          %>
+          
+          <%-htmlContent%>
+        <% } else { %>
+              <h2> No Posts to view </h2>
+          <% } %>
+        </div>      
+    </section>
+  </form>
+  
+  <%- include("partials/footer.ejs")%>
