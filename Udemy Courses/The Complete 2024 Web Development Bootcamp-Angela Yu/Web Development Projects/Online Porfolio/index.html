@@ -11,9 +11,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
+  <script>
+	 function showYear() {
+		document.getElementById("yearDisplay").innerHTML = new Date().getFullYear();
+	 }
+	</script>
+
 </head>
 
-<body>
+<body onload="showYear()">
 
   <section id="hero">
     <div class="gradient-fill">
@@ -330,7 +336,7 @@
               <use xlink:href="#bootstrap"></use>
             </svg>
           </a>
-          <span class="mb-3 mb-md-0 text-body-secondary">© 2025 Kumar, Akhilesh</span>
+          <span class="mb-3 mb-md-0 text-body-secondary">© <span id="yearDisplay">new Date().getFullYear()</span> Kumar, Akhilesh</span>
         </div>
 
         <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
