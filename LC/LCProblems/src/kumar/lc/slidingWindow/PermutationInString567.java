@@ -31,6 +31,9 @@ Constraints:
 
 1 <= s1.length, s2.length <= 104
 s1 and s2 consist of lowercase English letters.
+
+Time Complexity - o(n + m)
+Space Complexity -  o(n + m)
  */
 
 public class PermutationInString567 {
