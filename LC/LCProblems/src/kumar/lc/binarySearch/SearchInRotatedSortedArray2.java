@@ -35,6 +35,9 @@ nums is guaranteed to be rotated at some pivot.
  
 
 Follow up: This problem is similar to Search in Rotated Sorted Array, but nums may contain duplicates. Would this affect the runtime complexity? How and why?
+ 
+ Time Complexity - Worst O(n) Average O(log n)
+ Space O(1)
  */
 
 public class SearchInRotatedSortedArray2 {
