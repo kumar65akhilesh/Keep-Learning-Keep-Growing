@@ -39,6 +39,9 @@ intervals[i].length == 2
 intervals is sorted by starti in ascending order.
 newInterval.length == 2
 0 <= start <= end <= 105
+Time- o(n)
+Space o(n)
+
  */
 
 public class InsertIntervals57 {
