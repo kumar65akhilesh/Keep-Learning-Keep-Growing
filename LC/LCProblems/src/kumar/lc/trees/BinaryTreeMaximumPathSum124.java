@@ -36,7 +36,7 @@ Time Complexity - O(N)
 Space Complexity - O(N)
  */
 
-public class BinaryTreeMaximumPathSum {
+public class BinaryTreeMaximumPathSum124 {
 	public class TreeNode {
 		int val;
 		TreeNode left;

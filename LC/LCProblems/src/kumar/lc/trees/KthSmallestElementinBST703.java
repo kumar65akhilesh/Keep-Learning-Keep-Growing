@@ -34,7 +34,7 @@ The number of nodes in the tree is n.
 Follow up: If the BST is modified often (i.e., we can do insert and delete operations) and you need to find the kth smallest frequently, how would you optimize?
  */
 
-public class KthSmallestElementinBST {
+public class KthSmallestElementinBST703 {
 	public class TreeNode {
 		int val;
 		TreeNode left;

@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
-public class Twitter {
+public class Twitter355 {
     private class Tweet {
         int id, time;
 
@@ -22,7 +22,7 @@ public class Twitter {
     private Map<Integer, List<Tweet>> tweets;
     private int time;
 
-    public Twitter() {
+    public Twitter355() {
         friends = new HashMap<>();
         tweets = new HashMap<>();
         time = 0;
