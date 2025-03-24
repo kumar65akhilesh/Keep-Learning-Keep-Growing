@@ -26,7 +26,7 @@ Constraints:
 
 1 <= s.length <= 16
 s contains only lowercase English letters.
-Time - 
+Time - O(n2^n)
 Space - 
  */
 public class PalindromeParttioning131 {
