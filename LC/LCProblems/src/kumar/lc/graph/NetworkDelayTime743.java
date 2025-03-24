@@ -44,6 +44,8 @@ times[i].length == 3
 ui != vi
 0 <= wi <= 100
 All the pairs (ui, vi) are unique. (i.e., no multiple edges.)
+Time - O(v + ELogV) [max edges could be n * (n-1) so the priority queue opetion is ELogV^2 = ElogV]
+Space - O(V+E)
  */
 
 public class NetworkDelayTime743 {
