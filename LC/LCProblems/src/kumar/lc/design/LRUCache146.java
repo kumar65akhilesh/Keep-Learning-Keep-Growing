@@ -1,4 +1,4 @@
-package kumar.lc.linkedList;
+package kumar.lc.design;
 
 import java.util.HashMap;
 import java.util.Map;
