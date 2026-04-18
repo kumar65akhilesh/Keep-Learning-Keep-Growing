@@ -1,0 +1,118 @@
+/**
+ * ML Kit OCR Service
+ *
+ * Wraps react-native-mlkit-ocr to provide character-level recognition.
+ * Results are filtered by the active RecognitionMode (abc or 123).
+ */
+
+import MlkitOcr from 'react-native-mlkit-ocr';
+import type { RecognizedCharacter, RecognitionMode, OcrResult } from '../types';
+import { filterByMode } from '../utils/characterFilter';
+
+/**
+ * Recognize characters from an image URI using ML Kit.
+ *
+ * @param imageUri - Local file URI of the image to process
+ * @param mode - Recognition mode to filter characters by
+ * @returns OcrResult with filtered characters matching the mode
+ */
+export async function recognizeFromUri(
+  imageUri: string,
+  mode: RecognitionMode
+): Promise<OcrResult> {
+  const mlkitResult = await MlkitOcr.detectFromUri(imageUri);
+
+  // Extract individual characters from ML Kit's block → line → element hierarchy
+  const allCharacters: RecognizedCharacter[] = [];
+
+  for (const block of mlkitResult) {
+    for (const line of block.lines) {
+      for (const element of line.elements) {
+        // Each element is typically a word; break into individual characters
+        const chars = element.text.split('');
+        const elementWidth = element.frame.width / chars.length;
+
+        for (let i = 0; i < chars.length; i++) {
+          allCharacters.push({
+            text: chars[i],
+            confidence: element.confidence ?? 0.8,
+            boundingBox: {
+              x: (element.frame.left + i * elementWidth) / (block.frame.width + block.frame.left),
+              y: element.frame.top / (block.frame.height + block.frame.top),
+              width: elementWidth / (block.frame.width + block.frame.left),
+              height: element.frame.height / (block.frame.height + block.frame.top),
+            },
+          });
+        }
+      }
+    }
+  }
+
+  // Filter to only characters matching the active mode
+  const filteredCharacters = filterByMode(allCharacters, mode);
+
+  // Build raw text from all detected blocks
+  const rawText = mlkitResult.map((block) => block.text).join(' ');
+
+  return {
+    characters: filteredCharacters,
+    mode,
+    timestamp: Date.now(),
+    imageUri,
+    rawText,
+  };
+}
+
+/**
+ * Recognize characters from ML Kit result blocks (for frame processor usage).
+ * This is called with pre-processed ML Kit results rather than a URI.
+ *
+ * @param blocks - Raw ML Kit text blocks from frame processor
+ * @param mode - Active recognition mode
+ * @param imageWidth - Width of the source image/frame
+ * @param imageHeight - Height of the source image/frame
+ * @returns Array of filtered RecognizedCharacters
+ */
+export function recognizeFromBlocks(
+  blocks: Array<{
+    text: string;
+    frame: { left: number; top: number; width: number; height: number };
+    lines: Array<{
+      text: string;
+      elements: Array<{
+        text: string;
+        confidence?: number;
+        frame: { left: number; top: number; width: number; height: number };
+      }>;
+    }>;
+  }>,
+  mode: RecognitionMode,
+  imageWidth: number,
+  imageHeight: number
+): RecognizedCharacter[] {
+  const allCharacters: RecognizedCharacter[] = [];
+
+  for (const block of blocks) {
+    for (const line of block.lines) {
+      for (const element of line.elements) {
+        const chars = element.text.split('');
+        const elementWidth = element.frame.width / Math.max(chars.length, 1);
+
+        for (let i = 0; i < chars.length; i++) {
+          allCharacters.push({
+            text: chars[i],
+            confidence: element.confidence ?? 0.8,
+            boundingBox: {
+              x: (element.frame.left + i * elementWidth) / imageWidth,
+              y: element.frame.top / imageHeight,
+              width: elementWidth / imageWidth,
+              height: element.frame.height / imageHeight,
+            },
+          });
+        }
+      }
+    }
+  }
+
+  return filterByMode(allCharacters, mode);
+}

@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Letter Lens",
+    "slug": "camera-ocr-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "camera-ocr-app",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFD60A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.letterlens.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Letter Lens needs camera access to recognize letters and numbers.",
+        "NSSpeechRecognitionUsageDescription": "Letter Lens uses speech to read recognized characters aloud."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFD60A"
+      },
+      "package": "com.letterlens.app",
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-sqlite",
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "Letter Lens needs camera access to recognize letters and numbers.",
+          "enableFrameProcessors": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
