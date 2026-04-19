@@ -8,6 +8,7 @@ import {
   Dimensions,
   Platform,
   Animated,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -30,7 +31,7 @@ const MATCH_THRESHOLD = 0.25;
  * on expected cells (precision). Prevents random shapes like
  * circles from passing by penalising drawing in wrong areas.
  */
-const PRECISION_THRESHOLD = 0.40;
+const PRECISION_THRESHOLD = 0.50;
 /** Minimum number of total drawn points before we even evaluate */
 const MIN_POINTS = 10;
 
@@ -83,6 +84,7 @@ export default function TracingScreen() {
 
   const [tryAgainMsg, setTryAgainMsg] = useState(false);
   const canvasOffset = useRef({ x: 0, y: 0 });
+  const canvasRef = useRef<View>(null);
 
   const targetChar = charSet[currentIndex % charSet.length];
   const modeColor = letters ? Colors.grassGreen : Colors.purple;
@@ -134,10 +136,53 @@ export default function TracingScreen() {
         }
       }
 
+      // ── Anti-circle detection ──
+      // A circle has very uniform distance from its centroid (low
+      // coefficient of variation). Real letter tracing has varying
+      // distances because strokes go through the centre, not just
+      // around the perimeter.
+      // Characters that are naturally circular (O, D, Q, C, 0) are exempt.
+      const CIRCULAR_CHARS = new Set(['O', 'D', 'Q', 'C', '0']);
+      if (!CIRCULAR_CHARS.has(targetChar)) {
+        let sumX = 0, sumY = 0, ptCount = 0;
+        for (const stroke of allStrokes) {
+          for (const pt of stroke) {
+            sumX += pt.x;
+            sumY += pt.y;
+            ptCount++;
+          }
+        }
+        if (ptCount > 0) {
+          const cx = sumX / ptCount;
+          const cy = sumY / ptCount;
+          let sumDist = 0, sumDistSq = 0;
+          for (const stroke of allStrokes) {
+            for (const pt of stroke) {
+              const d = Math.sqrt((pt.x - cx) ** 2 + (pt.y - cy) ** 2);
+              sumDist += d;
+              sumDistSq += d * d;
+            }
+          }
+          const meanDist = sumDist / ptCount;
+          const variance = sumDistSq / ptCount - meanDist * meanDist;
+          // Coefficient of variation: std-dev / mean
+          const cv = meanDist > 0 ? Math.sqrt(Math.max(0, variance)) / meanDist : 1;
+          console.log(`[TRACING] Circularity CV=${cv.toFixed(3)} (circle ≈ 0.05-0.15, letter > 0.25)`);
+          if (cv < 0.20) {
+            console.log('[TRACING] REJECTED — stroke looks like a circle, not a letter trace');
+            return false;
+          }
+        }
+      }
+
       // Coverage: how much of the expected pattern was traced
       const coverage = visited.size / expected.size;
       // Precision: how much of what was drawn lands on expected cells
       const precision = allVisited.size > 0 ? visited.size / allVisited.size : 0;
+
+      console.log(`[TRACING] Char="${targetChar}" | Points=${totalPoints} | Canvas=${w}x${h} | Offset=(${canvasOffset.current.x},${canvasOffset.current.y})`);
+      console.log(`[TRACING] Expected=${expected.size} cells | Visited=${visited.size}/${allVisited.size} | Coverage=${(coverage*100).toFixed(1)}% | Precision=${(precision*100).toFixed(1)}%`);
+      console.log(`[TRACING] Pass: coverage>=${MATCH_THRESHOLD*100}% && precision>=${PRECISION_THRESHOLD*100}% → ${coverage >= MATCH_THRESHOLD && precision >= PRECISION_THRESHOLD}`);
 
       return coverage >= MATCH_THRESHOLD && precision >= PRECISION_THRESHOLD;
     },
@@ -162,6 +207,12 @@ export default function TracingScreen() {
   /** Handle the "Check" button — evaluate and give feedback */
   const handleCheck = useCallback(() => {
     if (tracedSuccess) return;
+
+    // Debug: show offset info so we can verify measurement works
+    const totalPts = strokes.reduce((sum, s) => sum + s.length, 0);
+    const firstPt = strokes[0]?.[0];
+    console.log(`[TRACING] Check pressed. Strokes=${strokes.length}, TotalPts=${totalPts}, FirstPt=(${firstPt?.x?.toFixed(0)},${firstPt?.y?.toFixed(0)}), Offset=(${canvasOffset.current.x.toFixed(0)},${canvasOffset.current.y.toFixed(0)})`);
+
     if (evaluatePattern(strokes)) {
       triggerSuccess();
     } else {
@@ -301,18 +352,22 @@ export default function TracingScreen() {
       <View style={styles.canvasWrapper}>
         {/* Drawing surface */}
         <View
+          ref={canvasRef}
           style={styles.canvas}
           {...panResponder.panHandlers}
           onLayout={(e) => {
             const { width, height } = e.nativeEvent.layout;
             canvasWidth.current = width;
             canvasHeight.current = height;
-            // Measure the canvas position on screen for accurate touch mapping
-            e.target && (e.target as any).measure?.(
-              (_x: number, _y: number, _w: number, _h: number, pageX: number, pageY: number) => {
-                canvasOffset.current = { x: pageX, y: pageY };
-              }
-            );
+            // Use ref.measureInWindow for reliable absolute position on Android
+            setTimeout(() => {
+              canvasRef.current?.measureInWindow?.((x, y, w, h) => {
+                if (x != null && y != null) {
+                  canvasOffset.current = { x, y };
+                  console.log('[TRACING] Canvas offset measured:', x, y, 'size:', w, h);
+                }
+              });
+            }, 100);
           }}
         >
           {/* Target character (faded guide — inside canvas so it's visible) */}
@@ -494,12 +549,11 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     borderWidth: 2,
     borderColor: Colors.lightGray,
-    borderStyle: 'dashed',
+    borderStyle: 'dashed' as const,
     backgroundColor: Colors.white,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...(Platform.OS === 'web' ? { cursor: 'crosshair' } : {}),
+    overflow: 'hidden' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   hintText: {
     fontFamily: Fonts.family.semiBold,

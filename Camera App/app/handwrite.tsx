@@ -51,6 +51,7 @@ export default function HandwriteScreen() {
   const [isRecognizing, setIsRecognizing] = useState(false);
   const currentStroke = useRef<Stroke>([]);
   const canvasOffset = useRef({ x: 0, y: 0 });
+  const canvasRef = useRef<View>(null);
 
   const modeColor = letters ? Colors.coral : Colors.sunnyYellow;
   const modeLabel = letters ? '🖊️ Handwrite ABC' : '🖊️ Handwrite 123';
@@ -190,14 +191,18 @@ export default function HandwriteScreen() {
       {/* Drawing canvas */}
       <View style={styles.canvasWrapper}>
         <View
+          ref={canvasRef}
           style={styles.canvas}
           {...panResponder.panHandlers}
-          onLayout={(e) => {
-            e.target && (e.target as any).measure?.(
-              (_x: number, _y: number, _w: number, _h: number, pageX: number, pageY: number) => {
-                canvasOffset.current = { x: pageX, y: pageY };
-              }
-            );
+          onLayout={() => {
+            setTimeout(() => {
+              canvasRef.current?.measureInWindow?.((x, y) => {
+                if (x != null && y != null) {
+                  canvasOffset.current = { x, y };
+                  console.log('[HANDWRITE] Canvas offset measured:', x, y);
+                }
+              });
+            }, 100);
           }}
         >
           {renderStrokes()}
@@ -313,9 +318,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.midGray,
     backgroundColor: Colors.white,
-    overflow: 'hidden',
+    overflow: 'hidden' as const,
     ...Shadows.md,
-    ...(Platform.OS === 'web' ? { cursor: 'crosshair' } : {}),
   },
   canvasPlaceholder: {
     flex: 1,
