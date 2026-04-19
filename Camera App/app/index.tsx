@@ -15,86 +15,234 @@ import { Colors, Fonts, Spacing, BorderRadius, Shadows } from '../constants/them
 import { useOcrStore } from '../store/ocrStore';
 import type { RecognitionMode } from '../types';
 
+/** Cartoon icon definition rendered as layered badge */
+interface CartoonIcon {
+  /** Background circle color */
+  bg: string;
+  /** Main Ionicon name */
+  icon: keyof typeof Ionicons.glyphMap;
+  /** Icon color */
+  iconColor: string;
+  /** Small decorative accent emoji (top-right sparkle) */
+  accent: string;
+  /** Tiny secondary icon at bottom-left */
+  miniIcon: keyof typeof Ionicons.glyphMap;
+  miniColor: string;
+}
+
 interface ModeCard {
   mode: RecognitionMode;
-  emoji: string;
   title: string;
   subtitle: string;
   preview: string;
   bgColor: string;
   borderColor: string;
   route: '/camera' | '/tracing' | '/handwrite';
-  icon: keyof typeof Ionicons.glyphMap;
+  cartoon: CartoonIcon;
 }
 
 const MODE_CARDS: ModeCard[] = [
   {
     mode: 'read-abc',
-    emoji: '📖',
     title: 'Read ABC',
     subtitle: 'Scan letters with camera',
     preview: 'A B C D E',
     bgColor: '#E8F8FF',
     borderColor: Colors.skyBlue,
     route: '/camera',
-    icon: 'camera-outline',
+    cartoon: {
+      bg: '#4CC9F0',
+      icon: 'camera',
+      iconColor: '#fff',
+      accent: '✨',
+      miniIcon: 'text',
+      miniColor: '#FFD60A',
+    },
   },
   {
     mode: 'trace-abc',
-    emoji: '✏️',
     title: 'Trace ABC',
     subtitle: 'Trace over guide letters',
     preview: 'A B C D E',
     bgColor: '#E8FFE8',
     borderColor: Colors.grassGreen,
     route: '/tracing',
-    icon: 'finger-print-outline',
+    cartoon: {
+      bg: '#06D6A0',
+      icon: 'finger-print',
+      iconColor: '#fff',
+      accent: '🌟',
+      miniIcon: 'pencil',
+      miniColor: '#FF9E00',
+    },
   },
   {
     mode: 'handwrite-abc',
-    emoji: '🖊️',
     title: 'Handwrite ABC',
     subtitle: 'Write freely & recognize',
     preview: 'A B C D E',
     bgColor: '#FFF0F5',
     borderColor: Colors.coral,
     route: '/handwrite',
-    icon: 'create-outline',
+    cartoon: {
+      bg: '#F72585',
+      icon: 'color-palette',
+      iconColor: '#fff',
+      accent: '🎨',
+      miniIcon: 'sparkles',
+      miniColor: '#FFD60A',
+    },
   },
   {
     mode: 'read-123',
-    emoji: '🔢',
     title: 'Read 123',
     subtitle: 'Scan numbers with camera',
     preview: '1 2 3 4 5',
     bgColor: '#FFF3E0',
     borderColor: Colors.orange,
     route: '/camera',
-    icon: 'camera-outline',
+    cartoon: {
+      bg: '#FF9E00',
+      icon: 'camera',
+      iconColor: '#fff',
+      accent: '🔍',
+      miniIcon: 'calculator',
+      miniColor: '#F72585',
+    },
   },
   {
     mode: 'trace-123',
-    emoji: '✏️',
     title: 'Trace 123',
     subtitle: 'Trace over guide numbers',
     preview: '1 2 3 4 5',
     bgColor: '#F3E8FF',
     borderColor: Colors.purple,
     route: '/tracing',
-    icon: 'finger-print-outline',
+    cartoon: {
+      bg: '#7B2FF7',
+      icon: 'finger-print',
+      iconColor: '#fff',
+      accent: '💫',
+      miniIcon: 'pencil',
+      miniColor: '#06D6A0',
+    },
   },
   {
     mode: 'handwrite-123',
-    emoji: '🖊️',
     title: 'Handwrite 123',
     subtitle: 'Write freely & recognize',
     preview: '1 2 3 4 5',
     bgColor: '#FFF8E0',
     borderColor: Colors.sunnyYellow,
     route: '/handwrite',
-    icon: 'create-outline',
+    cartoon: {
+      bg: '#FFD60A',
+      icon: 'color-palette',
+      iconColor: '#4A4A4A',
+      accent: '⭐',
+      miniIcon: 'sparkles',
+      miniColor: '#F72585',
+    },
   },
 ];
+
+/** Cartoon icon badge — layered circle with icon, sparkle, and mini-icon */
+function CartoonBadge({ cartoon, size }: { cartoon: CartoonIcon; size: number }) {
+  const iconSize = size * 0.48;
+  const miniSize = size * 0.22;
+  return (
+    <View style={[cartoonStyles.badgeOuter, { width: size, height: size }]}>
+      {/* Outer ring (lighter) */}
+      <View
+        style={[
+          cartoonStyles.badgeRing,
+          { width: size, height: size, borderRadius: size / 2, borderColor: cartoon.bg + '50' },
+        ]}
+      />
+      {/* Main circle */}
+      <View
+        style={[
+          cartoonStyles.badgeCircle,
+          {
+            width: size * 0.82,
+            height: size * 0.82,
+            borderRadius: (size * 0.82) / 2,
+            backgroundColor: cartoon.bg,
+          },
+        ]}
+      >
+        {/* Inner highlight (top-left shine) */}
+        <View
+          style={[
+            cartoonStyles.shine,
+            {
+              width: size * 0.22,
+              height: size * 0.12,
+              borderRadius: size * 0.06,
+              top: size * 0.08,
+              left: size * 0.12,
+            },
+          ]}
+        />
+        <Ionicons name={cartoon.icon} size={iconSize} color={cartoon.iconColor} />
+      </View>
+      {/* Sparkle accent (top-right) */}
+      <View style={[cartoonStyles.accentBubble, { top: -2, right: -2 }]}>
+        <Text style={{ fontSize: size * 0.24 }}>{cartoon.accent}</Text>
+      </View>
+      {/* Mini icon (bottom-left) */}
+      <View
+        style={[
+          cartoonStyles.miniBadge,
+          {
+            width: miniSize,
+            height: miniSize,
+            borderRadius: miniSize / 2,
+            backgroundColor: cartoon.miniColor,
+            bottom: 0,
+            left: 0,
+          },
+        ]}
+      >
+        <Ionicons name={cartoon.miniIcon} size={miniSize * 0.55} color="#fff" />
+      </View>
+    </View>
+  );
+}
+
+const cartoonStyles = StyleSheet.create({
+  badgeOuter: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.xs,
+  },
+  badgeRing: {
+    position: 'absolute',
+    borderWidth: 3,
+    borderStyle: 'dashed',
+  },
+  badgeCircle: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.md,
+  },
+  shine: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255,255,255,0.45)',
+  },
+  accentBubble: {
+    position: 'absolute',
+  },
+  miniBadge: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    ...Shadows.sm,
+  },
+});
 
 /**
  * Home Screen — 2×3 grid: Read / Trace / Handwrite × Letters / Numbers.
@@ -106,7 +254,8 @@ export default function HomeScreen() {
 
   const maxCardWidth = 160;
   const cardWidth = Math.min(maxCardWidth, (width - Spacing.lg * 3) / 2);
-  const cardHeight = cardWidth * 1.15;
+  const cardHeight = cardWidth * 1.3;
+  const badgeSize = cardWidth * 0.45;
 
   const handleSelectMode = (card: ModeCard) => {
     setMode(card.mode);
@@ -145,14 +294,11 @@ export default function HomeScreen() {
                 accessibilityLabel={`${card.title}: ${card.subtitle}`}
                 accessibilityRole="button"
               >
-                <Text style={styles.cardEmoji}>{card.emoji}</Text>
+                <CartoonBadge cartoon={card.cartoon} size={badgeSize} />
                 <Text style={styles.cardTitle}>{card.title}</Text>
                 <Text style={styles.cardSubtitle}>{card.subtitle}</Text>
                 <View style={styles.cardPreview}>
                   <Text style={styles.previewLetters}>{card.preview}</Text>
-                </View>
-                <View style={[styles.goButton, { backgroundColor: card.borderColor }]}>
-                  <Ionicons name={card.icon} size={20} color={Colors.white} />
                 </View>
               </TouchableOpacity>
             ))}
@@ -233,14 +379,12 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: BorderRadius.xl,
     borderWidth: 3,
-    padding: Spacing.md,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
     ...Shadows.md,
-  },
-  cardEmoji: {
-    fontSize: 36,
-    marginBottom: Spacing.xs,
   },
   cardTitle: {
     fontFamily: Fonts.family.extraBold,
@@ -268,17 +412,6 @@ const styles = StyleSheet.create({
     color: Colors.darkGray,
     letterSpacing: 2,
     textAlign: 'center',
-  },
-  goButton: {
-    position: 'absolute',
-    bottom: Spacing.sm,
-    right: Spacing.sm,
-    width: 34,
-    height: 34,
-    borderRadius: BorderRadius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.sm,
   },
   bottomNav: {
     flexDirection: 'row',
