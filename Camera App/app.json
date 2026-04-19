@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Letter Lens",
+    "name": "Little Letters",
     "slug": "camera-ocr-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,8 +17,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.letterlens.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Letter Lens needs camera access to recognize letters and numbers.",
-        "NSSpeechRecognitionUsageDescription": "Letter Lens uses speech to read recognized characters aloud."
+        "NSCameraUsageDescription": "Little Letters needs camera access to recognize letters and numbers.",
+        "NSSpeechRecognitionUsageDescription": "Little Letters uses speech to read recognized characters aloud."
       }
     },
     "android": {
@@ -36,7 +36,7 @@
       [
         "react-native-vision-camera",
         {
-          "cameraPermissionText": "Letter Lens needs camera access to recognize letters and numbers.",
+          "cameraPermissionText": "Little Letters needs camera access to recognize letters and numbers.",
           "enableFrameProcessors": true
         }
       ]

@@ -1,5 +1,5 @@
 /**
- * Letter Lens — Design System & Theme
+ * Little Letters — Design System & Theme
  *
  * Playful, kid-friendly color palette with large touch targets,
  * rounded shapes, and bouncy animations.

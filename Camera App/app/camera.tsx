@@ -200,7 +200,7 @@ export default function CameraScreen() {
         <Ionicons name="camera-outline" size={64} color={Colors.midGray} />
         <Text style={styles.permissionTitle}>Camera Access Needed</Text>
         <Text style={styles.permissionText}>
-          Letter Lens needs your camera to recognize {isLetterMode(mode) ? 'letters' : 'numbers'}.
+          Little Letters needs your camera to recognize {isLetterMode(mode) ? 'letters' : 'numbers'}.
         </Text>
         <TouchableOpacity style={styles.permissionButton} onPress={requestNativePermission}>
           <Text style={styles.permissionButtonText}>Allow Camera</Text>

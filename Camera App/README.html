@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Letter Lens - README</title>
+  <title>Little Letters - README</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Nunito, Helvetica, Arial, sans-serif;
@@ -47,10 +47,11 @@
   </style>
 </head>
 <body>
-<h1>🔍 Letter Lens</h1>
+<h1>� Little Letters</h1>
 <p>A playful, kid-friendly mobile app for young learners to <strong>read</strong> and <strong>write</strong> letters (A–Z) and numbers (1–9). Built with React Native (Expo SDK 55) and Google ML Kit for on-device OCR. Uses a high-pitched child-like TTS voice.</p>
 <h2>✨ Features</h2>
 <h3>Home Screen — 6-Mode Selector (2×3 grid)</h3>
+<p>Each tile has a <strong>cartoon illustration background</strong> with a layered cartoon badge icon.</p>
 <table>
 <thead>
 <tr>
@@ -64,11 +65,11 @@
 </tr>
 <tr>
 <td>✏️ <strong>Trace ABC</strong></td>
-<td>Opens a tracing canvas with a large faded guide letter (A→Z). Kids trace over the letter using their finger or mouse. Navigate Prev/Next through the alphabet, hear each letter spoken, and clear to retry.</td>
+<td>Guided <strong>stroke-by-stroke</strong> tracing. Kids follow dotted guide paths for each stroke of every letter (A→Z). Auto-evaluates on finger-lift with proximity-based scoring. Speaks &quot;Nice!&quot; between strokes and &quot;Good job!&quot; on completion.</td>
 </tr>
 <tr>
 <td>🖊️ <strong>Handwrite ABC</strong></td>
-<td>Opens a blank drawing canvas. Kids write a letter freely, then tap “Recognize”. The app identifies what was written and speaks it aloud. (Demo mode uses random matching; future: TFLite CNN for real recognition.)</td>
+<td>Opens a blank drawing canvas. Kids write a letter freely, then tap &quot;Recognize&quot;. The app identifies what was written and speaks it aloud.</td>
 </tr>
 <tr>
 <td>🔢 <strong>Read 123</strong></td>
@@ -76,7 +77,7 @@
 </tr>
 <tr>
 <td>✏️ <strong>Trace 123</strong></td>
-<td>Tracing practice for numbers 1–9. Same guided canvas as Trace ABC but cycles through digits.</td>
+<td>Guided stroke-by-stroke tracing for numbers 1–9. Same guided system as Trace ABC but cycles through digits.</td>
 </tr>
 <tr>
 <td>🖊️ <strong>Handwrite 123</strong></td>
@@ -88,27 +89,28 @@
 <li><strong>Mode-Based Filtering</strong> — Choosing a tile constrains OCR to that character set (letters OR digits), eliminating cross-set confusion (O/0, l/1, S/5, B/8)</li>
 <li><strong>Live Camera Preview</strong> — Point camera at text; detected characters highlighted with bounding boxes (native only)</li>
 <li><strong>Capture &amp; Recognize</strong> — Take a photo for detailed recognition with star-based confidence ratings (1–5 stars)</li>
-<li><strong>Tracing Practice</strong> — Guided canvas with faded guide character, character strip for quick navigation</li>
+<li><strong>Stroke-by-Stroke Tracing</strong> — Guided canvas shows dotted guide paths per stroke. Evaluates user drawing using proximity sampling (60% of 50 guide samples must be within 12% of canvas size). Auto-advances through strokes; speaks encouragement.</li>
 <li><strong>Handwriting Recognition</strong> — Blank canvas to draw freely, then tap Recognize to identify the character</li>
 <li><strong>Text-to-Speech</strong> — Child-like voice (high pitch 1.5). Tap any card to hear it. Spell-out mode reads characters one by one with pauses. Stop button cancels immediately (including mid-spell)</li>
 <li><strong>Phonetic Pronunciations</strong> — Ambiguous letters use &quot;the letter A/E/I/O/U/R/Y&quot; for clarity</li>
 <li><strong>Copy to Clipboard</strong> — One-tap copy of all recognized characters as a string</li>
 <li><strong>Scan History</strong> — Saved scans stored locally (SQLite on native, in-memory on web). Browse, search, delete, re-open</li>
-<li><strong>Kid-Friendly UI</strong> — Bright pastel colors, Nunito font, large touch targets, star ratings, encouraging banners (&quot;Super Star!&quot;, &quot;Amazing!&quot;), bouncy animations</li>
+<li><strong>Kid-Friendly UI</strong> — Bright pastel colors, Nunito font, large touch targets, star ratings, encouraging banners (&quot;Super Star!&quot;, &quot;Amazing!&quot;), tile background illustrations, cartoon badge icons</li>
 </ul>
 <h2>🏗️ Architecture</h2>
 <pre><code>┌────────────────────────────────────────────────────────────────┐
 │                         Home Screen                          │
-│  ┌─────────┐ ┌─────────┐ ┌─────────────┐ ┌─────────┐  │
-│  │📖Read ABC│ │✏️Trace ABC│ │🖊️Handwrite ABC│ │🔢Read 123│  │
-│  └────┬────┘ └────┬────┘ └──────┬──────┘ └────┬────┘  │
-│       │          │               │              │         │
-│  ┌─────────┐ ┌──────────┐ ┌──────────────┐              │
-│  │✏️Trace 123│ │🖊️Hndwrt 123│ │ History/Sett │              │
-│  └─────────┘ └──────────┘ └──────────────┘              │
-│                                                                │
+│  ┌─────────┐ ┌─────────┐ ┌─────────────┐                    │
+│  │📖Read ABC│ │✏️Trace ABC│ │🖊️Handwrite ABC│                  │
+│  └────┬────┘ └────┬────┘ └──────┬──────┘                    │
+│  ┌─────────┐ ┌─────────┐ ┌─────────────┐                    │
+│  │🔢Read 123│ │✏️Trace 123│ │🖊️Hndwrt 123  │                  │
+│  └────┬────┘ └────┬────┘ └──────┬──────┘                    │
+│       │          │               │                  Bottom:  │
+│       │      ┌───┴───┐          │           History / Settings│
+│       │      │       │          │                            │
 │  read-* → Camera → Result                                     │
-│  trace-* → Tracing canvas (guided)                             │
+│  trace-* → Tracing canvas (stroke-by-stroke guided)           │
 │  handwrite-* → Blank canvas → Recognize                       │
 └────────────────────────────────────────────────────────────────┘
 </code></pre>
@@ -119,9 +121,18 @@
 </code></pre>
 <ul>
 <li><code>read-*</code> modes → Camera screen → OCR → Result screen</li>
-<li><code>trace-*</code> modes → Guided tracing canvas with faded guide character</li>
+<li><code>trace-*</code> modes → Guided stroke-by-stroke tracing canvas</li>
 <li><code>handwrite-*</code> modes → Blank canvas → Draw → Recognize button → Result</li>
 </ul>
+<h3>Tracing System (<code>utils/strokePaths.ts</code>)</h3>
+<p>Each character (A–Z, 1–9) is defined as an ordered array of <strong>strokes</strong>. Each stroke is an array of normalised <code>[x, y]</code> waypoints in 0–1 coordinate space:</p>
+<pre><code class="language-typescript">const A: CharacterStrokes = [
+  [[0.2, 1], [0.5, 0]],           // left diagonal (↗)
+  [[0.5, 0], [0.8, 1]],           // right diagonal (↘)
+  [[0.35, 0.55], [0.65, 0.55]],   // crossbar (→)
+];
+</code></pre>
+<p>The tracing screen (<code>app/tracing.tsx</code>) uses <code>sampleStroke()</code> to generate 50 evenly-spaced guide points along each stroke. When the user lifts their finger, it checks what percentage of those guide points have a user-drawn point within 12% proximity. If ≥60% match, the stroke passes.</p>
 <h3>Mode-Based Filtering (<code>utils/characterFilter.ts</code>)</h3>
 <p><code>isLetterMode(mode)</code> checks if mode ends in <code>-abc</code>; <code>isReadMode(mode)</code> checks if it starts with <code>read-</code>; <code>isTraceMode(mode)</code> checks for <code>trace-</code>; <code>isHandwriteMode(mode)</code> checks for <code>handwrite-</code>. The <code>filterByMode()</code> function applies regex (<code>/^[A-Za-z]$/</code> or <code>/^[1-9]$/</code>) to raw ML Kit results, keeping only matching characters.</p>
 <h3>TTS (<code>services/tts.ts</code>)</h3>
@@ -134,14 +145,24 @@
 <pre><code>camera-ocr-app/
 ├── app/                          # Expo Router screens
 │   ├── _layout.tsx               # Root layout (Stack nav, font loading)
-│   ├── index.tsx                 # Home — 2×3 mode selector grid (6 tiles)
+│   ├── index.tsx                 # Home — 2×3 grid with ImageBackground tiles
 │   ├── camera.tsx                # Camera + OCR (native)
 │   ├── camera.web.tsx            # Camera placeholder + demo mode (web)
-│   ├── tracing.tsx               # Guided tracing canvas with faded guide character
+│   ├── tracing.tsx               # Stroke-by-stroke guided tracing canvas
 │   ├── handwrite.tsx             # Freehand drawing → recognize button
 │   ├── result.tsx                # Recognized characters display + actions
 │   ├── history.tsx               # Past scan records list
 │   └── settings.tsx              # App preferences
+├── assets/                       # Static images
+│   ├── icon.png                  # App icon (owl with magnifying glass)
+│   ├── adaptive-icon.png         # Android adaptive icon
+│   ├── splash-icon.png           # Splash screen (owl at 80% canvas)
+│   ├── tile-read-abc.png         # Tile bg: camera + scattered letters
+│   ├── tile-trace-abc.png        # Tile bg: pencil tracing dotted A
+│   ├── tile-handwrite-abc.png    # Tile bg: notebook + paint palette
+│   ├── tile-read-123.png         # Tile bg: camera + scattered numbers
+│   ├── tile-trace-123.png        # Tile bg: pencil tracing dotted 2
+│   └── tile-handwrite-123.png    # Tile bg: notebook + abacus beads
 ├── components/
 │   ├── camera/
 │   │   ├── CaptureButton.tsx     # Large circular capture button
@@ -153,6 +174,12 @@
 │       ├── LetterBubble.tsx      # Small circular character bubble
 │       ├── LetterCard.tsx        # Large character card with star confidence
 │       └── LoadingSpinner.tsx    # Centered spinner
+├── constants/
+│   └── theme.ts                 # Colors, Fonts, Spacing, Shadows (web-compatible boxShadow)
+├── scripts/
+│   ├── generate-icon.js          # Generates owl icon PNGs using sharp + SVG
+│   ├── generate-tiles.js         # Generates 6 tile background PNGs using sharp + SVG
+│   └── generate-readme-html.js   # Converts README.md → README.html via marked
 ├── services/
 │   ├── ocr.ts                   # ML Kit OCR wrapper + mode filtering (native)
 │   ├── ocr.web.ts               # OCR stub returning empty results (web)
@@ -171,41 +198,171 @@
 │   └── index.ts                 # Re-exports
 ├── utils/
 │   ├── characterFilter.ts      # isLetterMode, isReadMode, isTraceMode, isHandwriteMode, filterByMode
+│   ├── charPatterns.ts          # Legacy 5×7 bitmap patterns (unused, kept for reference)
+│   ├── strokePaths.ts           # Normalised stroke definitions for A–Z, 1–9
 │   └── debounce.ts              # debounce &amp; throttle utilities
-├── constants/
-│   └── theme.ts                 # Colors, Fonts, Spacing, Shadows (web-compatible boxShadow)
-├── __tests__/                    # Unit tests (5 files)
+├── __tests__/                    # Unit tests
 │   ├── services/
+│   │   ├── clipboard.test.ts
+│   │   ├── ocr.test.ts
+│   │   └── tts.test.ts
 │   ├── store/
+│   │   └── stores.test.ts
 │   └── utils/
+│       ├── characterFilter.test.ts
+│       └── debounce.test.ts
 ├── package.json
 ├── app.json                     # Expo config (SDK 55, bundleId, etc.)
 ├── tsconfig.json
 └── babel.config.js
 </code></pre>
-<h2>🚀 Quick Start</h2>
+<h2>🚀 Getting Started</h2>
 <h3>Prerequisites</h3>
-<ul>
-<li><strong>Node.js 18+</strong></li>
-<li><strong>Expo CLI</strong> (<code>npx expo</code>)</li>
-<li>For native: Android Studio or Xcode</li>
-<li>For web preview: any modern browser</li>
-</ul>
-<h3>Install &amp; Run</h3>
-<pre><code class="language-bash">cd camera-ocr-app
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Version</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Node.js</strong></td>
+<td>18+</td>
+<td>LTS recommended (<code>node -v</code> to check)</td>
+</tr>
+<tr>
+<td><strong>npm</strong></td>
+<td>9+</td>
+<td>Comes with Node (<code>npm -v</code> to check)</td>
+</tr>
+<tr>
+<td><strong>Git</strong></td>
+<td>any</td>
+<td>For cloning the repo</td>
+</tr>
+<tr>
+<td><strong>Android Studio</strong></td>
+<td>latest</td>
+<td>For Android native builds (with SDK 34+)</td>
+</tr>
+<tr>
+<td><strong>Xcode</strong></td>
+<td>15+</td>
+<td>For iOS builds (macOS only)</td>
+</tr>
+<tr>
+<td><strong>Physical Android device</strong></td>
+<td>Android 7+</td>
+<td>USB debugging enabled for on-device OCR testing</td>
+</tr>
+</tbody></table>
+<h3>1. Clone &amp; Install</h3>
+<pre><code class="language-bash"># Clone the repository
+git clone &lt;repo-url&gt;
+cd camera-ocr-app
 
-# Install dependencies (--legacy-peer-deps needed for react@19 compat)
+# Install dependencies
+# --legacy-peer-deps is required because react@19 has peer-dep conflicts
+# with some Expo packages that haven&#39;t updated their peerDeps yet
 npm install --legacy-peer-deps
-
-# === Web preview (no phone needed) ===
-npx expo start --web --port 3000
-# Then open http://localhost:3000
-
-# === Native (full camera + OCR) ===
-npx expo prebuild          # Generate native projects
-npx expo run:android       # Run on Android emulator/device
-npx expo run:ios           # Run on iOS simulator/device
 </code></pre>
+<h3>2. Generate Assets (icons &amp; tile images)</h3>
+<p>The app icon and tile background images are generated from SVG via the <code>sharp</code> library. Run both scripts if you need to regenerate them:</p>
+<pre><code class="language-bash"># Generate the owl app icon (icon.png, adaptive-icon.png, splash-icon.png)
+node scripts/generate-icon.js
+
+# Generate the 6 tile background images (tile-*.png)
+node scripts/generate-tiles.js
+
+# Regenerate README.html from README.md
+node scripts/generate-readme-html.js
+</code></pre>
+<h3>3. Start in Development Mode</h3>
+<h4>Option A: Web Preview (quick, no phone needed)</h4>
+<pre><code class="language-bash"># Start Metro bundler + open browser
+npx expo start --web --port 3000
+</code></pre>
+<p>Then open <strong><a href="http://localhost:3000">http://localhost:3000</a></strong>. Web mode supports tracing, handwriting, TTS, and demo camera mode. Real camera/OCR requires a native build.</p>
+<h4>Option B: Android Dev Client (full features — recommended)</h4>
+<p>This is the recommended approach for testing camera + OCR on a physical device.</p>
+<pre><code class="language-bash"># Step 1: Generate native Android project (run once, or after changing app.json/plugins)
+npx expo prebuild --clean
+
+# Step 2: Build and install the dev client APK on connected device
+npx expo run:android
+
+# Step 3: Once the app is installed, start Metro bundler
+# (the app on the phone will connect to this)
+npx expo start --dev-client --port 3030
+</code></pre>
+<blockquote>
+<p><strong>Tip:</strong> After the initial <code>run:android</code> build, you only need Metro (<code>npx expo start --dev-client</code>) for JS-only changes. Re-run <code>prebuild --clean</code> + <code>run:android</code> only when native dependencies or <code>app.json</code> change.</p>
+</blockquote>
+<h4>Option C: iOS (macOS only)</h4>
+<pre><code class="language-bash">npx expo prebuild --clean
+npx expo run:ios
+
+# Then start Metro
+npx expo start --dev-client --port 3030
+</code></pre>
+<h3>4. Two-Machine Workflow</h3>
+<p>If you develop on one machine (VS Code) and build on another:</p>
+<pre><code>VS Code Machine                    Build Machine
+┌──────────────┐                  ┌──────────────┐
+│ Edit code     │  ──copy files→  │ Metro bundler │
+│ Generate PNGs │                  │ npx expo start│
+│ Run tests     │                  │ Phone via USB │
+└──────────────┘                  └──────────────┘
+</code></pre>
+<ol>
+<li><strong>Edit</strong> files on VS Code machine</li>
+<li><strong>Copy</strong> changed files to build machine (same relative path)</li>
+<li>On build machine, Metro auto-reloads on file change — or press <code>r</code> in Metro terminal</li>
+<li>For <strong>native changes</strong> (new native package, app.json changes): re-run <code>npx expo prebuild --clean &amp;&amp; npx expo run:android</code> on the build machine</li>
+</ol>
+<h3>5. Common Dev Commands Reference</h3>
+<pre><code class="language-bash"># ─── Starting ────────────────────────────────────────────────
+npx expo start                        # Start Metro (auto-detect platform)
+npx expo start --web --port 3000      # Web preview on port 3000
+npx expo start --dev-client --port 3030 # Dev client mode (for native)
+npx expo start --clear                # Clear Metro cache &amp; start
+
+# ─── Building ────────────────────────────────────────────────
+npx expo prebuild                     # Generate native projects (android/ ios/)
+npx expo prebuild --clean             # Wipe &amp; regenerate native projects
+npx expo run:android                  # Build + install on Android device
+npx expo run:ios                      # Build + install on iOS simulator
+
+# ─── Testing ─────────────────────────────────────────────────
+npm test                              # Run all tests with coverage report
+npx jest --watch                      # Run tests in watch mode
+npx jest __tests__/utils              # Run only util tests
+npx jest --testPathPattern=ocr        # Run only tests matching &quot;ocr&quot;
+
+# ─── Linting ─────────────────────────────────────────────────
+npm run lint                          # ESLint check
+
+# ─── Asset Generation ────────────────────────────────────────
+node scripts/generate-icon.js         # Regenerate app icons
+node scripts/generate-tiles.js        # Regenerate tile backgrounds
+node scripts/generate-readme-html.js  # Regenerate README.html
+
+# ─── Troubleshooting ─────────────────────────────────────────
+npx expo start --clear                # Clear Metro cache
+npx expo install --fix                # Fix version mismatches
+rm -rf node_modules &amp;&amp; npm install --legacy-peer-deps  # Clean install
+
+# Kill a stuck port (Windows)
+netstat -ano | findstr :3030
+taskkill /F /PID &lt;PID&gt;
+
+# Kill a stuck port (macOS/Linux)
+lsof -i :3030
+kill -9 &lt;PID&gt;
+</code></pre>
+<h3>6. Environment Variables</h3>
+<p>The app currently uses no environment variables. All config is in <code>app.json</code> and <code>constants/theme.ts</code>.</p>
 <h3>Web Limitations</h3>
 <p>On web, camera and ML Kit are unavailable. The app provides:</p>
 <ul>
@@ -214,20 +371,44 @@ npx expo run:ios           # Run on iOS simulator/device
 <li><strong>TTS</strong> — uses Web Speech API with high pitch</li>
 <li><strong>History</strong> — in-memory only (lost on page refresh)</li>
 </ul>
-<h3>Port Conflicts</h3>
-<p>If port 3000 is already in use:</p>
-<pre><code class="language-bash"># Find and kill the process (Windows)
-netstat -ano | findstr :3000
-taskkill /F /PID &lt;PID&gt;
-
-# Or use a different port
-npx expo start --web --port 3001
-</code></pre>
 <h2>🧪 Running Tests</h2>
 <pre><code class="language-bash">npm test                  # All tests with coverage
 npx jest --watch          # Watch mode
 npx jest __tests__/utils  # Specific folder
 </code></pre>
+<p><strong>Test files:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Test file</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>__tests__/services/clipboard.test.ts</code></td>
+<td>Clipboard copy + paste</td>
+</tr>
+<tr>
+<td><code>__tests__/services/ocr.test.ts</code></td>
+<td>OCR processing + mode filtering</td>
+</tr>
+<tr>
+<td><code>__tests__/services/tts.test.ts</code></td>
+<td>TTS speak + cancel + phonetics</td>
+</tr>
+<tr>
+<td><code>__tests__/store/stores.test.ts</code></td>
+<td>Zustand store state transitions</td>
+</tr>
+<tr>
+<td><code>__tests__/utils/characterFilter.test.ts</code></td>
+<td>Mode detection + character filtering</td>
+</tr>
+<tr>
+<td><code>__tests__/utils/debounce.test.ts</code></td>
+<td>Debounce + throttle timing</td>
+</tr>
+</tbody></table>
 <p><strong>Coverage target:</strong> ≥80% on services and utilities.</p>
 <h2>📦 Key Dependencies</h2>
 <table>
@@ -245,8 +426,8 @@ npx jest __tests__/utils  # Specific folder
 </tr>
 <tr>
 <td><code>react</code> / <code>react-dom</code></td>
-<td>19.2.0</td>
-<td>UI library (must match exactly)</td>
+<td>^19.2.3</td>
+<td>UI library</td>
 </tr>
 <tr>
 <td><code>react-native</code></td>
@@ -255,7 +436,7 @@ npx jest __tests__/utils  # Specific folder
 </tr>
 <tr>
 <td><code>expo-camera</code></td>
-<td>~55.0.6</td>
+<td>~55.0.13</td>
 <td>Camera access (CameraView)</td>
 </tr>
 <tr>
@@ -265,12 +446,12 @@ npx jest __tests__/utils  # Specific folder
 </tr>
 <tr>
 <td><code>expo-speech</code></td>
-<td>~55.0.3</td>
+<td>~55.0.11</td>
 <td>Text-to-speech</td>
 </tr>
 <tr>
 <td><code>expo-clipboard</code></td>
-<td>~55.0.1</td>
+<td>~55.0.11</td>
 <td>Copy to clipboard</td>
 </tr>
 <tr>
@@ -280,7 +461,7 @@ npx jest __tests__/utils  # Specific folder
 </tr>
 <tr>
 <td><code>expo-image-manipulator</code></td>
-<td>~55.0.2</td>
+<td>~55.0.13</td>
 <td>Image preprocessing</td>
 </tr>
 <tr>
@@ -300,8 +481,18 @@ npx jest __tests__/utils  # Specific folder
 </tr>
 <tr>
 <td><code>@expo-google-fonts/nunito</code></td>
-<td>^0.2.3</td>
+<td>^0.2.0</td>
 <td>Kid-friendly rounded font</td>
+</tr>
+<tr>
+<td><code>sharp</code> (dev)</td>
+<td>^0.34.5</td>
+<td>SVG → PNG asset generation</td>
+</tr>
+<tr>
+<td><code>marked</code> (dev)</td>
+<td>^17.0.6</td>
+<td>Markdown → HTML for README</td>
 </tr>
 </tbody></table>
 <h2>🎨 Design System</h2>
@@ -317,30 +508,41 @@ npx jest __tests__/utils  # Specific folder
 </ul>
 <p><strong>Font:</strong> Nunito (Regular, SemiBold, Bold, ExtraBold) — falls back to system sans-serif on web if load fails.</p>
 <p><strong>Shadows:</strong> Uses <code>boxShadow</code> on web, native shadow props on iOS/Android.</p>
+<p><strong>Tile Backgrounds:</strong> Each home screen tile has a generated pastel illustration (camera icons, pencils, scattered letters/numbers, notebook lines, paint palettes, abacus beads) rendered at low opacity so foreground text stays readable.</p>
 <h2>🔧 Known Issues &amp; TODOs</h2>
 <h3>Current State (Working)</h3>
 <ul>
-<li><input checked="" disabled="" type="checkbox"> 6-mode home screen (Read ABC, Trace ABC, Handwrite ABC, Read 123, Trace 123, Handwrite 123)</li>
+<li><input checked="" disabled="" type="checkbox"> 6-mode home screen with cartoon badge icons and tile background illustrations</li>
 <li><input checked="" disabled="" type="checkbox"> Camera screen with demo mode (web) / ML Kit OCR (native)</li>
-<li><input checked="" disabled="" type="checkbox"> Tracing practice with guided canvas and faded character template</li>
+<li><input checked="" disabled="" type="checkbox"> Stroke-by-stroke guided tracing (proximity-based evaluation, auto-advance)</li>
 <li><input checked="" disabled="" type="checkbox"> Handwriting recognition with blank canvas and Recognize button</li>
 <li><input checked="" disabled="" type="checkbox"> Result screen with letter cards, star ratings, TTS, copy, save</li>
 <li><input checked="" disabled="" type="checkbox"> History screen with search, delete, re-open</li>
 <li><input checked="" disabled="" type="checkbox"> Settings screen (speech speed, spell-out, auto-save, default mode)</li>
 <li><input checked="" disabled="" type="checkbox"> Child-like TTS voice with proper letter pronunciations</li>
+<li><input checked="" disabled="" type="checkbox"> Custom owl app icon and splash screen</li>
 <li><input checked="" disabled="" type="checkbox"> Web preview works at localhost:3000</li>
 </ul>
 <h3>TODO / Future Enhancements</h3>
 <ul>
-<li><input disabled="" type="checkbox"> <strong>Real device testing</strong> — Test camera + ML Kit OCR on physical Android/iOS</li>
 <li><input disabled="" type="checkbox"> <strong>Handwriting recognition model</strong> — Replace random demo recognition with a TFLite CNN model for real handwritten character identification</li>
-<li><input disabled="" type="checkbox"> <strong>Writing evaluation</strong> — Compare user&#39;s drawn stroke to the guide letter (shape matching) in tracing mode</li>
 <li><input disabled="" type="checkbox"> <strong>Sound effects</strong> — Add fun sounds on recognition success (currently silent)</li>
 <li><input disabled="" type="checkbox"> <strong>Persistent web storage</strong> — Use IndexedDB or localStorage instead of in-memory for web history</li>
 <li><input disabled="" type="checkbox"> <strong>Gamification</strong> — Track progress per letter, award badges, show completion percentage</li>
 <li><input disabled="" type="checkbox"> <strong>Dark mode</strong> — Theme toggle exists in settings store but UI not implemented</li>
-<li><input disabled="" type="checkbox"> <strong>Align package versions</strong> — Some packages show version mismatch warnings vs Expo SDK 55 expected versions</li>
-<li><input disabled="" type="checkbox"> <strong>Fix TypeScript types</strong> — <code>@types/react@19.0.14</code> has JSX type mismatch with React 19.2; update to <code>~19.2.10</code></li>
+<li><input disabled="" type="checkbox"> <strong>Animations</strong> — Add Reanimated-powered transitions for card reveals and tracing success</li>
+</ul>
+<h2>📝 Changelog</h2>
+<h3>v1.0.0 (April 2026)</h3>
+<ul>
+<li>Initial release with 6 modes (Read/Trace/Handwrite × ABC/123)</li>
+<li>Stroke-by-stroke guided tracing with normalised waypoint definitions (A–Z, 1–9)</li>
+<li>On-device ML Kit OCR for camera modes</li>
+<li>Cartoon tile backgrounds with ImageBackground</li>
+<li>Custom owl-with-magnifying-glass app icon</li>
+<li>Child-like TTS with phonetic pronunciations</li>
+<li>SQLite scan history (native) / in-memory (web)</li>
+<li>Zustand v5 state management</li>
 </ul>
 <h2>📝 License</h2>
 <p>MIT</p>

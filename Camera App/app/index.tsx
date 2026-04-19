@@ -280,7 +280,7 @@ export default function HomeScreen() {
         <View style={styles.innerContainer}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.appName}>🔍 Letter Lens</Text>
+            <Text style={styles.appName}>� Little Letters</Text>
             <Text style={styles.subtitle}>What do you want to do?</Text>
           </View>
 

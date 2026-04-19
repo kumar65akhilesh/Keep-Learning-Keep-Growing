@@ -1,5 +1,5 @@
 /**
- * Generate Letter Lens app icon — Owl with magnifying glass
+ * Generate Little Letters app icon — Owl with magnifying glass
  * 
  * Run: node scripts/generate-icon.js
  */
@@ -98,7 +98,7 @@ function createOwlSvg(size) {
   <path d="M${cx + r*0.25} ${cy * 1.05} Q${cx + r*0.35} ${cy * 1.0} ${cx + r*0.5} ${cy * 1.03}" stroke="#FFFFFF" stroke-width="${s*0.008}" fill="none" opacity="0.5" stroke-linecap="round"/>
 
   <!-- App name at bottom -->
-  <text x="${cx}" y="${s * 0.95}" text-anchor="middle" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-weight="bold" font-size="${s * 0.055}" fill="${BRAND_YELLOW}" letter-spacing="${s * 0.003}">LETTER LENS</text>
+  <text x="${cx}" y="${s * 0.95}" text-anchor="middle" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-weight="bold" font-size="${s * 0.055}" fill="${BRAND_YELLOW}" letter-spacing="${s * 0.003}">LITTLE LETTERS</text>
 </svg>`;
 }
 
@@ -195,7 +195,7 @@ async function generateIcons() {
     }
   });
 
-  const owlForSplash = Buffer.from(createAdaptiveSvg(600));
+  const owlForSplash = Buffer.from(createAdaptiveSvg(1027));
   const owlPng = await sharp(owlForSplash).png().toBuffer();
 
   await splashBg

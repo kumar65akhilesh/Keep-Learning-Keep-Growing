@@ -201,7 +201,7 @@ export default function SettingsScreen() {
 
         {/* App info */}
         <View style={styles.appInfo}>
-          <Text style={styles.appInfoText}>🔍 Letter Lens v1.0.0</Text>
+          <Text style={styles.appInfoText}>� Little Letters v1.0.0</Text>
           <Text style={styles.appInfoSubtext}>Learn letters & numbers with your camera!</Text>
         </View>
       </ScrollView>
