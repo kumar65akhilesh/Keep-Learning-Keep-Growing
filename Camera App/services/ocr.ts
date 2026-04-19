@@ -52,10 +52,14 @@ export async function recognizeFromUri(
     for (const line of block.lines) {
       if (!line.elements) continue;
       for (const element of line.elements) {
-        if (!element.text || !element.frame) continue;
+        if (!element.text) continue;
         // Each element is typically a word; break into individual characters
         const chars = element.text.split('');
-        const elementWidth = element.frame.width / Math.max(chars.length, 1);
+
+        // frame may be undefined in react-native-mlkit-ocr v0.3.0
+        const elFrame = element.frame ?? { left: 0, top: 0, width: 1, height: 1 };
+        const hasFrame = !!element.frame;
+        const elementWidth = elFrame.width / Math.max(chars.length, 1);
 
         const blockWidth = block.frame?.width ?? 1;
         const blockLeft = block.frame?.left ?? 0;
@@ -66,12 +70,20 @@ export async function recognizeFromUri(
           allCharacters.push({
             text: chars[i],
             confidence: element.confidence ?? 0.8,
-            boundingBox: {
-              x: (element.frame.left + i * elementWidth) / (blockWidth + blockLeft || 1),
-              y: element.frame.top / (blockHeight + blockTop || 1),
-              width: elementWidth / (blockWidth + blockLeft || 1),
-              height: element.frame.height / (blockHeight + blockTop || 1),
-            },
+            boundingBox: hasFrame
+              ? {
+                  x: (elFrame.left + i * elementWidth) / (blockWidth + blockLeft || 1),
+                  y: elFrame.top / (blockHeight + blockTop || 1),
+                  width: elementWidth / (blockWidth + blockLeft || 1),
+                  height: elFrame.height / (blockHeight + blockTop || 1),
+                }
+              : {
+                  // No frame data — spread evenly across the line
+                  x: i / Math.max(chars.length, 1),
+                  y: 0,
+                  width: 1 / Math.max(chars.length, 1),
+                  height: 1,
+                },
           });
         }
       }
