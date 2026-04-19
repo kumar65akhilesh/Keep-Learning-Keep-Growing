@@ -7,6 +7,8 @@ import {
   ScrollView,
   Platform,
   useWindowDimensions,
+  ImageBackground,
+  type ImageSourcePropType,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -39,6 +41,7 @@ interface ModeCard {
   borderColor: string;
   route: '/camera' | '/tracing' | '/handwrite';
   cartoon: CartoonIcon;
+  tileImage: ImageSourcePropType;
 }
 
 const MODE_CARDS: ModeCard[] = [
@@ -50,6 +53,7 @@ const MODE_CARDS: ModeCard[] = [
     bgColor: '#E8F8FF',
     borderColor: Colors.skyBlue,
     route: '/camera',
+    tileImage: require('../assets/tile-read-abc.png'),
     cartoon: {
       bg: '#4CC9F0',
       icon: 'camera',
@@ -67,6 +71,7 @@ const MODE_CARDS: ModeCard[] = [
     bgColor: '#E8FFE8',
     borderColor: Colors.grassGreen,
     route: '/tracing',
+    tileImage: require('../assets/tile-trace-abc.png'),
     cartoon: {
       bg: '#06D6A0',
       icon: 'finger-print',
@@ -84,6 +89,7 @@ const MODE_CARDS: ModeCard[] = [
     bgColor: '#FFF0F5',
     borderColor: Colors.coral,
     route: '/handwrite',
+    tileImage: require('../assets/tile-handwrite-abc.png'),
     cartoon: {
       bg: '#F72585',
       icon: 'color-palette',
@@ -101,6 +107,7 @@ const MODE_CARDS: ModeCard[] = [
     bgColor: '#FFF3E0',
     borderColor: Colors.orange,
     route: '/camera',
+    tileImage: require('../assets/tile-read-123.png'),
     cartoon: {
       bg: '#FF9E00',
       icon: 'camera',
@@ -118,6 +125,7 @@ const MODE_CARDS: ModeCard[] = [
     bgColor: '#F3E8FF',
     borderColor: Colors.purple,
     route: '/tracing',
+    tileImage: require('../assets/tile-trace-123.png'),
     cartoon: {
       bg: '#7B2FF7',
       icon: 'finger-print',
@@ -135,6 +143,7 @@ const MODE_CARDS: ModeCard[] = [
     bgColor: '#FFF8E0',
     borderColor: Colors.sunnyYellow,
     route: '/handwrite',
+    tileImage: require('../assets/tile-handwrite-123.png'),
     cartoon: {
       bg: '#FFD60A',
       icon: 'color-palette',
@@ -285,7 +294,6 @@ export default function HomeScreen() {
                   {
                     width: cardWidth,
                     height: cardHeight,
-                    backgroundColor: card.bgColor,
                     borderColor: card.borderColor,
                   },
                 ]}
@@ -294,12 +302,22 @@ export default function HomeScreen() {
                 accessibilityLabel={`${card.title}: ${card.subtitle}`}
                 accessibilityRole="button"
               >
-                <CartoonBadge cartoon={card.cartoon} size={badgeSize} />
-                <Text style={styles.cardTitle}>{card.title}</Text>
-                <Text style={styles.cardSubtitle}>{card.subtitle}</Text>
-                <View style={styles.cardPreview}>
-                  <Text style={styles.previewLetters}>{card.preview}</Text>
-                </View>
+                <ImageBackground
+                  source={card.tileImage}
+                  resizeMode="cover"
+                  style={styles.tileBg}
+                  imageStyle={[
+                    styles.tileBgImage,
+                    { backgroundColor: card.bgColor },
+                  ]}
+                >
+                  <CartoonBadge cartoon={card.cartoon} size={badgeSize} />
+                  <Text style={styles.cardTitle}>{card.title}</Text>
+                  <Text style={styles.cardSubtitle}>{card.subtitle}</Text>
+                  <View style={styles.cardPreview}>
+                    <Text style={styles.previewLetters}>{card.preview}</Text>
+                  </View>
+                </ImageBackground>
               </TouchableOpacity>
             ))}
           </View>
@@ -379,12 +397,19 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: BorderRadius.xl,
     borderWidth: 3,
+    overflow: 'hidden',
+    ...Shadows.md,
+  },
+  tileBg: {
+    flex: 1,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.md,
     paddingHorizontal: Spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadows.md,
+  },
+  tileBgImage: {
+    borderRadius: BorderRadius.xl - 2,
   },
   cardTitle: {
     fontFamily: Fonts.family.extraBold,

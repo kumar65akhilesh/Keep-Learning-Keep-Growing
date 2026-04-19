@@ -1,14 +1,12 @@
-import React, { useCallback, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   PanResponder,
-  Dimensions,
   Platform,
   Animated,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,22 +16,12 @@ import { useOcrStore } from '../store/ocrStore';
 import { isLetterMode } from '../utils/characterFilter';
 import { speakCharacter } from '../services/tts';
 import * as Speech from 'expo-speech';
-import { getExpectedCells, PATTERN_COLS, PATTERN_ROWS } from '../utils/charPatterns';
+import { getStrokes, sampleStroke, type StrokePoint } from '../utils/strokePaths';
 
-/**
- * Minimum fraction of the reference pattern cells that must be
- * covered by the user's strokes to count as a successful trace.
- * Deliberately lenient for young kids.
- */
-const MATCH_THRESHOLD = 0.25;
-/**
- * Minimum fraction of the user's visited cells that must land
- * on expected cells (precision). Prevents random shapes like
- * circles from passing by penalising drawing in wrong areas.
- */
-const PRECISION_THRESHOLD = 0.50;
-/** Minimum number of total drawn points before we even evaluate */
-const MIN_POINTS = 10;
+// ─── Config ───────────────────────────────────────────────────────
+const PROXIMITY_THRESHOLD = 0.12;
+const STROKE_COMPLETE_RATIO = 0.60;
+const MIN_STROKE_POINTS = 5;
 
 const SUCCESS_MESSAGES = [
   'Good Job! 🌟',
@@ -46,289 +34,231 @@ const SUCCESS_MESSAGES = [
   'Way to go! 🌈',
 ];
 
-/** A single drawn point */
-interface Point {
-  x: number;
-  y: number;
-}
+interface Point { x: number; y: number; }
 
-/** A stroke is an array of points */
-type Stroke = Point[];
-
-/**
- * Tracing Practice Screen — Kids trace letters or numbers over a guide.
- *
- * Shows a large faded target character.
- * Kids draw on the canvas; they can clear, hear the letter, or skip to the next.
- */
+// ─── Component ────────────────────────────────────────────────────
 export default function TracingScreen() {
   const router = useRouter();
   const mode = useOcrStore((s) => s.mode);
   const letters = isLetterMode(mode);
 
   const charSet = useMemo(
-    () =>
-      letters
-        ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
-        : '123456789'.split(''),
-    [letters]
+    () => (letters ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('') : '123456789'.split('')),
+    [letters],
   );
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [strokes, setStrokes] = useState<Stroke[]>([]);
-  const [tracedSuccess, setTracedSuccess] = useState(false);
-  const currentStroke = useRef<Stroke>([]);
-  const canvasWidth = useRef(320);
-  const canvasHeight = useRef(320);
-  const successAnim = useRef(new Animated.Value(0)).current;
-
-  const [tryAgainMsg, setTryAgainMsg] = useState(false);
-  const canvasOffset = useRef({ x: 0, y: 0 });
-  const canvasRef = useRef<View>(null);
-
   const targetChar = charSet[currentIndex % charSet.length];
   const modeColor = letters ? Colors.grassGreen : Colors.purple;
   const modeLabel = letters ? '✏️ Trace ABC' : '✏️ Trace 123';
+
+  const charStrokes = useMemo(() => getStrokes(targetChar) ?? [], [targetChar]);
+  const totalStrokeCount = charStrokes.length;
+
+  const [activeStrokeIdx, setActiveStrokeIdx] = useState(0);
+  const [completedStrokes, setCompletedStrokes] = useState<boolean[]>(
+    () => new Array(totalStrokeCount).fill(false),
+  );
+  const currentStroke = useRef<Point[]>([]);
+  const [userStrokes, setUserStrokes] = useState<Point[][]>([]);
+  const [allDone, setAllDone] = useState(false);
+  const [tryAgainMsg, setTryAgainMsg] = useState(false);
+
+  const canvasWidth = useRef(320);
+  const canvasHeight = useRef(320);
+  const canvasOffset = useRef({ x: 0, y: 0 });
+  const canvasRef = useRef<View>(null);
+  const successAnim = useRef(new Animated.Value(0)).current;
   const successMessage = useRef(SUCCESS_MESSAGES[0]);
 
-  /**
-   * Evaluate whether the user's strokes match the reference
-   * pattern for the current character.
-   *
-   * Maps stroke points into the 5×7 character grid
-   * (using the centre 70% of the canvas to account for font padding)
-   * and checks overlap with expected cells.
-   */
-  const evaluatePattern = useCallback(
-    (allStrokes: Stroke[]): boolean => {
-      const totalPoints = allStrokes.reduce((sum, s) => sum + s.length, 0);
-      if (totalPoints < MIN_POINTS) return false;
+  useEffect(() => {
+    const count = charStrokes.length;
+    setActiveStrokeIdx(0);
+    setCompletedStrokes(new Array(count).fill(false));
+    setUserStrokes([]);
+    setAllDone(false);
+    setTryAgainMsg(false);
+    currentStroke.current = [];
+    successAnim.setValue(0);
+  }, [targetChar, charStrokes.length, successAnim]);
 
-      const expected = getExpectedCells(targetChar);
-      if (!expected || expected.size === 0) return false;
+  const guideSamples = useMemo(() => {
+    return charStrokes.map((stroke) => sampleStroke(stroke, 50));
+  }, [charStrokes]);
 
-      const w = canvasWidth.current;
-      const h = canvasHeight.current;
-
-      // The guide character (font 220px inside ~320px canvas)
-      // occupies roughly the central 70% of the canvas.
-      const marginX = w * 0.15;
-      const marginY = h * 0.15;
-      const activeW = w * 0.70;
-      const activeH = h * 0.70;
-
-      const cellW = activeW / PATTERN_COLS;
-      const cellH = activeH / PATTERN_ROWS;
-
-      const visited = new Set<string>();
-      const allVisited = new Set<string>();
-      for (const stroke of allStrokes) {
-        for (const pt of stroke) {
-          const col = Math.floor((pt.x - marginX) / cellW);
-          const row = Math.floor((pt.y - marginY) / cellH);
-          if (col >= 0 && col < PATTERN_COLS && row >= 0 && row < PATTERN_ROWS) {
-            const key = `${col},${row}`;
-            allVisited.add(key);
-            if (expected.has(key)) {
-              visited.add(key);
-            }
-          }
-        }
-      }
-
-      // ── Anti-circle detection ──
-      // A circle has very uniform distance from its centroid (low
-      // coefficient of variation). Real letter tracing has varying
-      // distances because strokes go through the centre, not just
-      // around the perimeter.
-      // Characters that are naturally circular (O, D, Q, C, 0) are exempt.
-      const CIRCULAR_CHARS = new Set(['O', 'D', 'Q', 'C', '0']);
-      if (!CIRCULAR_CHARS.has(targetChar)) {
-        let sumX = 0, sumY = 0, ptCount = 0;
-        for (const stroke of allStrokes) {
-          for (const pt of stroke) {
-            sumX += pt.x;
-            sumY += pt.y;
-            ptCount++;
-          }
-        }
-        if (ptCount > 0) {
-          const cx = sumX / ptCount;
-          const cy = sumY / ptCount;
-          let sumDist = 0, sumDistSq = 0;
-          for (const stroke of allStrokes) {
-            for (const pt of stroke) {
-              const d = Math.sqrt((pt.x - cx) ** 2 + (pt.y - cy) ** 2);
-              sumDist += d;
-              sumDistSq += d * d;
-            }
-          }
-          const meanDist = sumDist / ptCount;
-          const variance = sumDistSq / ptCount - meanDist * meanDist;
-          // Coefficient of variation: std-dev / mean
-          const cv = meanDist > 0 ? Math.sqrt(Math.max(0, variance)) / meanDist : 1;
-          console.log(`[TRACING] Circularity CV=${cv.toFixed(3)} (circle ≈ 0.05-0.15, letter > 0.25)`);
-          if (cv < 0.20) {
-            console.log('[TRACING] REJECTED — stroke looks like a circle, not a letter trace');
-            return false;
-          }
-        }
-      }
-
-      // Coverage: how much of the expected pattern was traced
-      const coverage = visited.size / expected.size;
-      // Precision: how much of what was drawn lands on expected cells
-      const precision = allVisited.size > 0 ? visited.size / allVisited.size : 0;
-
-      console.log(`[TRACING] Char="${targetChar}" | Points=${totalPoints} | Canvas=${w}x${h} | Offset=(${canvasOffset.current.x},${canvasOffset.current.y})`);
-      console.log(`[TRACING] Expected=${expected.size} cells | Visited=${visited.size}/${allVisited.size} | Coverage=${(coverage*100).toFixed(1)}% | Precision=${(precision*100).toFixed(1)}%`);
-      console.log(`[TRACING] Pass: coverage>=${MATCH_THRESHOLD*100}% && precision>=${PRECISION_THRESHOLD*100}% → ${coverage >= MATCH_THRESHOLD && precision >= PRECISION_THRESHOLD}`);
-
-      return coverage >= MATCH_THRESHOLD && precision >= PRECISION_THRESHOLD;
-    },
-    [targetChar]
+  const toPixel = useCallback(
+    (pt: StrokePoint): Point => ({
+      x: pt.x * canvasWidth.current,
+      y: pt.y * canvasHeight.current,
+    }),
+    [],
   );
 
-  /** Trigger success animation + TTS */
-  const triggerSuccess = useCallback(() => {
-    successMessage.current =
-      SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)];
-    setTracedSuccess(true);
-    setTryAgainMsg(false);
-    Animated.spring(successAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 60,
-      friction: 6,
-    }).start();
+  const evaluateCurrentStroke = useCallback(
+    (drawnPoints: Point[]) => {
+      if (drawnPoints.length < MIN_STROKE_POINTS) return false;
+      const samples = guideSamples[activeStrokeIdx];
+      if (!samples || samples.length === 0) return false;
+      const w = canvasWidth.current;
+      const h = canvasHeight.current;
+      const thresh = PROXIMITY_THRESHOLD * Math.max(w, h);
+      let nearCount = 0;
+      for (const gpt of samples) {
+        const gx = gpt.x * w;
+        const gy = gpt.y * h;
+        for (const dp of drawnPoints) {
+          const dist = Math.sqrt((dp.x - gx) ** 2 + (dp.y - gy) ** 2);
+          if (dist <= thresh) { nearCount++; break; }
+        }
+      }
+      const ratio = nearCount / samples.length;
+      console.log(`[TRACING] Stroke ${activeStrokeIdx + 1}/${totalStrokeCount} | Near=${nearCount}/${samples.length} (${(ratio * 100).toFixed(0)}%) | Need ${(STROKE_COMPLETE_RATIO * 100).toFixed(0)}%`);
+      return ratio >= STROKE_COMPLETE_RATIO;
+    },
+    [activeStrokeIdx, guideSamples, totalStrokeCount],
+  );
+
+  const triggerCharSuccess = useCallback(() => {
+    successMessage.current = SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)];
+    setAllDone(true);
+    Animated.spring(successAnim, { toValue: 1, useNativeDriver: true, tension: 60, friction: 6 }).start();
     Speech.speak('Good job!', { pitch: 1.5, rate: 0.85 });
   }, [successAnim]);
 
-  /** Handle the "Check" button — evaluate and give feedback */
-  const handleCheck = useCallback(() => {
-    if (tracedSuccess) return;
-
-    // Debug: show offset info so we can verify measurement works
-    const totalPts = strokes.reduce((sum, s) => sum + s.length, 0);
-    const firstPt = strokes[0]?.[0];
-    console.log(`[TRACING] Check pressed. Strokes=${strokes.length}, TotalPts=${totalPts}, FirstPt=(${firstPt?.x?.toFixed(0)},${firstPt?.y?.toFixed(0)}), Offset=(${canvasOffset.current.x.toFixed(0)},${canvasOffset.current.y.toFixed(0)})`);
-
-    if (evaluatePattern(strokes)) {
-      triggerSuccess();
-    } else {
-      // Show "try again" hint briefly
-      setTryAgainMsg(true);
-      Speech.speak('Try again!', { pitch: 1.5, rate: 0.85 });
-      setTimeout(() => setTryAgainMsg(false), 2000);
-    }
-  }, [strokes, tracedSuccess, evaluatePattern, triggerSuccess]);
-
-  /** PanResponder for drawing */
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponder: () => !allDone,
+        onMoveShouldSetPanResponder: () => !allDone,
         onPanResponderGrant: (evt) => {
+          if (allDone) return;
           const { pageX, pageY } = evt.nativeEvent;
-          const x = pageX - canvasOffset.current.x;
-          const y = pageY - canvasOffset.current.y;
-          currentStroke.current = [{ x, y }];
+          currentStroke.current = [{ x: pageX - canvasOffset.current.x, y: pageY - canvasOffset.current.y }];
         },
         onPanResponderMove: (evt) => {
+          if (allDone) return;
           const { pageX, pageY } = evt.nativeEvent;
-          const x = pageX - canvasOffset.current.x;
-          const y = pageY - canvasOffset.current.y;
-          currentStroke.current.push({ x, y });
-          // Force re-render to show stroke in progress
-          setStrokes((prev) => [...prev]);
+          currentStroke.current.push({ x: pageX - canvasOffset.current.x, y: pageY - canvasOffset.current.y });
+          setUserStrokes((prev) => [...prev]);
         },
         onPanResponderRelease: () => {
-          const finishedStroke = [...currentStroke.current];
+          if (allDone) return;
+          const finished = [...currentStroke.current];
           currentStroke.current = [];
-          if (finishedStroke.length > 1) {
-            setStrokes((prev) => {
-              const updated = [...prev, finishedStroke];
-              return updated;
-            });
+          if (finished.length < 2) return;
+          if (evaluateCurrentStroke(finished)) {
+            setCompletedStrokes((prev) => { const next = [...prev]; next[activeStrokeIdx] = true; return next; });
+            setUserStrokes((prev) => [...prev, finished]);
+            setTryAgainMsg(false);
+            if (activeStrokeIdx + 1 >= totalStrokeCount) {
+              triggerCharSuccess();
+            } else {
+              setActiveStrokeIdx((i) => i + 1);
+              Speech.speak('Nice!', { pitch: 1.4, rate: 1.0 });
+            }
+          } else {
+            setTryAgainMsg(true);
+            Speech.speak('Try again!', { pitch: 1.3, rate: 1.0 });
+            setTimeout(() => setTryAgainMsg(false), 1800);
           }
         },
       }),
-    []
+    [allDone, activeStrokeIdx, evaluateCurrentStroke, totalStrokeCount, triggerCharSuccess],
   );
 
-  /** Clear the canvas / Retry */
-  const handleRetry = useCallback(() => {
-    setStrokes([]);
-    currentStroke.current = [];
-    setTracedSuccess(false);
+  const resetChar = useCallback(() => {
+    setActiveStrokeIdx(0);
+    setCompletedStrokes(new Array(charStrokes.length).fill(false));
+    setUserStrokes([]);
+    setAllDone(false);
     setTryAgainMsg(false);
-    successAnim.setValue(0);
-  }, [successAnim]);
-
-  /** Go to next character */
-  const handleNext = useCallback(() => {
-    setCurrentIndex((i) => i + 1);
-    setStrokes([]);
     currentStroke.current = [];
-    setTracedSuccess(false);
-    setTryAgainMsg(false);
     successAnim.setValue(0);
-  }, [successAnim]);
+  }, [charStrokes.length, successAnim]);
 
-  /** Go to previous character */
-  const handlePrev = useCallback(() => {
-    setCurrentIndex((i) => Math.max(0, i - 1));
-    setStrokes([]);
-    currentStroke.current = [];
-    setTracedSuccess(false);
-    setTryAgainMsg(false);
-    successAnim.setValue(0);
-  }, [successAnim]);
+  const handleNext = useCallback(() => setCurrentIndex((i) => i + 1), []);
+  const handlePrev = useCallback(() => setCurrentIndex((i) => Math.max(0, i - 1)), []);
+  const handleSpeak = useCallback(() => speakCharacter(targetChar), [targetChar]);
 
-  /** Speak the target character */
-  const handleSpeak = useCallback(() => {
-    speakCharacter(targetChar);
-  }, [targetChar]);
+  const renderGuidePath = (samples: StrokePoint[], strokeIdx: number) => {
+    const isCompleted = completedStrokes[strokeIdx];
+    const isActive = strokeIdx === activeStrokeIdx && !allDone;
+    const color = isCompleted ? modeColor : isActive ? modeColor : Colors.lightGray;
+    const opacity = isCompleted ? 1.0 : isActive ? 0.7 : 0.25;
+    const dotSize = isActive ? 7 : 5;
+    return samples.map((pt, i) => {
+      const px = toPixel(pt);
+      if (!isCompleted && i % 2 !== 0) return null;
+      return (
+        <View
+          key={`g${strokeIdx}-${i}`}
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: px.x - dotSize / 2,
+            top: px.y - dotSize / 2,
+            width: dotSize,
+            height: dotSize,
+            borderRadius: dotSize / 2,
+            backgroundColor: color,
+            opacity,
+          }}
+        />
+      );
+    });
+  };
 
-  /** Render strokes as SVG-like paths (using View-based line segments) */
-  const renderStrokes = () => {
-    const allStrokes = [
-      ...strokes,
-      ...(currentStroke.current.length > 1 ? [currentStroke.current] : []),
-    ];
+  const renderActiveMarkers = () => {
+    if (allDone || !guideSamples[activeStrokeIdx]) return null;
+    const samples = guideSamples[activeStrokeIdx];
+    const start = toPixel(samples[0]);
+    const end = toPixel(samples[samples.length - 1]);
+    return (
+      <>
+        <View pointerEvents="none" style={[markerStyles.dot, { left: start.x - 12, top: start.y - 12, backgroundColor: Colors.grassGreen }]}>
+          <Text style={markerStyles.dotText}>{'▶'}</Text>
+        </View>
+        <View pointerEvents="none" style={[markerStyles.dot, { left: end.x - 10, top: end.y - 10, backgroundColor: Colors.coral, width: 20, height: 20 }]}>
+          <View style={markerStyles.stopSquare} />
+        </View>
+      </>
+    );
+  };
 
-    return allStrokes.map((stroke, si) =>
+  const renderUserStrokes = () => {
+    const all = [...userStrokes, ...(currentStroke.current.length > 1 ? [currentStroke.current] : [])];
+    return all.map((stroke, si) =>
       stroke.slice(1).map((point, pi) => {
         const prev = stroke[pi];
         const dx = point.x - prev.x;
         const dy = point.y - prev.y;
         const length = Math.sqrt(dx * dx + dy * dy);
         const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
         return (
           <View
-            key={`s${si}-p${pi}`}
+            key={`u${si}-${pi}`}
+            pointerEvents="none"
             style={{
               position: 'absolute',
               left: prev.x,
               top: prev.y,
               width: length,
-              height: 4,
+              height: 5,
               backgroundColor: modeColor,
-              borderRadius: 2,
+              borderRadius: 2.5,
               transform: [{ rotate: `${angle}deg` }],
               transformOrigin: 'left center',
             }}
           />
         );
-      })
+      }),
     );
   };
 
+  const strokeLabel = allDone ? 'All strokes done!' : `Stroke ${activeStrokeIdx + 1} of ${totalStrokeCount}`;
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color={Colors.charcoal} />
@@ -341,16 +271,28 @@ export default function TracingScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Progress indicator */}
       <View style={styles.progressRow}>
-        <Text style={styles.progressText}>
-          {currentIndex + 1} / {charSet.length}
-        </Text>
+        <Text style={styles.progressText}>{targetChar}  {'·'}  {currentIndex + 1} / {charSet.length}</Text>
       </View>
 
-      {/* Drawing canvas */}
+      <View style={styles.strokeDotsRow}>
+        {charStrokes.map((_, idx) => (
+          <View
+            key={idx}
+            style={[
+              styles.strokeDot,
+              completedStrokes[idx]
+                ? { backgroundColor: modeColor }
+                : idx === activeStrokeIdx && !allDone
+                  ? { backgroundColor: modeColor, opacity: 0.4 }
+                  : { backgroundColor: Colors.lightGray },
+            ]}
+          />
+        ))}
+        <Text style={styles.strokeLabel}>{strokeLabel}</Text>
+      </View>
+
       <View style={styles.canvasWrapper}>
-        {/* Drawing surface */}
         <View
           ref={canvasRef}
           style={styles.canvas}
@@ -359,125 +301,71 @@ export default function TracingScreen() {
             const { width, height } = e.nativeEvent.layout;
             canvasWidth.current = width;
             canvasHeight.current = height;
-            // Use ref.measureInWindow for reliable absolute position on Android
             setTimeout(() => {
-              canvasRef.current?.measureInWindow?.((x, y, w, h) => {
+              canvasRef.current?.measureInWindow?.((x, y) => {
                 if (x != null && y != null) {
                   canvasOffset.current = { x, y };
-                  console.log('[TRACING] Canvas offset measured:', x, y, 'size:', w, h);
+                  console.log('[TRACING] Canvas offset:', x, y);
                 }
               });
-            }, 100);
+            }, 150);
           }}
         >
-          {/* Target character (faded guide — inside canvas so it's visible) */}
-          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-            <Text style={[styles.guideChar, { color: `${modeColor}30`, width: '100%', height: '100%' }]}>
-              {targetChar}
-            </Text>
-          </View>
-          {renderStrokes()}
+          {guideSamples.map((samples, idx) => renderGuidePath(samples, idx))}
+          {renderActiveMarkers()}
+          {renderUserStrokes()}
         </View>
 
-        {/* Hint or success message */}
-        {tracedSuccess ? (
+        {allDone ? (
           <Animated.View
             style={[
               styles.successBanner,
               {
                 backgroundColor: modeColor,
-                transform: [
-                  {
-                    scale: successAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.5, 1],
-                    }),
-                  },
-                ],
+                transform: [{ scale: successAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }],
                 opacity: successAnim,
               },
             ]}
           >
             <Text style={styles.successText}>{successMessage.current}</Text>
-            <Text style={styles.successDetail}>
-              You traced "{targetChar}" perfectly!
-            </Text>
+            <Text style={styles.successDetail}>You traced "{targetChar}" perfectly!</Text>
           </Animated.View>
         ) : tryAgainMsg ? (
           <Text style={[styles.hintText, { color: Colors.coral, fontFamily: Fonts.family.bold }]}>
-            Almost! Keep tracing the {letters ? 'letter' : 'number'} "{targetChar}" 💪
+            Follow the dotted line more closely! 💪
           </Text>
         ) : (
-          <Text style={styles.hintText}>
-            Trace the {letters ? 'letter' : 'number'} "{targetChar}" above!
-          </Text>
+          <Text style={styles.hintText}>Trace from {'▶'} to {'■'} along the dots!</Text>
         )}
       </View>
 
-      {/* Action buttons */}
       <View style={styles.actionsRow}>
-        <TouchableOpacity
-          style={[styles.actionBtn, { opacity: currentIndex === 0 ? 0.4 : 1 }]}
-          onPress={handlePrev}
-          disabled={currentIndex === 0}
-        >
+        <TouchableOpacity style={[styles.actionBtn, { opacity: currentIndex === 0 ? 0.4 : 1 }]} onPress={handlePrev} disabled={currentIndex === 0}>
           <Ionicons name="arrow-back-circle" size={32} color={Colors.darkGray} />
           <Text style={styles.actionLabel}>Prev</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionBtn} onPress={handleRetry}>
+        <TouchableOpacity style={styles.actionBtn} onPress={resetChar}>
           <Ionicons name="refresh-circle" size={32} color={Colors.coral} />
           <Text style={styles.actionLabel}>Retry</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.checkBtn, { backgroundColor: tracedSuccess ? Colors.midGray : modeColor }]}
-          onPress={handleCheck}
-          disabled={tracedSuccess || strokes.length === 0}
-        >
-          <Ionicons name="checkmark-circle" size={36} color={Colors.white} />
-          <Text style={[styles.actionLabel, { color: Colors.white }]}>Check</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity style={styles.actionBtn} onPress={handleSpeak}>
           <Ionicons name="volume-high" size={32} color={Colors.skyBlue} />
           <Text style={styles.actionLabel}>Hear It</Text>
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.actionBtn} onPress={handleNext}>
           <Ionicons name="arrow-forward-circle" size={32} color={modeColor} />
           <Text style={styles.actionLabel}>Next</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Character picker strip */}
       <View style={styles.charStrip}>
         {charSet.map((char, idx) => (
           <TouchableOpacity
             key={char}
-            style={[
-              styles.charChip,
-              idx === currentIndex % charSet.length && {
-                backgroundColor: modeColor,
-              },
-            ]}
-            onPress={() => {
-              setCurrentIndex(idx);
-              setStrokes([]);
-              currentStroke.current = [];
-              setTracedSuccess(false);
-              setTryAgainMsg(false);
-              successAnim.setValue(0);
-            }}
+            style={[styles.charChip, idx === currentIndex % charSet.length && { backgroundColor: modeColor }]}
+            onPress={() => setCurrentIndex(idx)}
           >
-            <Text
-              style={[
-                styles.charChipText,
-                idx === currentIndex % charSet.length && { color: Colors.white },
-              ]}
-            >
-              {char}
-            </Text>
+            <Text style={[styles.charChipText, idx === currentIndex % charSet.length && { color: Colors.white }]}>{char}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -485,140 +373,34 @@ export default function TracingScreen() {
   );
 }
 
+const markerStyles = StyleSheet.create({
+  dot: { position: 'absolute', width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', ...Shadows.sm },
+  dotText: { color: Colors.white, fontSize: 12, fontFamily: Fonts.family.bold },
+  stopSquare: { width: 8, height: 8, borderRadius: 1, backgroundColor: Colors.white },
+});
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.softWhite,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.xs,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modeBadge: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
-  },
-  modeBadgeText: {
-    fontFamily: Fonts.family.bold,
-    fontSize: Fonts.size.md,
-    color: Colors.white,
-  },
-  speakButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressRow: {
-    alignItems: 'center',
-    paddingBottom: Spacing.xs,
-  },
-  progressText: {
-    fontFamily: Fonts.family.semiBold,
-    fontSize: Fonts.size.sm,
-    color: Colors.midGray,
-  },
-  canvasWrapper: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
-  },
-  guideChar: {
-    position: 'absolute',
-    fontFamily: Fonts.family.extraBold,
-    fontSize: 220,
-    textAlign: 'center',
-    ...(Platform.OS === 'web' ? { userSelect: 'none' } : {}),
-  },
-  canvas: {
-    width: '100%',
-    maxWidth: 320,
-    aspectRatio: 1,
-    borderRadius: BorderRadius.xl,
-    borderWidth: 2,
-    borderColor: Colors.lightGray,
-    borderStyle: 'dashed' as const,
-    backgroundColor: Colors.white,
-    overflow: 'hidden' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  hintText: {
-    fontFamily: Fonts.family.semiBold,
-    fontSize: Fonts.size.md,
-    color: Colors.midGray,
-    marginTop: Spacing.md,
-    textAlign: 'center',
-  },
-  successBanner: {
-    marginTop: Spacing.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: BorderRadius.full,
-    alignItems: 'center',
-  },
-  successText: {
-    fontFamily: Fonts.family.extraBold,
-    fontSize: Fonts.size.xl,
-    color: Colors.white,
-  },
-  successDetail: {
-    fontFamily: Fonts.family.semiBold,
-    fontSize: Fonts.size.md,
-    color: Colors.white,
-    marginTop: 2,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing.xxl,
-    paddingVertical: Spacing.md,
-  },
-  actionBtn: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  checkBtn: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.lg,
-  },
-  actionLabel: {
-    fontFamily: Fonts.family.semiBold,
-    fontSize: Fonts.size.xs,
-    color: Colors.darkGray,
-  },
-  charStrip: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
-  },
-  charChip: {
-    width: 32,
-    height: 32,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.lightGray,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  charChipText: {
-    fontFamily: Fonts.family.bold,
-    fontSize: Fonts.size.sm,
-    color: Colors.darkGray,
-  },
+  container: { flex: 1, backgroundColor: Colors.softWhite },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.xs },
+  backButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  modeBadge: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.xs, borderRadius: BorderRadius.full },
+  modeBadgeText: { fontFamily: Fonts.family.bold, fontSize: Fonts.size.md, color: Colors.white },
+  speakButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  progressRow: { alignItems: 'center', paddingBottom: 2 },
+  progressText: { fontFamily: Fonts.family.semiBold, fontSize: Fonts.size.sm, color: Colors.midGray },
+  strokeDotsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBottom: Spacing.sm },
+  strokeDot: { width: 10, height: 10, borderRadius: 5 },
+  strokeLabel: { fontFamily: Fonts.family.semiBold, fontSize: Fonts.size.xs, color: Colors.midGray, marginLeft: 6 },
+  canvasWrapper: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xl },
+  canvas: { width: '100%', maxWidth: 320, aspectRatio: 1, borderRadius: BorderRadius.xl, borderWidth: 2, borderColor: Colors.lightGray, borderStyle: 'dashed' as const, backgroundColor: Colors.white, overflow: 'hidden' as const },
+  hintText: { fontFamily: Fonts.family.semiBold, fontSize: Fonts.size.md, color: Colors.midGray, marginTop: Spacing.md, textAlign: 'center' },
+  successBanner: { marginTop: Spacing.md, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: BorderRadius.full, alignItems: 'center' },
+  successText: { fontFamily: Fonts.family.extraBold, fontSize: Fonts.size.xl, color: Colors.white },
+  successDetail: { fontFamily: Fonts.family.semiBold, fontSize: Fonts.size.md, color: Colors.white, marginTop: 2 },
+  actionsRow: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.xxl, paddingVertical: Spacing.md },
+  actionBtn: { alignItems: 'center', gap: 4 },
+  actionLabel: { fontFamily: Fonts.family.semiBold, fontSize: Fonts.size.xs, color: Colors.darkGray },
+  charStrip: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.xs, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+  charChip: { width: 32, height: 32, borderRadius: BorderRadius.sm, backgroundColor: Colors.lightGray, alignItems: 'center', justifyContent: 'center' },
+  charChipText: { fontFamily: Fonts.family.bold, fontSize: Fonts.size.sm, color: Colors.darkGray },
 });
