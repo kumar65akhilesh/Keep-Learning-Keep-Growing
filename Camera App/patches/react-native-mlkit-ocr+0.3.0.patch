@@ -1,0 +1,22 @@
+diff --git a/node_modules/react-native-mlkit-ocr/android/build.gradle b/node_modules/react-native-mlkit-ocr/android/build.gradle
+index 1234567..abcdefg 100644
+--- a/node_modules/react-native-mlkit-ocr/android/build.gradle
++++ b/node_modules/react-native-mlkit-ocr/android/build.gradle
+@@ -4,7 +4,7 @@
+ 
+   repositories {
+     google()
+-    jcenter()
++    mavenCentral()
+   }
+ 
+   dependencies {
+@@ -51,7 +51,7 @@
+ 
+ repositories {
+   mavenCentral()
+-  jcenter()
++  mavenCentral()
+   google()
+ 
+   def found = false
