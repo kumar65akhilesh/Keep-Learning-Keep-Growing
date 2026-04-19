@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   PanResponder,
   Dimensions,
   Platform,
   Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Spacing, BorderRadius, Shadows } from '../constants/theme';
@@ -82,6 +82,7 @@ export default function TracingScreen() {
   const successAnim = useRef(new Animated.Value(0)).current;
 
   const [tryAgainMsg, setTryAgainMsg] = useState(false);
+  const canvasOffset = useRef({ x: 0, y: 0 });
 
   const targetChar = charSet[currentIndex % charSet.length];
   const modeColor = letters ? Colors.grassGreen : Colors.purple;
@@ -178,12 +179,16 @@ export default function TracingScreen() {
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: (evt) => {
-          const { locationX, locationY } = evt.nativeEvent;
-          currentStroke.current = [{ x: locationX, y: locationY }];
+          const { pageX, pageY } = evt.nativeEvent;
+          const x = pageX - canvasOffset.current.x;
+          const y = pageY - canvasOffset.current.y;
+          currentStroke.current = [{ x, y }];
         },
         onPanResponderMove: (evt) => {
-          const { locationX, locationY } = evt.nativeEvent;
-          currentStroke.current.push({ x: locationX, y: locationY });
+          const { pageX, pageY } = evt.nativeEvent;
+          const x = pageX - canvasOffset.current.x;
+          const y = pageY - canvasOffset.current.y;
+          currentStroke.current.push({ x, y });
           // Force re-render to show stroke in progress
           setStrokes((prev) => [...prev]);
         },
@@ -302,12 +307,20 @@ export default function TracingScreen() {
             const { width, height } = e.nativeEvent.layout;
             canvasWidth.current = width;
             canvasHeight.current = height;
+            // Measure the canvas position on screen for accurate touch mapping
+            e.target && (e.target as any).measure?.(
+              (_x: number, _y: number, _w: number, _h: number, pageX: number, pageY: number) => {
+                canvasOffset.current = { x: pageX, y: pageY };
+              }
+            );
           }}
         >
           {/* Target character (faded guide — inside canvas so it's visible) */}
-          <Text style={[styles.guideChar, { color: `${modeColor}30` }]}>
-            {targetChar}
-          </Text>
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <Text style={[styles.guideChar, { color: `${modeColor}30`, width: '100%', height: '100%' }]}>
+              {targetChar}
+            </Text>
+          </View>
           {renderStrokes()}
         </View>
 

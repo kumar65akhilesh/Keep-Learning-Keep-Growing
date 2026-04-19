@@ -26,21 +26,29 @@ export async function recognizeFromUri(
   const allCharacters: RecognizedCharacter[] = [];
 
   for (const block of mlkitResult) {
+    if (!block.lines) continue;
     for (const line of block.lines) {
+      if (!line.elements) continue;
       for (const element of line.elements) {
+        if (!element.text || !element.frame) continue;
         // Each element is typically a word; break into individual characters
         const chars = element.text.split('');
-        const elementWidth = element.frame.width / chars.length;
+        const elementWidth = element.frame.width / Math.max(chars.length, 1);
+
+        const blockWidth = block.frame?.width ?? 1;
+        const blockLeft = block.frame?.left ?? 0;
+        const blockHeight = block.frame?.height ?? 1;
+        const blockTop = block.frame?.top ?? 0;
 
         for (let i = 0; i < chars.length; i++) {
           allCharacters.push({
             text: chars[i],
             confidence: element.confidence ?? 0.8,
             boundingBox: {
-              x: (element.frame.left + i * elementWidth) / (block.frame.width + block.frame.left),
-              y: element.frame.top / (block.frame.height + block.frame.top),
-              width: elementWidth / (block.frame.width + block.frame.left),
-              height: element.frame.height / (block.frame.height + block.frame.top),
+              x: (element.frame.left + i * elementWidth) / (blockWidth + blockLeft || 1),
+              y: element.frame.top / (blockHeight + blockTop || 1),
+              width: elementWidth / (blockWidth + blockLeft || 1),
+              height: element.frame.height / (blockHeight + blockTop || 1),
             },
           });
         }

@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   PanResponder,
   Platform,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Spacing, BorderRadius, Shadows } from '../constants/theme';
@@ -50,6 +50,7 @@ export default function HandwriteScreen() {
   const [recognizedChar, setRecognizedChar] = useState<string | null>(null);
   const [isRecognizing, setIsRecognizing] = useState(false);
   const currentStroke = useRef<Stroke>([]);
+  const canvasOffset = useRef({ x: 0, y: 0 });
 
   const modeColor = letters ? Colors.coral : Colors.sunnyYellow;
   const modeLabel = letters ? '🖊️ Handwrite ABC' : '🖊️ Handwrite 123';
@@ -61,13 +62,17 @@ export default function HandwriteScreen() {
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: (evt) => {
-          const { locationX, locationY } = evt.nativeEvent;
-          currentStroke.current = [{ x: locationX, y: locationY }];
+          const { pageX, pageY } = evt.nativeEvent;
+          const x = pageX - canvasOffset.current.x;
+          const y = pageY - canvasOffset.current.y;
+          currentStroke.current = [{ x, y }];
           setRecognizedChar(null);
         },
         onPanResponderMove: (evt) => {
-          const { locationX, locationY } = evt.nativeEvent;
-          currentStroke.current.push({ x: locationX, y: locationY });
+          const { pageX, pageY } = evt.nativeEvent;
+          const x = pageX - canvasOffset.current.x;
+          const y = pageY - canvasOffset.current.y;
+          currentStroke.current.push({ x, y });
           setStrokes((prev) => [...prev]);
         },
         onPanResponderRelease: () => {
@@ -184,7 +189,17 @@ export default function HandwriteScreen() {
 
       {/* Drawing canvas */}
       <View style={styles.canvasWrapper}>
-        <View style={styles.canvas} {...panResponder.panHandlers}>
+        <View
+          style={styles.canvas}
+          {...panResponder.panHandlers}
+          onLayout={(e) => {
+            e.target && (e.target as any).measure?.(
+              (_x: number, _y: number, _w: number, _h: number, pageX: number, pageY: number) => {
+                canvasOffset.current = { x: pageX, y: pageY };
+              }
+            );
+          }}
+        >
           {renderStrokes()}
           {strokes.length === 0 && !currentStroke.current.length && (
             <View style={styles.canvasPlaceholder}>
