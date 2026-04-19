@@ -20,7 +20,29 @@ export async function recognizeFromUri(
   imageUri: string,
   mode: RecognitionMode
 ): Promise<OcrResult> {
+  console.log('[OCR] Starting recognition, URI:', imageUri, 'mode:', mode);
+
   const mlkitResult = await MlkitOcr.detectFromUri(imageUri);
+
+  console.log('[OCR] ML Kit returned', mlkitResult?.length ?? 0, 'blocks');
+  if (mlkitResult && mlkitResult.length > 0) {
+    for (let i = 0; i < mlkitResult.length; i++) {
+      const block = mlkitResult[i];
+      console.log(`[OCR] Block ${i}: text="${block.text}", frame=`, JSON.stringify(block.frame), 'lines=', block.lines?.length ?? 0);
+      if (block.lines) {
+        for (const line of block.lines) {
+          console.log(`[OCR]   Line: "${line.text}", elements=`, line.elements?.length ?? 0);
+          if (line.elements) {
+            for (const el of line.elements) {
+              console.log(`[OCR]     Element: "${el.text}", frame=`, JSON.stringify(el.frame), 'confidence=', el.confidence);
+            }
+          }
+        }
+      }
+    }
+  } else {
+    console.log('[OCR] ML Kit returned EMPTY result — no text detected in image');
+  }
 
   // Extract individual characters from ML Kit's block → line → element hierarchy
   const allCharacters: RecognizedCharacter[] = [];
@@ -56,8 +78,12 @@ export async function recognizeFromUri(
     }
   }
 
+  console.log('[OCR] Total characters extracted:', allCharacters.length, 'texts:', allCharacters.map(c => c.text).join(''));
+
   // Filter to only characters matching the active mode
   const filteredCharacters = filterByMode(allCharacters, mode);
+
+  console.log('[OCR] After filtering for mode', mode, ':', filteredCharacters.length, 'characters remain:', filteredCharacters.map(c => c.text).join(''));
 
   // Build raw text from all detected blocks
   const rawText = mlkitResult.map((block) => block.text).join(' ');

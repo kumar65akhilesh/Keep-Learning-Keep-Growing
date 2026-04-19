@@ -101,6 +101,8 @@ export default function CameraScreen() {
         skipProcessing: false,
       });
 
+      console.log('[Camera] Photo captured:', photo?.uri ? 'URI exists' : 'NO URI', 'width:', photo?.width, 'height:', photo?.height);
+
       if (!photo?.uri) {
         Alert.alert('Error', 'Failed to capture photo. Please try again.');
         return;
@@ -112,8 +114,13 @@ export default function CameraScreen() {
         quality: 0.9,
       });
 
+      console.log('[Camera] Preprocessed URI:', processedUri);
+
       // Run OCR with mode-specific filtering
       const result = await recognizeFromUri(processedUri, mode);
+
+      console.log('[Camera] OCR result:', result.characters.length, 'characters found, rawText:', JSON.stringify(result.rawText));
+
       setCurrentResult(result);
 
       // Navigate to result screen
