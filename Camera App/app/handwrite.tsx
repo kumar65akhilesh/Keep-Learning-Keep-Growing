@@ -168,9 +168,9 @@ export default function HandwriteScreen() {
               left: prev.x,
               top: prev.y,
               width: length,
-              height: 5,
+              height: 10,
               backgroundColor: Colors.charcoal,
-              borderRadius: 2.5,
+              borderRadius: 5,
               transform: [{ rotate: `${angle}deg` }],
               transformOrigin: 'left center',
             }}
