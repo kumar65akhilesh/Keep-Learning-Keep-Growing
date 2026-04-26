@@ -1,4 +1,13 @@
 
-× Failed to delete android code: EBUSY: resource busy or locked, unlink 'C:\Camera App\android\.gradle\buildOutputCleanup\buildOutputCleanup.lock'
-Error: EBUSY: resource busy or locked, unlink 'C:\Camera App\android\.gradle\buildOutputCleanup\buildOutputCleanup.lock'
-Error: EBUSY: resource busy or locked, unlink 'C:\Camera App\android\.gradle\buildOutputCleanup\buildOutputCleanup.lock'
+# 1. Kill all Gradle daemons
+cd "C:\Camera App\camera-ocr-app"
+gradlew --stop 2>nul
+
+# 2. Kill any lingering Java processes holding the lock
+taskkill /F /IM java.exe 2>nul
+
+# 3. Now delete the android folder manually
+rmdir /s /q "C:\Camera App\android"
+
+# 4. Retry prebuild
+npx expo prebuild --clean
