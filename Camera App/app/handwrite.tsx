@@ -15,6 +15,7 @@ import { Colors, Fonts, Spacing, BorderRadius, Shadows } from '../constants/them
 import { useOcrStore } from '../store/ocrStore';
 import { isLetterMode } from '../utils/characterFilter';
 import { speakCharacter } from '../services/tts';
+import { recognizeBestMatch } from '../utils/strokeRecognizer';
 
 /** A single drawn point */
 interface Point {
@@ -95,9 +96,9 @@ export default function HandwriteScreen() {
   }, []);
 
   /**
-   * Recognize what was drawn.
-   * Demo: picks a random character from the set (simulating recognition).
-   * Future: send canvas bitmap to TFLite CNN model for real inference.
+   * Recognize what was drawn using stroke-based template matching.
+   * Compares the user's freehand strokes against known character templates
+   * and returns the best match.
    */
   const handleRecognize = useCallback(() => {
     if (strokes.length === 0) {
@@ -107,28 +108,37 @@ export default function HandwriteScreen() {
 
     setIsRecognizing(true);
 
-    // Simulate recognition delay
+    // Small delay for UI feedback (spinner)
     setTimeout(() => {
-      const randomChar = charSet[Math.floor(Math.random() * charSet.length)];
-      setRecognizedChar(randomChar);
-      speakCharacter(randomChar);
+      const match = recognizeBestMatch(strokes, charSet);
 
-      // Also set as OCR result so user can navigate to result screen
-      setCurrentResult({
-        characters: [
-          {
-            text: randomChar,
-            confidence: 0.7 + Math.random() * 0.3,
-            boundingBox: { x: 0.1, y: 0.1, width: 0.8, height: 0.8 },
-          },
-        ],
-        mode,
-        timestamp: Date.now(),
-        rawText: randomChar,
-      });
+      if (match) {
+        setRecognizedChar(match.char);
+        speakCharacter(match.char);
+
+        // Also set as OCR result so user can navigate to result screen
+        setCurrentResult({
+          characters: [
+            {
+              text: match.char,
+              confidence: match.confidence,
+              boundingBox: { x: 0.1, y: 0.1, width: 0.8, height: 0.8 },
+            },
+          ],
+          mode,
+          timestamp: Date.now(),
+          rawText: match.char,
+        });
+      } else {
+        setRecognizedChar(null);
+        Alert.alert(
+          'Hmm... 🤔',
+          'I couldn\'t recognize that. Try drawing the letter or number bigger and clearer!',
+        );
+      }
 
       setIsRecognizing(false);
-    }, 800);
+    }, 300);
   }, [strokes, charSet, mode, setCurrentResult]);
 
   /** Render strokes as line segments */
