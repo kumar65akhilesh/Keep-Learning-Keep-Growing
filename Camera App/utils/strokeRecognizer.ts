@@ -1,16 +1,15 @@
 /**
- * Stroke-Based Handwriting Recognizer
+ * Stroke-Based Handwriting Recognizer (v2 — Multi-Feature)
  *
- * Compares a user's freehand strokes against the known stroke templates
- * defined in strokePaths.ts. Uses normalised point sampling and average
- * minimum-distance scoring to find the best matching character.
+ * Uses multiple features to compare user drawings against templates:
+ *   1. Point-cloud shape distance (bi-directional avg min distance)
+ *   2. Directional histogram (8-bin angular distribution per stroke)
+ *   3. Zone occupancy (3×3 grid density)
+ *   4. Aspect ratio similarity
+ *   5. Stroke count penalty
+ *   6. Start/end point matching
  *
- * Algorithm:
- * 1. Normalise user strokes into 0–1 coordinate space
- * 2. Flatten all user strokes into one point cloud
- * 3. For each candidate character, flatten its sampled guide into a point cloud
- * 4. Compute a bi-directional average-minimum-distance score
- * 5. Return the character with the lowest (best) distance score
+ * Each feature produces a sub-score; the weighted sum determines the winner.
  */
 
 import {
@@ -32,16 +31,45 @@ export interface RecognitionCandidate {
   score: number; // lower = better match
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────
+/** Internal: extracted features for comparison */
+interface ShapeFeatures {
+  /** Resampled point-cloud in 0–1 space */
+  points: StrokePoint[];
+  /** 8-bin direction histogram (normalised to sum=1) */
+  dirHist: number[];
+  /** 3×3 zone occupancy (normalised to sum=1) */
+  zoneHist: number[];
+  /** Aspect ratio (width / height, 0–∞) */
+  aspectRatio: number;
+  /** Number of separate strokes */
+  strokeCount: number;
+  /** Start and end points of each stroke (normalised 0–1) */
+  strokeEndpoints: { start: StrokePoint; end: StrokePoint }[];
+}
+
+// ─── Constants ────────────────────────────────────────────────────
+
+const SAMPLES_PER_STROKE = 40;
+const DIR_BINS = 8;
+const ZONE_GRID = 3;
+
+/** Feature weights (tuned for A–Z + 1–9 discrimination) */
+const W_SHAPE = 0.30;
+const W_DIRECTION = 0.25;
+const W_ZONE = 0.20;
+const W_ENDPOINTS = 0.10;
+const W_ASPECT = 0.08;
+const W_STROKE_COUNT = 0.07;
+
+// ─── Normalisation ────────────────────────────────────────────────
 
 /**
- * Normalise pixel-coordinate strokes into 0–1 space based on their
- * bounding box. Adds a small margin so strokes aren't edge-to-edge.
+ * Normalise pixel strokes into 0–1 using bounding box, preserving aspect ratio.
+ * Returns { normStrokes, aspectRatio }.
  */
-function normaliseStrokes(strokes: Point[][]): StrokePoint[][] {
-  // Flatten to find bounding box
+function normaliseStrokes(strokes: Point[][]): { norm: StrokePoint[][]; aspectRatio: number } {
   const all = strokes.flat();
-  if (all.length === 0) return [];
+  if (all.length === 0) return { norm: [], aspectRatio: 1 };
 
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const p of all) {
@@ -53,27 +81,28 @@ function normaliseStrokes(strokes: Point[][]): StrokePoint[][] {
 
   const rangeX = maxX - minX || 1;
   const rangeY = maxY - minY || 1;
+  const aspectRatio = rangeX / rangeY;
 
-  // Keep aspect ratio by using the larger range, centered
+  // Uniform scale using max dimension, centered
   const maxRange = Math.max(rangeX, rangeY);
   const offsetX = (maxRange - rangeX) / 2;
   const offsetY = (maxRange - rangeY) / 2;
 
-  return strokes.map((stroke) =>
+  const norm = strokes.map((stroke) =>
     stroke.map((p) => ({
       x: (p.x - minX + offsetX) / maxRange,
       y: (p.y - minY + offsetY) / maxRange,
     }))
   );
+
+  return { norm, aspectRatio };
 }
 
-/**
- * Re-sample a stroke (array of points) to a fixed number of evenly-spaced points.
- */
+// ─── Resampling ───────────────────────────────────────────────────
+
 function resamplePoints(points: StrokePoint[], n: number): StrokePoint[] {
   if (points.length < 2) return [...points];
 
-  // Compute cumulative arc-length
   const cumLen: number[] = [0];
   for (let i = 1; i < points.length; i++) {
     const dx = points[i].x - points[i - 1].x;
@@ -100,47 +129,187 @@ function resamplePoints(points: StrokePoint[], n: number): StrokePoint[] {
   return result;
 }
 
+// ─── Feature extraction ──────────────────────────────────────────
+
+/** Build an 8-bin direction histogram from sequential point pairs. */
+function buildDirHistogram(points: StrokePoint[]): number[] {
+  const bins = new Array(DIR_BINS).fill(0);
+  for (let i = 1; i < points.length; i++) {
+    const dx = points[i].x - points[i - 1].x;
+    const dy = points[i].y - points[i - 1].y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 1e-6) continue;
+    // angle in [0, 2π)
+    let angle = Math.atan2(dy, dx);
+    if (angle < 0) angle += 2 * Math.PI;
+    const bin = Math.min(DIR_BINS - 1, Math.floor((angle / (2 * Math.PI)) * DIR_BINS));
+    bins[bin] += len; // weight by segment length
+  }
+  // normalise
+  const sum = bins.reduce((a, b) => a + b, 0);
+  if (sum > 0) for (let i = 0; i < bins.length; i++) bins[i] /= sum;
+  return bins;
+}
+
+/** Build a 3×3 zone occupancy histogram. */
+function buildZoneHistogram(points: StrokePoint[]): number[] {
+  const zones = new Array(ZONE_GRID * ZONE_GRID).fill(0);
+  for (const p of points) {
+    const col = Math.min(ZONE_GRID - 1, Math.floor(p.x * ZONE_GRID));
+    const row = Math.min(ZONE_GRID - 1, Math.floor(p.y * ZONE_GRID));
+    zones[row * ZONE_GRID + col]++;
+  }
+  const sum = zones.reduce((a: number, b: number) => a + b, 0);
+  if (sum > 0) for (let i = 0; i < zones.length; i++) zones[i] /= sum;
+  return zones;
+}
+
 /**
- * Compute one-directional average minimum distance:
- * For each point in `from`, find the nearest point in `to`, then average.
+ * Extract all features from normalised strokes.
  */
-function avgMinDistance(from: StrokePoint[], to: StrokePoint[]): number {
-  if (from.length === 0 || to.length === 0) return Infinity;
+function extractFeatures(normStrokes: StrokePoint[][], aspectRatio: number): ShapeFeatures {
+  const allPoints: StrokePoint[] = [];
+  const endpoints: { start: StrokePoint; end: StrokePoint }[] = [];
+
+  for (const stroke of normStrokes) {
+    const resampled = resamplePoints(stroke, SAMPLES_PER_STROKE);
+    allPoints.push(...resampled);
+    if (resampled.length > 0) {
+      endpoints.push({
+        start: resampled[0],
+        end: resampled[resampled.length - 1],
+      });
+    }
+  }
+
+  return {
+    points: allPoints,
+    dirHist: buildDirHistogram(allPoints),
+    zoneHist: buildZoneHistogram(allPoints),
+    aspectRatio,
+    strokeCount: normStrokes.length,
+    strokeEndpoints: endpoints,
+  };
+}
+
+// ─── Distance metrics ─────────────────────────────────────────────
+
+/** Bi-directional average minimum point distance */
+function shapeDistance(a: StrokePoint[], b: StrokePoint[]): number {
+  if (a.length === 0 || b.length === 0) return 1;
+  const forward = avgMinDist(a, b);
+  const backward = avgMinDist(b, a);
+  return (forward + backward) / 2;
+}
+
+function avgMinDist(from: StrokePoint[], to: StrokePoint[]): number {
   let total = 0;
   for (const fp of from) {
-    let minDist = Infinity;
+    let best = Infinity;
     for (const tp of to) {
-      const d = Math.sqrt((fp.x - tp.x) ** 2 + (fp.y - tp.y) ** 2);
-      if (d < minDist) minDist = d;
+      const d = (fp.x - tp.x) ** 2 + (fp.y - tp.y) ** 2;
+      if (d < best) best = d;
     }
-    total += minDist;
+    total += Math.sqrt(best);
   }
   return total / from.length;
 }
 
+/** Histogram distance (Bhattacharyya-like: 1 − sum(sqrt(a_i * b_i))) */
+function histDistance(a: number[], b: number[]): number {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) {
+    sum += Math.sqrt(a[i] * b[i]);
+  }
+  return 1 - sum; // 0 = identical, 1 = totally different
+}
+
+/** Aspect ratio difference (log scale so 2:1 vs 1:2 have equal penalty) */
+function aspectDistance(a: number, b: number): number {
+  return Math.abs(Math.log((a + 0.01) / (b + 0.01)));
+}
+
+/** Stroke count penalty: fractional difference */
+function strokeCountDistance(a: number, b: number): number {
+  return Math.abs(a - b) / Math.max(a, b, 1);
+}
+
+/**
+ * Compare start/end points of strokes. Match by order, penalise extras.
+ * Uses greedy matching when stroke counts differ.
+ */
+function endpointDistance(
+  a: { start: StrokePoint; end: StrokePoint }[],
+  b: { start: StrokePoint; end: StrokePoint }[],
+): number {
+  const n = Math.max(a.length, b.length);
+  if (n === 0) return 0;
+
+  let total = 0;
+  const matched = Math.min(a.length, b.length);
+
+  for (let i = 0; i < matched; i++) {
+    const ds = Math.sqrt((a[i].start.x - b[i].start.x) ** 2 + (a[i].start.y - b[i].start.y) ** 2);
+    const de = Math.sqrt((a[i].end.x - b[i].end.x) ** 2 + (a[i].end.y - b[i].end.y) ** 2);
+    total += (ds + de) / 2;
+  }
+
+  // Penalise unmatched strokes
+  total += (n - matched) * 0.5;
+
+  return total / n;
+}
+
 // ─── Template cache ───────────────────────────────────────────────
 
-const SAMPLES_PER_STROKE = 30;
-const templateCache = new Map<string, StrokePoint[]>();
+const templateFeatureCache = new Map<string, ShapeFeatures>();
 
-function getTemplateSamples(char: string, strokes: CharacterStrokes): StrokePoint[] {
-  if (templateCache.has(char)) return templateCache.get(char)!;
-  const points: StrokePoint[] = [];
+function getTemplateFeatures(char: string, strokes: CharacterStrokes): ShapeFeatures {
+  if (templateFeatureCache.has(char)) return templateFeatureCache.get(char)!;
+
+  // Template strokes are already in 0–1 space
+  const allPoints: StrokePoint[] = [];
+  const endpoints: { start: StrokePoint; end: StrokePoint }[] = [];
+
   for (const stroke of strokes) {
-    points.push(...sampleStroke(stroke, SAMPLES_PER_STROKE));
+    const sampled = sampleStroke(stroke, SAMPLES_PER_STROKE);
+    allPoints.push(...sampled);
+    if (sampled.length > 0) {
+      endpoints.push({ start: sampled[0], end: sampled[sampled.length - 1] });
+    }
   }
-  templateCache.set(char, points);
-  return points;
+
+  // Compute template aspect ratio from its point spread
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of allPoints) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+  const templateAR = ((maxX - minX) || 0.5) / ((maxY - minY) || 0.5);
+
+  const features: ShapeFeatures = {
+    points: allPoints,
+    dirHist: buildDirHistogram(allPoints),
+    zoneHist: buildZoneHistogram(allPoints),
+    aspectRatio: templateAR,
+    strokeCount: strokes.length,
+    strokeEndpoints: endpoints,
+  };
+
+  templateFeatureCache.set(char, features);
+  return features;
 }
 
 // ─── Main Recognition ─────────────────────────────────────────────
 
 /**
- * Recognise the user's drawn strokes against known character templates.
+ * Recognise user strokes against known character templates.
  *
  * @param userStrokes  Array of strokes in pixel coordinates
  * @param candidates   Which characters to consider (e.g. A–Z or 1–9)
- * @returns Sorted array of candidates (best match first), or empty if input is empty
+ * @returns Sorted array of candidates (best match first)
  */
 export function recognizeStrokes(
   userStrokes: Point[][],
@@ -148,18 +317,15 @@ export function recognizeStrokes(
 ): RecognitionCandidate[] {
   if (userStrokes.length === 0) return [];
 
-  // 1. Normalise user strokes to 0–1
-  const normStrokes = normaliseStrokes(userStrokes);
+  // Filter out tiny accidental strokes (< 3 points)
+  const validStrokes = userStrokes.filter((s) => s.length >= 3);
+  if (validStrokes.length === 0) return [];
 
-  // 2. Resample each normalised user stroke, then flatten into one point cloud
-  const userPoints: StrokePoint[] = [];
-  for (const stroke of normStrokes) {
-    userPoints.push(...resamplePoints(stroke, SAMPLES_PER_STROKE));
-  }
+  const { norm, aspectRatio } = normaliseStrokes(validStrokes);
+  const userFeats = extractFeatures(norm, aspectRatio);
 
-  if (userPoints.length === 0) return [];
+  if (userFeats.points.length === 0) return [];
 
-  // 3. Score against each candidate character
   const results: RecognitionCandidate[] = [];
 
   for (const char of candidates) {
@@ -167,30 +333,46 @@ export function recognizeStrokes(
     const templateStrokes = STROKE_PATHS[charUpper];
     if (!templateStrokes) continue;
 
-    const templatePoints = getTemplateSamples(charUpper, templateStrokes);
+    const tplFeats = getTemplateFeatures(charUpper, templateStrokes);
 
-    // Bi-directional distance (user→template + template→user) for robustness
-    const d1 = avgMinDistance(userPoints, templatePoints);
-    const d2 = avgMinDistance(templatePoints, userPoints);
-    const score = (d1 + d2) / 2;
+    // Compute sub-scores (all in ~0–1 range)
+    const sShape = shapeDistance(userFeats.points, tplFeats.points);
+    const sDir = histDistance(userFeats.dirHist, tplFeats.dirHist);
+    const sZone = histDistance(userFeats.zoneHist, tplFeats.zoneHist);
+    const sEndpoints = endpointDistance(userFeats.strokeEndpoints, tplFeats.strokeEndpoints);
+    const sAspect = Math.min(1, aspectDistance(userFeats.aspectRatio, tplFeats.aspectRatio));
+    const sStrokeCount = strokeCountDistance(userFeats.strokeCount, tplFeats.strokeCount);
+
+    const score =
+      W_SHAPE * sShape +
+      W_DIRECTION * sDir +
+      W_ZONE * sZone +
+      W_ENDPOINTS * sEndpoints +
+      W_ASPECT * sAspect +
+      W_STROKE_COUNT * sStrokeCount;
 
     results.push({ char: charUpper, score });
   }
 
-  // Sort by score ascending (lower = better)
   results.sort((a, b) => a.score - b.score);
+
+  // Debug: log top 3
+  if (results.length >= 3) {
+    console.log(
+      `[RECOGNIZE] Top: ${results.slice(0, 3).map((r) => `${r.char}(${r.score.toFixed(3)})`).join(' > ')}`,
+    );
+  }
 
   return results;
 }
 
 /**
- * Convenience: get the single best-match character, or null if no match.
- * Also applies a maximum-score threshold to avoid random garbage matching.
+ * Get the single best-match character, or null if too uncertain.
  */
 export function recognizeBestMatch(
   userStrokes: Point[][],
   candidates: string[],
-  maxScore = 0.35,
+  maxScore = 0.45,
 ): { char: string; confidence: number } | null {
   const results = recognizeStrokes(userStrokes, candidates);
   if (results.length === 0) return null;
@@ -198,7 +380,6 @@ export function recognizeBestMatch(
   const best = results[0];
   if (best.score > maxScore) return null;
 
-  // Convert score (0 = perfect, maxScore = worst acceptable) into confidence (0–1)
   const confidence = Math.max(0, Math.min(1, 1 - best.score / maxScore));
   return { char: best.char, confidence };
 }
