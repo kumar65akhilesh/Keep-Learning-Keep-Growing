@@ -15,7 +15,7 @@ import { Colors, Fonts, Spacing, BorderRadius, Shadows } from '../constants/them
 import { useOcrStore } from '../store/ocrStore';
 import { isLetterMode } from '../utils/characterFilter';
 import { speakCharacter } from '../services/tts';
-import { recognizeBestMatch } from '../utils/strokeRecognizer';
+import { recognizeCanvas } from '../services/canvasOcr';
 
 /** A single drawn point */
 interface Point {
@@ -96,11 +96,11 @@ export default function HandwriteScreen() {
   }, []);
 
   /**
-   * Recognize what was drawn using stroke-based template matching.
-   * Compares the user's freehand strokes against known character templates
-   * and returns the best match.
+   * Recognize what was drawn.
+   * Native: captures canvas as image → runs ML Kit OCR.
+   * Web: falls back to stroke-based template matching.
    */
-  const handleRecognize = useCallback(() => {
+  const handleRecognize = useCallback(async () => {
     if (strokes.length === 0) {
       Alert.alert('Draw something!', 'Write a letter or number first, then tap Recognize.');
       return;
@@ -108,9 +108,9 @@ export default function HandwriteScreen() {
 
     setIsRecognizing(true);
 
-    // Small delay for UI feedback (spinner)
-    setTimeout(() => {
-      const match = recognizeBestMatch(strokes, charSet);
+    try {
+      // Pass strokes for web fallback (ignored on native)
+      const match = await recognizeCanvas(canvasRef as React.RefObject<any>, mode, strokes);
 
       if (match) {
         setRecognizedChar(match.char);
@@ -136,10 +136,14 @@ export default function HandwriteScreen() {
           'I couldn\'t recognize that. Try drawing the letter or number bigger and clearer!',
         );
       }
-
+    } catch (error) {
+      console.error('[HANDWRITE] Recognition error:', error);
+      setRecognizedChar(null);
+      Alert.alert('Oops!', 'Something went wrong. Please try again.');
+    } finally {
       setIsRecognizing(false);
-    }, 300);
-  }, [strokes, charSet, mode, setCurrentResult]);
+    }
+  }, [strokes, mode, setCurrentResult]);
 
   /** Render strokes as line segments */
   const renderStrokes = () => {
