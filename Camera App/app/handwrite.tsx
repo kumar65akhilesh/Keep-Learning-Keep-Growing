@@ -77,10 +77,11 @@ export default function HandwriteScreen() {
           setStrokes((prev) => [...prev]);
         },
         onPanResponderRelease: () => {
-          if (currentStroke.current.length > 1) {
-            setStrokes((prev) => [...prev, [...currentStroke.current]]);
-          }
+          const finished = [...currentStroke.current];
           currentStroke.current = [];
+          if (finished.length > 1) {
+            setStrokes((prev) => [...prev, finished]);
+          }
         },
       }),
     []
