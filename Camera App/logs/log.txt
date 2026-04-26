@@ -1,9 +1,10 @@
-# 1. Kill all Java processes holding the lock
-Stop-Process -Name "java" -Force -ErrorAction SilentlyContinue
-
-# 2. Delete the android folder
-Remove-Item -Path "C:\Camera App\android" -Recurse -Force
-
-# 3. Retry prebuild
+# 1. Install the new package
 cd "C:\Camera App\camera-ocr-app"
+npm install react-native-view-shot --legacy-peer-deps
+
+# 2. Rebuild native project (new native dependency requires it)
 npx expo prebuild --clean
+npx expo run:android
+
+# 3. Start Metro
+npx expo start --dev-client --port 3030
