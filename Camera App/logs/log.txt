@@ -1,13 +1,9 @@
+# 1. Kill all Java processes holding the lock
+Stop-Process -Name "java" -Force -ErrorAction SilentlyContinue
 
-# 1. Kill all Gradle daemons
+# 2. Delete the android folder
+Remove-Item -Path "C:\Camera App\android" -Recurse -Force
+
+# 3. Retry prebuild
 cd "C:\Camera App\camera-ocr-app"
-gradlew --stop 2>nul
-
-# 2. Kill any lingering Java processes holding the lock
-taskkill /F /IM java.exe 2>nul
-
-# 3. Now delete the android folder manually
-rmdir /s /q "C:\Camera App\android"
-
-# 4. Retry prebuild
 npx expo prebuild --clean
