@@ -1,1 +1,4 @@
 
+× Failed to delete android code: EBUSY: resource busy or locked, unlink 'C:\Camera App\android\.gradle\buildOutputCleanup\buildOutputCleanup.lock'
+Error: EBUSY: resource busy or locked, unlink 'C:\Camera App\android\.gradle\buildOutputCleanup\buildOutputCleanup.lock'
+Error: EBUSY: resource busy or locked, unlink 'C:\Camera App\android\.gradle\buildOutputCleanup\buildOutputCleanup.lock'
