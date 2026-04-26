@@ -183,12 +183,44 @@ export default function TracingScreen() {
   const renderGuidePath = (samples: StrokePoint[], strokeIdx: number) => {
     const isCompleted = completedStrokes[strokeIdx];
     const isActive = strokeIdx === activeStrokeIdx && !allDone;
-    const color = isCompleted ? modeColor : isActive ? modeColor : Colors.lightGray;
-    const opacity = isCompleted ? 1.0 : isActive ? 0.7 : 0.25;
+
+    // ── Completed stroke: draw a solid smooth line along the guide path ──
+    if (isCompleted) {
+      return samples.slice(1).map((pt, i) => {
+        const prev = toPixel(samples[i]);
+        const curr = toPixel(pt);
+        const dx = curr.x - prev.x;
+        const dy = curr.y - prev.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        return (
+          <View
+            key={`gc${strokeIdx}-${i}`}
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: prev.x,
+              top: prev.y,
+              width: length,
+              height: 8,
+              backgroundColor: modeColor,
+              borderRadius: 4,
+              transform: [{ rotate: `${angle}deg` }],
+              transformOrigin: 'left center',
+              opacity: 1.0,
+            }}
+          />
+        );
+      });
+    }
+
+    // ── Active / upcoming stroke: dotted guide ──
+    const color = isActive ? modeColor : Colors.lightGray;
+    const opacity = isActive ? 0.7 : 0.25;
     const dotSize = isActive ? 7 : 5;
     return samples.map((pt, i) => {
       const px = toPixel(pt);
-      if (!isCompleted && i % 2 !== 0) return null;
+      if (i % 2 !== 0) return null;
       return (
         <View
           key={`g${strokeIdx}-${i}`}
@@ -226,17 +258,19 @@ export default function TracingScreen() {
   };
 
   const renderUserStrokes = () => {
-    const all = [...userStrokes, ...(currentStroke.current.length > 1 ? [currentStroke.current] : [])];
-    return all.map((stroke, si) =>
-      stroke.slice(1).map((point, pi) => {
-        const prev = stroke[pi];
+    // Only render the live in-progress stroke (finger path).
+    // Completed strokes are shown as perfect guide-path highlights instead.
+    const liveStroke = currentStroke.current.length > 1 ? currentStroke.current : null;
+    if (!liveStroke) return null;
+    return liveStroke.slice(1).map((point, pi) => {
+        const prev = liveStroke[pi];
         const dx = point.x - prev.x;
         const dy = point.y - prev.y;
         const length = Math.sqrt(dx * dx + dy * dy);
         const angle = Math.atan2(dy, dx) * (180 / Math.PI);
         return (
           <View
-            key={`u${si}-${pi}`}
+            key={`live-${pi}`}
             pointerEvents="none"
             style={{
               position: 'absolute',
@@ -251,8 +285,7 @@ export default function TracingScreen() {
             }}
           />
         );
-      }),
-    );
+      });
   };
 
   const strokeLabel = allDone ? 'All strokes done!' : `Stroke ${activeStrokeIdx + 1} of ${totalStrokeCount}`;
