@@ -42,8 +42,8 @@ export async function recognizeCanvas(
       quality: 1.0,
       result: 'tmpfile',
       // High resolution for better OCR accuracy
-      width: 640,
-      height: 640,
+      width: 800,
+      height: 800,
     });
 
     console.log('[CANVAS-OCR] Captured canvas image:', uri);
