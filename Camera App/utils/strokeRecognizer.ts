@@ -37,7 +37,7 @@ interface ShapeFeatures {
   points: StrokePoint[];
   /** 8-bin direction histogram (normalised to sum=1) */
   dirHist: number[];
-  /** 3×3 zone occupancy (normalised to sum=1) */
+  /** 5×5 zone occupancy (normalised to sum=1) */
   zoneHist: number[];
   /** Aspect ratio (width / height, 0–∞) */
   aspectRatio: number;
@@ -45,21 +45,26 @@ interface ShapeFeatures {
   strokeCount: number;
   /** Start and end points of each stroke (normalised 0–1) */
   strokeEndpoints: { start: StrokePoint; end: StrokePoint }[];
+  /** Vertical center of gravity (0 = top, 1 = bottom) */
+  verticalCog: number;
+  /** Horizontal center of gravity (0 = left, 1 = right) */
+  horizontalCog: number;
 }
 
 // ─── Constants ────────────────────────────────────────────────────
 
 const SAMPLES_PER_STROKE = 40;
 const DIR_BINS = 8;
-const ZONE_GRID = 3;
+const ZONE_GRID = 5;
 
 /** Feature weights (tuned for A–Z + 1–9 discrimination) */
-const W_SHAPE = 0.30;
-const W_DIRECTION = 0.25;
+const W_SHAPE = 0.22;
+const W_DIRECTION = 0.20;
 const W_ZONE = 0.20;
 const W_ENDPOINTS = 0.10;
-const W_ASPECT = 0.08;
+const W_ASPECT = 0.06;
 const W_STROKE_COUNT = 0.07;
+const W_COG = 0.15;  // center-of-gravity (distinguishes V/A, W/M, etc.)
 
 // ─── Normalisation ────────────────────────────────────────────────
 
@@ -182,6 +187,14 @@ function extractFeatures(normStrokes: StrokePoint[][], aspectRatio: number): Sha
     }
   }
 
+  // Compute center of gravity
+  let sumX = 0, sumY = 0;
+  for (const p of allPoints) {
+    sumX += p.x;
+    sumY += p.y;
+  }
+  const n = allPoints.length || 1;
+
   return {
     points: allPoints,
     dirHist: buildDirHistogram(allPoints),
@@ -189,6 +202,8 @@ function extractFeatures(normStrokes: StrokePoint[][], aspectRatio: number): Sha
     aspectRatio,
     strokeCount: normStrokes.length,
     strokeEndpoints: endpoints,
+    verticalCog: sumY / n,
+    horizontalCog: sumX / n,
   };
 }
 
@@ -289,6 +304,14 @@ function getTemplateFeatures(char: string, strokes: CharacterStrokes): ShapeFeat
   }
   const templateAR = ((maxX - minX) || 0.5) / ((maxY - minY) || 0.5);
 
+  // Compute center of gravity for template
+  let sumX = 0, sumY = 0;
+  for (const p of allPoints) {
+    sumX += p.x;
+    sumY += p.y;
+  }
+  const n = allPoints.length || 1;
+
   const features: ShapeFeatures = {
     points: allPoints,
     dirHist: buildDirHistogram(allPoints),
@@ -296,6 +319,8 @@ function getTemplateFeatures(char: string, strokes: CharacterStrokes): ShapeFeat
     aspectRatio: templateAR,
     strokeCount: strokes.length,
     strokeEndpoints: endpoints,
+    verticalCog: sumY / n,
+    horizontalCog: sumX / n,
   };
 
   templateFeatureCache.set(char, features);
@@ -342,6 +367,10 @@ export function recognizeStrokes(
     const sEndpoints = endpointDistance(userFeats.strokeEndpoints, tplFeats.strokeEndpoints);
     const sAspect = Math.min(1, aspectDistance(userFeats.aspectRatio, tplFeats.aspectRatio));
     const sStrokeCount = strokeCountDistance(userFeats.strokeCount, tplFeats.strokeCount);
+    const sCog = Math.sqrt(
+      (userFeats.verticalCog - tplFeats.verticalCog) ** 2 +
+      (userFeats.horizontalCog - tplFeats.horizontalCog) ** 2,
+    );
 
     const score =
       W_SHAPE * sShape +
@@ -349,7 +378,8 @@ export function recognizeStrokes(
       W_ZONE * sZone +
       W_ENDPOINTS * sEndpoints +
       W_ASPECT * sAspect +
-      W_STROKE_COUNT * sStrokeCount;
+      W_STROKE_COUNT * sStrokeCount +
+      W_COG * sCog;
 
     results.push({ char: charUpper, score });
   }
