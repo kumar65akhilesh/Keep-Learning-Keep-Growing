@@ -90,17 +90,21 @@ function strokesToGrid(strokes: { x: number; y: number }[][]): Float32Array {
   const offX    = (S - (maxX - minX) * scale) / 2;
   const offY    = (S - (maxY - minY) * scale) / 2;
 
-  /** Set pixel with Gaussian-ish anti-aliased blob */
+  /** Plot a point with EMNIST-matching stroke width (~2px with soft edges) */
   const plot = (cx: number, cy: number) => {
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        const px = Math.round(cx + dx);
-        const py = Math.round(cy + dy);
-        if (px < 0 || px >= S || py < 0 || py >= S) continue;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const val  = dist <= 0.5 ? 1.0 : dist <= 1.0 ? 0.7 : 0.3;
-        const idx  = py * S + px;
-        grid[idx]  = Math.max(grid[idx], val);
+    // Center pixel = full white
+    const px0 = Math.round(cx);
+    const py0 = Math.round(cy);
+    if (px0 >= 0 && px0 < S && py0 >= 0 && py0 < S) {
+      grid[py0 * S + px0] = 1.0;
+    }
+    // 4-connected neighbors = softer edge (simulates anti-aliasing)
+    const neighbors = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+    for (const [dx, dy] of neighbors) {
+      const nx = px0 + dx;
+      const ny = py0 + dy;
+      if (nx >= 0 && nx < S && ny >= 0 && ny < S) {
+        grid[ny * S + nx] = Math.max(grid[ny * S + nx], 0.5);
       }
     }
   };
@@ -167,31 +171,11 @@ export async function recognizeCanvas(
   const labels    = isLetters ? LETTER_LABELS : DIGIT_LABELS;
 
   // ── Rasterise strokes ───────────────────────────────────────────
-  const rawGrid = strokesToGrid(valid);
-
-  // EMNIST images are stored column-major (transposed). Even after the
-  // training script's np.transpose, the model learned on images whose
-  // x/y axes are swapped relative to natural screen drawing. Transposing
-  // the 28×28 grid (swap rows ↔ cols) aligns our input with the model.
-  const inputData = new Float32Array(28 * 28);
-  for (let y = 0; y < 28; y++) {
-    for (let x = 0; x < 28; x++) {
-      inputData[x * 28 + y] = rawGrid[y * 28 + x]; // transpose
-    }
-  }
+  const inputData = strokesToGrid(valid);
 
   // Debug visualisation (dev only)
   if (__DEV__) {
-    let viz = '\n[TFLITE] 28×28 drawn:\n';
-    for (let y = 0; y < 28; y++) {
-      let row = '';
-      for (let x = 0; x < 28; x++) {
-        const v = rawGrid[y * 28 + x];
-        row += v > 0.7 ? '█' : v > 0.3 ? '▒' : v > 0 ? '░' : ' ';
-      }
-      viz += row + '\n';
-    }
-    viz += '\n[TFLITE] 28×28 transposed (model input):\n';
+    let viz = '\n[TFLITE] 28×28 input:\n';
     for (let y = 0; y < 28; y++) {
       let row = '';
       for (let x = 0; x < 28; x++) {
@@ -200,6 +184,12 @@ export async function recognizeCanvas(
       }
       viz += row + '\n';
     }
+    // Input stats for debugging
+    let nonZero = 0, sum = 0;
+    for (let i = 0; i < inputData.length; i++) {
+      if (inputData[i] > 0) { nonZero++; sum += inputData[i]; }
+    }
+    console.log(`[TFLITE] Input stats: ${nonZero} non-zero pixels, sum=${sum.toFixed(1)}, avg=${(sum / Math.max(nonZero, 1)).toFixed(2)}`);
     console.log(viz);
   }
 
@@ -224,14 +214,15 @@ export async function recognizeCanvas(
 
     const predicted = labels[bestIdx];
 
-    // Log top-3
-    const top3 = [...probs]
+    // Log top-5 + output tensor info
+    const sorted = [...probs]
       .map((p, i) => ({ p, c: labels[i] }))
-      .sort((a, b) => b.p - a.p)
-      .slice(0, 3)
-      .map((x) => `${x.c}(${(x.p * 100).toFixed(0)}%)`)
+      .sort((a, b) => b.p - a.p);
+    const top5 = sorted.slice(0, 5)
+      .map((x) => `${x.c}(${(x.p * 100).toFixed(1)}%)`)
       .join(' ');
-    console.log(`[TFLITE] ✓ ${predicted} ${(bestProb * 100).toFixed(1)}% | Top 3: ${top3}`);
+    console.log(`[TFLITE] Output tensor: ${probs.length} classes, sum=${[...probs].reduce((a, b) => a + b, 0).toFixed(3)}`);
+    console.log(`[TFLITE] ✓ ${predicted} ${(bestProb * 100).toFixed(1)}% | Top 5: ${top5}`);
 
     // In digit mode skip "0" (app uses 1-9)
     if (!isLetters && predicted === '0') {
