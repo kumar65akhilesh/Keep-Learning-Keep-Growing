@@ -167,11 +167,31 @@ export async function recognizeCanvas(
   const labels    = isLetters ? LETTER_LABELS : DIGIT_LABELS;
 
   // ── Rasterise strokes ───────────────────────────────────────────
-  const inputData = strokesToGrid(valid);
+  const rawGrid = strokesToGrid(valid);
+
+  // EMNIST images are stored column-major (transposed). Even after the
+  // training script's np.transpose, the model learned on images whose
+  // x/y axes are swapped relative to natural screen drawing. Transposing
+  // the 28×28 grid (swap rows ↔ cols) aligns our input with the model.
+  const inputData = new Float32Array(28 * 28);
+  for (let y = 0; y < 28; y++) {
+    for (let x = 0; x < 28; x++) {
+      inputData[x * 28 + y] = rawGrid[y * 28 + x]; // transpose
+    }
+  }
 
   // Debug visualisation (dev only)
   if (__DEV__) {
-    let viz = '\n[TFLITE] 28×28 input:\n';
+    let viz = '\n[TFLITE] 28×28 drawn:\n';
+    for (let y = 0; y < 28; y++) {
+      let row = '';
+      for (let x = 0; x < 28; x++) {
+        const v = rawGrid[y * 28 + x];
+        row += v > 0.7 ? '█' : v > 0.3 ? '▒' : v > 0 ? '░' : ' ';
+      }
+      viz += row + '\n';
+    }
+    viz += '\n[TFLITE] 28×28 transposed (model input):\n';
     for (let y = 0; y < 28; y++) {
       let row = '';
       for (let x = 0; x < 28; x++) {
