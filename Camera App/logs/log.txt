@@ -1,10 +1,10 @@
-# 1. Install the new package
-cd "C:\Camera App\camera-ocr-app"
-npm install react-native-view-shot --legacy-peer-deps
+# 1. Install Python dependencies & train EMNIST models
+pip install tensorflow numpy
+py scripts/train_emnist.py
 
-# 2. Rebuild native project (new native dependency requires it)
+# 2. Install TFLite npm packages
+npm install react-native-fast-tflite react-native-nitro-modules --legacy-peer-deps
+
+# 3. Rebuild native Android project and run
 npx expo prebuild --clean
 npx expo run:android
-
-# 3. Start Metro
-npx expo start --dev-client --port 3030
