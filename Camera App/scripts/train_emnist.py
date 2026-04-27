@@ -47,45 +47,48 @@ DIGITS_TFLITE = os.path.join(ASSETS_DIR, "emnist-digits.tflite")
 
 def load_emnist_letters():
     """
-    Load EMNIST Letters dataset.
-    Falls back to generating synthetic data from MNIST if EMNIST download fails.
-    EMNIST Letters: 26 classes (A-Z), 28×28 grayscale images.
+    Load EMNIST Letters dataset (26 classes, A-Z).
+    Tries multiple download strategies:
+      1. `emnist` pip package (most reliable)
+      2. Manual download from NIST gzip mirror
+      3. tensorflow_datasets
+    Raises if all fail — never silently falls back to digits.
     """
+
+    # ── Strategy 1: emnist pip package ────────────────────────────
     try:
-        # Try loading via tensorflow_datasets
-        import tensorflow_datasets as tfds
-        ds_train = tfds.load('emnist/letters', split='train', as_supervised=True)
-        ds_test = tfds.load('emnist/letters', split='test', as_supervised=True)
+        try:
+            from emnist import extract_training_samples, extract_test_samples
+        except ImportError:
+            print("[INFO] Installing 'emnist' package...")
+            os.system(f'"{sys.executable}" -m pip install emnist')
+            from emnist import extract_training_samples, extract_test_samples
 
-        x_train, y_train = [], []
-        for img, label in ds_train:
-            x_train.append(img.numpy())
-            y_train.append(label.numpy())
-        x_train = np.array(x_train)
-        y_train = np.array(y_train)
+        print("[INFO] Loading EMNIST Letters via emnist package...")
+        x_train, y_train = extract_training_samples('letters')
+        x_test, y_test = extract_test_samples('letters')
 
-        x_test, y_test = [], []
-        for img, label in ds_test:
-            x_test.append(img.numpy())
-            y_test.append(label.numpy())
-        x_test = np.array(x_test)
-        y_test = np.array(y_test)
-
-        # EMNIST letters labels are 1-26 (A=1, Z=26), shift to 0-25
+        # emnist package labels: 1-26 (A=1, Z=26) → shift to 0-25
         y_train = y_train - 1
         y_test = y_test - 1
 
+        print(f"  Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
+        print(f"  Test:  {x_test.shape},  labels range: {y_test.min()}-{y_test.max()}")
+        assert y_train.max() == 25, f"Expected 26 classes (0-25), got max label {y_train.max()}"
         return x_train, y_train, x_test, y_test, 26
-    except Exception as e:
-        print(f"[INFO] Could not load EMNIST via tfds ({e}), downloading manually...")
+    except Exception as e1:
+        print(f"[WARN] emnist package failed: {e1}")
 
-    # Manual download from NIST/Cohen et al. via the gzip files
+    # ── Strategy 2: Manual NIST gzip download ─────────────────────
     try:
         import urllib.request
         import gzip
         import struct
 
-        BASE_URL = "https://biometrics.nist.gov/cs_links/EMNIST/gzip/"
+        MIRRORS = [
+            "https://biometrics.nist.gov/cs_links/EMNIST/gzip/",
+            "https://www.itl.nist.gov/iaui/vip/cs_links/EMNIST/gzip/",
+        ]
         files = {
             "train_images": "emnist-letters-train-images-idx3-ubyte.gz",
             "train_labels": "emnist-letters-train-labels-idx1-ubyte.gz",
@@ -96,45 +99,139 @@ def load_emnist_letters():
         cache_dir = os.path.join(PROJECT_DIR, ".emnist_cache")
         os.makedirs(cache_dir, exist_ok=True)
 
-        def download_and_parse_images(filename):
+        def download_file(filename):
             filepath = os.path.join(cache_dir, filename)
-            if not os.path.exists(filepath):
-                print(f"  Downloading {filename}...")
-                urllib.request.urlretrieve(BASE_URL + filename, filepath)
+            if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
+                return filepath
+            for base_url in MIRRORS:
+                try:
+                    url = base_url + filename
+                    print(f"  Downloading {url} ...")
+                    urllib.request.urlretrieve(url, filepath)
+                    if os.path.getsize(filepath) > 1000:
+                        return filepath
+                except Exception:
+                    continue
+            raise RuntimeError(f"Could not download {filename} from any mirror")
+
+        def parse_images(filename):
+            filepath = download_file(filename)
             with gzip.open(filepath, 'rb') as f:
                 magic, num, rows, cols = struct.unpack('>IIII', f.read(16))
                 data = np.frombuffer(f.read(), dtype=np.uint8).reshape(num, rows, cols)
-            # EMNIST images need to be transposed (they're column-major)
+            # EMNIST images are stored column-major → transpose to row-major
             data = np.transpose(data, (0, 2, 1))
             return data
 
-        def download_and_parse_labels(filename):
-            filepath = os.path.join(cache_dir, filename)
-            if not os.path.exists(filepath):
-                print(f"  Downloading {filename}...")
-                urllib.request.urlretrieve(BASE_URL + filename, filepath)
+        def parse_labels(filename):
+            filepath = download_file(filename)
             with gzip.open(filepath, 'rb') as f:
                 magic, num = struct.unpack('>II', f.read(8))
                 labels = np.frombuffer(f.read(), dtype=np.uint8)
             return labels
 
-        print("[INFO] Downloading EMNIST Letters dataset...")
-        x_train = download_and_parse_images(files["train_images"])
-        y_train = download_and_parse_labels(files["train_labels"])
-        x_test = download_and_parse_images(files["test_images"])
-        y_test = download_and_parse_labels(files["test_labels"])
+        print("[INFO] Downloading EMNIST Letters from NIST mirrors...")
+        x_train = parse_images(files["train_images"])
+        y_train = parse_labels(files["train_labels"])
+        x_test = parse_images(files["test_images"])
+        y_test = parse_labels(files["test_labels"])
 
         # Labels are 1-26, shift to 0-25
         y_train = y_train - 1
         y_test = y_test - 1
 
+        print(f"  Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
+        print(f"  Test:  {x_test.shape},  labels range: {y_test.min()}-{y_test.max()}")
+        assert y_train.max() == 25, f"Expected 26 classes (0-25), got max label {y_train.max()}"
         return x_train, y_train, x_test, y_test, 26
     except Exception as e2:
-        print(f"[ERROR] Could not download EMNIST: {e2}")
-        print("[INFO] Falling back to MNIST digits-only for testing...")
-        # Fallback: just use MNIST (digits only) as proof of concept
-        (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
-        return x_train, y_train, x_test, y_test, 10
+        print(f"[WARN] NIST mirror download failed: {e2}")
+
+    # ── Strategy 3: tensorflow_datasets ───────────────────────────
+    try:
+        import tensorflow_datasets as tfds
+        print("[INFO] Loading EMNIST Letters via tensorflow_datasets...")
+        ds_train = tfds.load('emnist/letters', split='train', as_supervised=True)
+        ds_test = tfds.load('emnist/letters', split='test', as_supervised=True)
+
+        x_train, y_train = [], []
+        for img, label in ds_train:
+            x_train.append(img.numpy().squeeze())
+            y_train.append(label.numpy())
+        x_train = np.array(x_train)
+        y_train = np.array(y_train)
+
+        x_test, y_test = [], []
+        for img, label in ds_test:
+            x_test.append(img.numpy().squeeze())
+            y_test.append(label.numpy())
+        x_test = np.array(x_test)
+        y_test = np.array(y_test)
+
+        # tfds labels are 1-26, shift to 0-25
+        y_train = y_train - 1
+        y_test = y_test - 1
+
+        print(f"  Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
+        assert y_train.max() == 25, f"Expected 26 classes (0-25), got max label {y_train.max()}"
+        return x_train, y_train, x_test, y_test, 26
+    except Exception as e3:
+        print(f"[WARN] tensorflow_datasets API failed: {e3}")
+
+    # ── Strategy 4: Load directly from tfrecord files ─────────────
+    try:
+        tfrecord_dir = os.path.join(
+            os.path.expanduser("~"), "tensorflow_datasets", "emnist", "letters", "3.1.0"
+        )
+        train_path = os.path.join(tfrecord_dir, "emnist-train.tfrecord-00000-of-00001")
+        test_path = os.path.join(tfrecord_dir, "emnist-test.tfrecord-00000-of-00001")
+
+        if os.path.exists(train_path) and os.path.exists(test_path):
+            print("[INFO] Loading EMNIST Letters directly from tfrecord files...")
+
+            feature_desc = {
+                'image': tf.io.FixedLenFeature([], tf.string),
+                'label': tf.io.FixedLenFeature([], tf.int64),
+            }
+
+            def parse_fn(example_proto):
+                parsed = tf.io.parse_single_example(example_proto, feature_desc)
+                # tfds stores images as PNG-encoded bytes
+                image = tf.io.decode_png(parsed['image'], channels=1)
+                image = tf.squeeze(image)  # (28, 28)
+                return image, parsed['label']
+
+            def load_from_tfrecord(path):
+                dataset = tf.data.TFRecordDataset(path)
+                images, labels = [], []
+                for raw in dataset:
+                    img, lbl = parse_fn(raw)
+                    images.append(img.numpy())
+                    labels.append(lbl.numpy())
+                return np.array(images), np.array(labels)
+
+            x_train, y_train = load_from_tfrecord(train_path)
+            x_test, y_test = load_from_tfrecord(test_path)
+
+            # tfds labels are 1-26, shift to 0-25
+            y_train = y_train - 1
+            y_test = y_test - 1
+
+            print(f"  Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
+            print(f"  Test:  {x_test.shape},  labels range: {y_test.min()}-{y_test.max()}")
+            assert y_train.max() == 25, f"Expected 26 classes, got max label {y_train.max()}"
+            return x_train, y_train, x_test, y_test, 26
+        else:
+            print(f"[WARN] tfrecord files not found at {tfrecord_dir}")
+    except Exception as e4:
+        print(f"[WARN] Direct tfrecord loading failed: {e4}")
+
+    # ── All strategies failed — DO NOT fall back to digits ────────
+    raise RuntimeError(
+        "FATAL: Could not load EMNIST Letters from any source.\n"
+        "Try: pip install emnist\n"
+        "Or manually download from https://www.nist.gov/itl/products-and-services/emnist-dataset"
+    )
 
 
 def load_emnist_digits():
@@ -217,14 +314,24 @@ def main():
     print("EMNIST Model Training for Little Letters App")
     print("=" * 60)
 
-    # Train Letters model (A-Z)
+    # Train Letters model (A-Z) — MUST be 26 classes
     x_train, y_train, x_test, y_test, n_classes = load_emnist_letters()
+    assert n_classes == 26, f"Letters model must have 26 classes, got {n_classes}!"
+    print(f"[CHECK] Letters dataset: {n_classes} classes ✓")
     letters_acc = train_and_export(
         "Letters (A-Z)", x_train, y_train, x_test, y_test, n_classes, LETTERS_TFLITE
     )
 
+    # Verify exported letters model has 26 output classes
+    interpreter = tf.lite.Interpreter(model_path=LETTERS_TFLITE)
+    interpreter.allocate_tensors()
+    out_shape = interpreter.get_output_details()[0]['shape']
+    assert out_shape[-1] == 26, f"Letters .tflite has {out_shape[-1]} outputs, expected 26!"
+    print(f"[CHECK] Letters .tflite output shape: {out_shape} ✓")
+
     # Train Digits model (0-9)
     x_train, y_train, x_test, y_test, n_classes = load_emnist_digits()
+    assert n_classes == 10, f"Digits model must have 10 classes, got {n_classes}!"
     digits_acc = train_and_export(
         "Digits (0-9)", x_train, y_train, x_test, y_test, n_classes, DIGITS_TFLITE
     )
