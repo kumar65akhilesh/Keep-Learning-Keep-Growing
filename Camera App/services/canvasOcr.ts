@@ -1,17 +1,18 @@
 /**
- * Canvas OCR Service — Native
+ * Canvas OCR Service — Native (Hybrid)
  *
- * Captures the handwriting canvas as an image using react-native-view-shot,
- * then runs it through ML Kit OCR (react-native-mlkit-ocr) for recognition.
+ * Uses a two-pass recognition strategy for maximum accuracy:
+ *   1. Capture canvas as image → ML Kit OCR (best for clear/printed-style writing)
+ *   2. Stroke-based template matching fallback (better for single isolated characters)
  *
- * The canvas is rendered with dark strokes on a white background, making it
- * ideal for ML Kit's text recognizer which expects natural/printed text.
+ * If both return a result, ML Kit is preferred (unless its result doesn't match
+ * the mode filter). If ML Kit fails, the stroke recognizer result is used.
  */
 
 import { captureRef } from 'react-native-view-shot';
 import MlkitOcr from 'react-native-mlkit-ocr';
 import type { RecognitionMode } from '../types';
-import { filterByMode } from '../utils/characterFilter';
+import { recognizeBestMatch } from '../utils/strokeRecognizer';
 
 export interface HandwriteResult {
   char: string;
@@ -19,50 +20,35 @@ export interface HandwriteResult {
 }
 
 /**
- * Capture the canvas View as a high-contrast PNG and run ML Kit OCR on it.
- *
- * @param canvasRef - React ref to the canvas View
- * @param mode - Recognition mode (determines letter vs number filtering)
- * @returns The best matching character and confidence, or null if nothing recognized
+ * Try ML Kit OCR on the captured canvas image.
  */
-export async function recognizeCanvas(
+async function tryMlKit(
   canvasRef: React.RefObject<any>,
   mode: RecognitionMode,
-  _strokes?: { x: number; y: number }[][],
 ): Promise<HandwriteResult | null> {
-  if (!canvasRef.current) {
-    console.warn('[CANVAS-OCR] canvasRef is null');
-    return null;
-  }
-
   try {
-    // 1. Capture the canvas as a temporary PNG file
     const uri = await captureRef(canvasRef, {
       format: 'png',
       quality: 1.0,
       result: 'tmpfile',
-      // High resolution for better OCR accuracy
       width: 800,
       height: 800,
     });
 
     console.log('[CANVAS-OCR] Captured canvas image:', uri);
 
-    // 2. Run ML Kit OCR on the captured image
     const mlkitResult = await MlkitOcr.detectFromUri(uri);
-
     console.log('[CANVAS-OCR] ML Kit returned', mlkitResult?.length ?? 0, 'blocks');
 
     if (!mlkitResult || mlkitResult.length === 0) {
-      console.log('[CANVAS-OCR] No text detected in canvas image');
+      console.log('[CANVAS-OCR] ML Kit: no text detected');
       return null;
     }
 
-    // 3. Extract all detected characters
+    // Extract characters
     const allChars: { text: string; confidence: number }[] = [];
-
     for (const block of mlkitResult) {
-      console.log(`[CANVAS-OCR] Block: "${block.text}"`);
+      console.log(`[CANVAS-OCR] ML Kit block: "${block.text}"`);
       if (!block.lines) continue;
       for (const line of block.lines) {
         if (!line.elements) continue;
@@ -78,28 +64,99 @@ export async function recognizeCanvas(
       }
     }
 
-    console.log('[CANVAS-OCR] Extracted characters:', allChars.map(c => c.text).join(''));
-
-    // 4. Filter by mode (letters vs numbers)
+    // Filter by mode
     const filtered = allChars.filter((c) => {
       if (mode.endsWith('-abc')) return /^[A-Za-z]$/.test(c.text);
       if (mode.endsWith('-123')) return /^[1-9]$/.test(c.text);
       return true;
     });
 
-    if (filtered.length === 0) {
-      console.log('[CANVAS-OCR] No characters matched the mode filter');
-      return null;
-    }
+    if (filtered.length === 0) return null;
 
-    // 5. Return the first (most prominent) character
-    const best = filtered[0];
     return {
-      char: best.text.toUpperCase(),
-      confidence: best.confidence,
+      char: filtered[0].text.toUpperCase(),
+      confidence: filtered[0].confidence,
     };
   } catch (error) {
-    console.error('[CANVAS-OCR] Error:', error);
+    console.warn('[CANVAS-OCR] ML Kit error:', error);
     return null;
   }
+}
+
+/**
+ * Try stroke-based template matching.
+ */
+function tryStrokeRecognizer(
+  strokes: { x: number; y: number }[][],
+  mode: RecognitionMode,
+): HandwriteResult | null {
+  const candidates = mode.endsWith('-abc')
+    ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+    : '123456789'.split('');
+
+  return recognizeBestMatch(strokes, candidates);
+}
+
+/**
+ * Hybrid recognition: ML Kit first, stroke recognizer fallback.
+ *
+ * @param canvasRef - React ref to the canvas View
+ * @param mode - Recognition mode (letter vs number filtering)
+ * @param strokes - User's drawn strokes (for stroke-based fallback)
+ * @returns Best matching character and confidence, or null
+ */
+export async function recognizeCanvas(
+  canvasRef: React.RefObject<any>,
+  mode: RecognitionMode,
+  strokes?: { x: number; y: number }[][],
+): Promise<HandwriteResult | null> {
+  if (!canvasRef.current) {
+    console.warn('[CANVAS-OCR] canvasRef is null');
+    return null;
+  }
+
+  // Run both recognizers
+  const mlkitResult = await tryMlKit(canvasRef, mode);
+  const strokeResult = strokes && strokes.length > 0
+    ? tryStrokeRecognizer(strokes, mode)
+    : null;
+
+  console.log(
+    `[CANVAS-OCR] ML Kit: ${mlkitResult?.char ?? 'null'} | Stroke: ${strokeResult?.char ?? 'null'}`,
+  );
+
+  // Decision logic:
+  // 1. Both agree → high confidence, use that character
+  if (mlkitResult && strokeResult && mlkitResult.char === strokeResult.char) {
+    console.log(`[CANVAS-OCR] Both agree: ${mlkitResult.char}`);
+    return {
+      char: mlkitResult.char,
+      confidence: Math.max(mlkitResult.confidence, strokeResult.confidence),
+    };
+  }
+
+  // 2. Only ML Kit returned a result → use it
+  if (mlkitResult && !strokeResult) {
+    console.log(`[CANVAS-OCR] Using ML Kit only: ${mlkitResult.char}`);
+    return mlkitResult;
+  }
+
+  // 3. Only stroke recognizer returned a result → use it
+  if (!mlkitResult && strokeResult) {
+    console.log(`[CANVAS-OCR] Using stroke recognizer only: ${strokeResult.char}`);
+    return strokeResult;
+  }
+
+  // 4. Both returned different results → prefer stroke recognizer for single characters
+  //    (ML Kit is optimized for words/paragraphs; stroke recognizer is better for isolated chars)
+  if (mlkitResult && strokeResult) {
+    console.log(
+      `[CANVAS-OCR] Disagreement — ML Kit: ${mlkitResult.char} vs Stroke: ${strokeResult.char}. Using stroke recognizer.`,
+    );
+    return strokeResult;
+  }
+
+  // 5. Neither recognized anything
+  console.log('[CANVAS-OCR] Neither recognizer returned a result');
+  return null;
 }
