@@ -39,7 +39,8 @@
           "cameraPermissionText": "Little Letters needs camera access to recognize letters and numbers.",
           "enableFrameProcessors": true
         }
-      ]
+      ],
+      "react-native-fast-tflite"
     ],
     "experiments": {
       "typedRoutes": true
