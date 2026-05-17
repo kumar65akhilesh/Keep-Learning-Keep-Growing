@@ -43,7 +43,7 @@ export default function HandwriteScreen() {
     () =>
       letters
         ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
-        : '123456789'.split(''),
+        : '0123456789'.split(''),
     [letters]
   );
 
