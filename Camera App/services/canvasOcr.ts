@@ -248,17 +248,9 @@ export async function recognizeCanvas(
   try {
     const model = isLetters ? await getLettersModel() : await getDigitsModel();
 
-    // Log model input/output tensor details on first run
-    const inputDetails = model.inputs;
-    const outputDetails = model.outputs;
-    console.log(`[TFLITE] Model inputs:`, JSON.stringify(inputDetails));
-    console.log(`[TFLITE] Model outputs:`, JSON.stringify(outputDetails));
-
-    // EMNIST images are stored column-major (transposed) in the dataset.
-    // The training script transposes them to row-major for training,
-    // so our row-major rasterized grid should match — BUT if the transpose
-    // was not applied during training, we need to transpose here.
-    // Try both orientations and log which gives better results.
+    // EMNIST images are stored column-major. The model was trained without
+    // transposing to row-major, so we must transpose our row-major rasterised
+    // grid to match what the model learned.
     const transposedData = new Float32Array(28 * 28);
     for (let y = 0; y < 28; y++) {
       for (let x = 0; x < 28; x++) {
@@ -266,9 +258,8 @@ export async function recognizeCanvas(
       }
     }
 
-    // Visualize transposed version for comparison
     if (__DEV__) {
-      let tviz = '\n[TFLITE] 28×28 TRANSPOSED input:\n';
+      let tviz = '\n[TFLITE] 28×28 input (transposed for model):\n';
       for (let y = 0; y < 28; y++) {
         let row = '';
         for (let x = 0; x < 28; x++) {
@@ -280,50 +271,36 @@ export async function recognizeCanvas(
       console.log(tviz);
     }
 
-    // Run inference on BOTH orientations and compare
-    const runInference = (data: Float32Array, label: string) => {
-      const buf = data.buffer.slice(
-        data.byteOffset,
-        data.byteOffset + data.byteLength,
-      ) as ArrayBuffer;
-      const outputs = model.runSync([buf]);
-      const probs = new Float32Array(outputs[0] as ArrayBuffer);
-      let bestIdx = 0;
-      let bestProb = probs[0];
-      for (let i = 1; i < probs.length; i++) {
-        if (probs[i] > bestProb) { bestProb = probs[i]; bestIdx = i; }
-      }
-      const sorted = [...probs]
-        .map((p, i) => ({ p, c: labels[i] }))
-        .sort((a, b) => b.p - a.p);
-      const top5 = sorted.slice(0, 5)
-        .map((x) => `${x.c}(${(x.p * 100).toFixed(1)}%)`)
-        .join(' ');
-      console.log(`[TFLITE] ${label}: "${labels[bestIdx]}" @ ${(bestProb * 100).toFixed(1)}% | Top 5: ${top5}`);
-      return { probs, bestIdx, bestProb };
-    };
+    const buf = transposedData.buffer.slice(
+      transposedData.byteOffset,
+      transposedData.byteOffset + transposedData.byteLength,
+    ) as ArrayBuffer;
+    const outputs = model.runSync([buf]);
+    const probs = new Float32Array(outputs[0] as ArrayBuffer);
 
-    const normalResult = runInference(inputData, 'NORMAL');
-    const transResult = runInference(transposedData, 'TRANSPOSED');
+    let bestIdx = 0;
+    let bestProb = probs[0];
+    for (let i = 1; i < probs.length; i++) {
+      if (probs[i] > bestProb) { bestProb = probs[i]; bestIdx = i; }
+    }
 
-    // Use whichever orientation gives higher confidence
-    const useTransposed = transResult.bestProb > normalResult.bestProb;
-    const chosen = useTransposed ? transResult : normalResult;
-    console.log(`[TFLITE] ► Using ${useTransposed ? 'TRANSPOSED' : 'NORMAL'} (${(chosen.bestProb * 100).toFixed(1)}% vs ${(useTransposed ? normalResult.bestProb : transResult.bestProb) * 100}%)`);
+    const predicted = labels[bestIdx];
 
-    const predicted = labels[chosen.bestIdx];
-    const bestProb = chosen.bestProb;
-    const probs = chosen.probs;
+    // Log top-5 predictions
+    const sorted = [...probs]
+      .map((p, i) => ({ p, c: labels[i] }))
+      .sort((a, b) => b.p - a.p);
+    const top5 = sorted.slice(0, 5)
+      .map((x) => `${x.c}(${(x.p * 100).toFixed(1)}%)`)
+      .join(' ');
+    console.log(`[TFLITE] ✓ Predicted: "${predicted}" @ ${(bestProb * 100).toFixed(1)}% | Top 5: ${top5}`);
 
     // Confidence warnings
     if (bestProb < 0.3) {
       console.warn(`[TFLITE] ⚠️ Low confidence (${(bestProb * 100).toFixed(1)}%) — result may be unreliable`);
     }
-    const sortedFinal = [...probs]
-      .map((p, i) => ({ p, c: labels[i] }))
-      .sort((a, b) => b.p - a.p);
-    if (sortedFinal.length >= 2 && sortedFinal[0].p - sortedFinal[1].p < 0.1) {
-      console.warn(`[TFLITE] ⚠️ Close call: "${sortedFinal[0].c}" vs "${sortedFinal[1].c}" (diff=${((sortedFinal[0].p - sortedFinal[1].p) * 100).toFixed(1)}%) — ambiguous input`);
+    if (sorted.length >= 2 && sorted[0].p - sorted[1].p < 0.1) {
+      console.warn(`[TFLITE] ⚠️ Close call: "${sorted[0].c}" vs "${sorted[1].c}" (diff=${((sorted[0].p - sorted[1].p) * 100).toFixed(1)}%) — ambiguous input`);
     }
 
     // In digit mode skip "0" (app uses 1-9)
