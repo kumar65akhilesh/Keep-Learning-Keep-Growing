@@ -302,6 +302,21 @@ export async function recognizeCanvas(
       .join(' ');
     console.log(`[TFLITE] ✓ Predicted: "${predicted}" @ ${(bestProb * 100).toFixed(1)}% | Top 5: ${top5}`);
 
+    // ── Post-processing: I/L disambiguation ───────────────────────
+    // A plain vertical line (very narrow aspect ratio) after transpose
+    // becomes horizontal, which the model confuses with "L". If the
+    // drawing is essentially a vertical stroke and L/I are the top two,
+    // prefer "I".
+    if (isLetters && predicted === 'L' && bboxW > 0 && bboxH > 0) {
+      const ar = bboxW / bboxH;
+      const iIdx = labels.indexOf('I');
+      const iProb = iIdx >= 0 ? probs[iIdx] : 0;
+      if (ar < 0.25 && iProb > 0.1) {
+        console.log(`[TFLITE] ⇢ I/L fix: aspect=${ar.toFixed(2)} (very narrow), overriding L→I`);
+        return { char: 'I', confidence: iProb };
+      }
+    }
+
     // Confidence warnings
     if (bestProb < 0.3) {
       console.warn(`[TFLITE] ⚠️ Low confidence (${(bestProb * 100).toFixed(1)}%) — result may be unreliable`);
