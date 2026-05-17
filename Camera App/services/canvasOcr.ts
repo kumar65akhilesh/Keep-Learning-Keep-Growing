@@ -211,7 +211,8 @@ export async function recognizeCanvas(
     `[TFLITE] Overall bbox: [${bboxMinX.toFixed(0)},${bboxMinY.toFixed(0)} → ${bboxMaxX.toFixed(0)},${bboxMaxY.toFixed(0)}], size=${bboxW.toFixed(0)}×${bboxH.toFixed(0)}, aspect=${aspectRatio}, totalPoints=${allPts.length}`
   );
 
-  const isLetters = mode.endsWith('-abc');
+  const isLetters = mode.endsWith('-abc') || mode.endsWith('-abc-lower');
+  const isLowercase = mode.endsWith('-abc-lower');
   const labels    = isLetters ? LETTER_LABELS : DIGIT_LABELS;
   console.log(`[TFLITE] Using ${isLetters ? 'letters' : 'digits'} model (${labels.length} classes)`);
 
@@ -313,7 +314,8 @@ export async function recognizeCanvas(
       const iProb = iIdx >= 0 ? probs[iIdx] : 0;
       if (ar < 0.25 && iProb > 0.1) {
         console.log(`[TFLITE] ⇢ I/L fix: aspect=${ar.toFixed(2)} (very narrow), overriding L→I`);
-        return { char: 'I', confidence: iProb };
+        const iChar = isLowercase ? 'i' : 'I';
+        return { char: iChar, confidence: iProb };
       }
     }
 
@@ -326,7 +328,8 @@ export async function recognizeCanvas(
     }
 
     console.log(`[TFLITE] ── Result: "${predicted}" ──`);
-    return { char: predicted, confidence: bestProb };
+    const finalChar = isLowercase ? predicted.toLowerCase() : predicted;
+    return { char: finalChar, confidence: bestProb };
   } catch (err) {
     console.warn('[TFLITE] Inference failed:', err);
     // Stroke recognizer fallback disabled
