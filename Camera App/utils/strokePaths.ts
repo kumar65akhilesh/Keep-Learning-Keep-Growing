@@ -376,11 +376,11 @@ export const STROKE_PATHS: Record<string, CharacterStrokes> = {
     [{ x: 0.7, y: 0.12 }, { x: 0.58, y: 0.05 }, { x: 0.42, y: 0.08 }, { x: 0.35, y: 0.2 }, { x: 0.35, y: 0.92 }],
     [{ x: 0.2, y: 0.4 }, { x: 0.6, y: 0.4 }],
   ],
-  // g — circle + descending tail
+  // g — circle + descending tail (compressed to fit canvas)
   'g': [
-    [{ x: 0.7, y: 0.48 }, { x: 0.58, y: 0.38 }, { x: 0.4, y: 0.36 }, { x: 0.25, y: 0.45 },
-     { x: 0.2, y: 0.62 }, { x: 0.25, y: 0.78 }, { x: 0.42, y: 0.88 }, { x: 0.6, y: 0.85 }, { x: 0.7, y: 0.75 }],
-    [{ x: 0.7, y: 0.38 }, { x: 0.7, y: 0.92 }, { x: 0.62, y: 1.0 }, { x: 0.4, y: 1.0 }, { x: 0.25, y: 0.95 }],
+    [{ x: 0.7, y: 0.42 }, { x: 0.58, y: 0.33 }, { x: 0.4, y: 0.31 }, { x: 0.25, y: 0.39 },
+     { x: 0.2, y: 0.54 }, { x: 0.25, y: 0.68 }, { x: 0.42, y: 0.76 }, { x: 0.6, y: 0.74 }, { x: 0.7, y: 0.65 }],
+    [{ x: 0.7, y: 0.33 }, { x: 0.7, y: 0.82 }, { x: 0.62, y: 0.93 }, { x: 0.4, y: 0.93 }, { x: 0.25, y: 0.88 }],
   ],
   // h — tall stem + right arch
   'h': [
@@ -390,13 +390,13 @@ export const STROKE_PATHS: Record<string, CharacterStrokes> = {
   ],
   // i — dot + short stem
   'i': [
-    [{ x: 0.5, y: 0.22 }, { x: 0.5, y: 0.25 }],
+    [{ x: 0.48, y: 0.2 }, { x: 0.5, y: 0.18 }, { x: 0.52, y: 0.2 }, { x: 0.5, y: 0.22 }, { x: 0.48, y: 0.2 }],
     [{ x: 0.5, y: 0.38 }, { x: 0.5, y: 0.92 }],
   ],
-  // j — dot + descending stem with hook
+  // j — dot + descending stem with hook (compressed descender)
   'j': [
-    [{ x: 0.55, y: 0.22 }, { x: 0.55, y: 0.25 }],
-    [{ x: 0.55, y: 0.38 }, { x: 0.55, y: 0.88 }, { x: 0.45, y: 0.98 }, { x: 0.3, y: 0.98 }],
+    [{ x: 0.53, y: 0.2 }, { x: 0.55, y: 0.18 }, { x: 0.57, y: 0.2 }, { x: 0.55, y: 0.22 }, { x: 0.53, y: 0.2 }],
+    [{ x: 0.55, y: 0.38 }, { x: 0.55, y: 0.82 }, { x: 0.45, y: 0.92 }, { x: 0.32, y: 0.92 }],
   ],
   // k — tall stem + angle strokes
   'k': [
@@ -404,9 +404,9 @@ export const STROKE_PATHS: Record<string, CharacterStrokes> = {
     [{ x: 0.7, y: 0.38 }, { x: 0.25, y: 0.65 }],
     [{ x: 0.25, y: 0.65 }, { x: 0.72, y: 0.92 }],
   ],
-  // l — tall thin stem
+  // l — tall stem with bottom curve
   'l': [
-    [{ x: 0.5, y: 0.05 }, { x: 0.5, y: 0.92 }],
+    [{ x: 0.45, y: 0.05 }, { x: 0.45, y: 0.82 }, { x: 0.5, y: 0.92 }, { x: 0.6, y: 0.92 }],
   ],
   // m — short stem + two arches
   'm': [
@@ -426,17 +426,17 @@ export const STROKE_PATHS: Record<string, CharacterStrokes> = {
      { x: 0.7, y: 0.88 }, { x: 0.5, y: 0.93 }, { x: 0.3, y: 0.88 }, { x: 0.2, y: 0.72 },
      { x: 0.2, y: 0.55 }, { x: 0.3, y: 0.4 }, { x: 0.5, y: 0.35 }],
   ],
-  // p — descending stem + right bump
+  // p — descending stem + right bump (compressed descender)
   'p': [
-    [{ x: 0.25, y: 0.38 }, { x: 0.25, y: 1.0 }],
-    [{ x: 0.25, y: 0.42 }, { x: 0.45, y: 0.35 }, { x: 0.65, y: 0.38 }, { x: 0.78, y: 0.52 },
-     { x: 0.78, y: 0.7 }, { x: 0.65, y: 0.85 }, { x: 0.45, y: 0.9 }, { x: 0.25, y: 0.82 }],
+    [{ x: 0.25, y: 0.33 }, { x: 0.25, y: 0.93 }],
+    [{ x: 0.25, y: 0.37 }, { x: 0.45, y: 0.3 }, { x: 0.65, y: 0.33 }, { x: 0.78, y: 0.46 },
+     { x: 0.78, y: 0.62 }, { x: 0.65, y: 0.76 }, { x: 0.45, y: 0.8 }, { x: 0.25, y: 0.72 }],
   ],
-  // q — circle + descending right stem
+  // q — circle + descending right stem (compressed descender)
   'q': [
-    [{ x: 0.7, y: 0.48 }, { x: 0.58, y: 0.38 }, { x: 0.4, y: 0.36 }, { x: 0.25, y: 0.45 },
-     { x: 0.2, y: 0.62 }, { x: 0.25, y: 0.78 }, { x: 0.42, y: 0.88 }, { x: 0.6, y: 0.85 }, { x: 0.7, y: 0.75 }],
-    [{ x: 0.7, y: 0.38 }, { x: 0.7, y: 1.0 }],
+    [{ x: 0.7, y: 0.42 }, { x: 0.58, y: 0.33 }, { x: 0.4, y: 0.31 }, { x: 0.25, y: 0.39 },
+     { x: 0.2, y: 0.54 }, { x: 0.25, y: 0.68 }, { x: 0.42, y: 0.76 }, { x: 0.6, y: 0.74 }, { x: 0.7, y: 0.65 }],
+    [{ x: 0.7, y: 0.33 }, { x: 0.7, y: 0.93 }],
   ],
   // r — short stem + small overhang
   'r': [
@@ -477,10 +477,10 @@ export const STROKE_PATHS: Record<string, CharacterStrokes> = {
     [{ x: 0.2, y: 0.38 }, { x: 0.8, y: 0.92 }],
     [{ x: 0.8, y: 0.38 }, { x: 0.2, y: 0.92 }],
   ],
-  // y — two strokes meeting + descending tail
+  // y — two strokes meeting + descending tail (compressed)
   'y': [
-    [{ x: 0.2, y: 0.38 }, { x: 0.5, y: 0.75 }],
-    [{ x: 0.8, y: 0.38 }, { x: 0.5, y: 0.75 }, { x: 0.4, y: 0.92 }, { x: 0.3, y: 1.0 }, { x: 0.2, y: 0.98 }],
+    [{ x: 0.2, y: 0.35 }, { x: 0.5, y: 0.68 }],
+    [{ x: 0.8, y: 0.35 }, { x: 0.5, y: 0.68 }, { x: 0.4, y: 0.82 }, { x: 0.3, y: 0.93 }, { x: 0.2, y: 0.91 }],
   ],
   // z — three strokes: top bar, diagonal, bottom bar
   'z': [
