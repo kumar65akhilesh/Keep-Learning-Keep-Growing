@@ -8,6 +8,8 @@ export type RecognitionMode =
   | 'read-abc'
   | 'trace-abc'
   | 'handwrite-abc'
+  | 'trace-abc-lower'
+  | 'handwrite-abc-lower'
   | 'read-123'
   | 'trace-123'
   | 'handwrite-123';
