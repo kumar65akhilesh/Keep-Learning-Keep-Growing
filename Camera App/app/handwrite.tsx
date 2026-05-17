@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Spacing, BorderRadius, Shadows } from '../constants/theme';
 import { useOcrStore } from '../store/ocrStore';
-import { isLetterMode } from '../utils/characterFilter';
+import { isLetterMode, isLowercaseMode } from '../utils/characterFilter';
 import { speakCharacter } from '../services/tts';
 import { recognizeCanvas } from '../services/canvasOcr';
 
@@ -38,13 +38,16 @@ export default function HandwriteScreen() {
   const mode = useOcrStore((s) => s.mode);
   const setCurrentResult = useOcrStore((s) => s.setCurrentResult);
   const letters = isLetterMode(mode);
+  const lowercase = isLowercaseMode(mode);
 
   const charSet = useMemo(
     () =>
-      letters
-        ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
-        : '0123456789'.split(''),
-    [letters]
+      lowercase
+        ? 'abcdefghijklmnopqrstuvwxyz'.split('')
+        : letters
+          ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+          : '0123456789'.split(''),
+    [letters, lowercase]
   );
 
   const [strokes, setStrokes] = useState<Stroke[]>([]);
@@ -56,7 +59,7 @@ export default function HandwriteScreen() {
   const layoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const modeColor = letters ? Colors.coral : Colors.sunnyYellow;
-  const modeLabel = letters ? '🖊️ Handwrite ABC' : '🖊️ Handwrite 123';
+  const modeLabel = lowercase ? '🖊️ Handwrite abc' : letters ? '🖊️ Handwrite ABC' : '🖊️ Handwrite 123';
 
   /** PanResponder for drawing */
   const panResponder = useMemo(

@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Spacing, BorderRadius, Shadows } from '../constants/theme';
 import { useOcrStore } from '../store/ocrStore';
-import { isLetterMode } from '../utils/characterFilter';
+import { isLetterMode, isLowercaseMode } from '../utils/characterFilter';
 import { speakCharacter } from '../services/tts';
 import * as Speech from 'expo-speech';
 import { getStrokes, sampleStroke, type StrokePoint } from '../utils/strokePaths';
@@ -41,16 +41,17 @@ export default function TracingScreen() {
   const router = useRouter();
   const mode = useOcrStore((s) => s.mode);
   const letters = isLetterMode(mode);
+  const lowercase = isLowercaseMode(mode);
 
   const charSet = useMemo(
-    () => (letters ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('') : '123456789'.split('')),
-    [letters],
+    () => (lowercase ? 'abcdefghijklmnopqrstuvwxyz'.split('') : letters ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('') : '123456789'.split('')),
+    [letters, lowercase],
   );
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const targetChar = charSet[currentIndex % charSet.length];
   const modeColor = letters ? Colors.grassGreen : Colors.purple;
-  const modeLabel = letters ? '✏️ Trace ABC' : '✏️ Trace 123';
+  const modeLabel = lowercase ? '✏️ Trace abc' : letters ? '✏️ Trace ABC' : '✏️ Trace 123';
 
   const charStrokes = useMemo(() => getStrokes(targetChar) ?? [], [targetChar]);
   const totalStrokeCount = charStrokes.length;
@@ -344,6 +345,30 @@ export default function TracingScreen() {
             }, 150);
           }}
         >
+          {/* ── Hollow letter background ── */}
+          <View pointerEvents="none" style={hollowStyles.container}>
+            {[
+              [-2, 0], [2, 0], [0, -2], [0, 2],
+              [-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [1.4, 1.4],
+            ].map(([dx, dy], i) => (
+              <Text
+                key={`outline-${i}`}
+                style={[
+                  hollowStyles.letter,
+                  {
+                    color: Colors.lightGray,
+                    transform: [{ translateX: dx }, { translateY: dy }],
+                  },
+                ]}
+              >
+                {targetChar}
+              </Text>
+            ))}
+            <Text style={[hollowStyles.letter, { color: Colors.white }]}>
+              {targetChar}
+            </Text>
+          </View>
+
           {guideSamples.map((samples, idx) => renderGuidePath(samples, idx))}
           {renderActiveMarkers()}
           {renderUserStrokes()}
@@ -405,6 +430,21 @@ export default function TracingScreen() {
     </SafeAreaView>
   );
 }
+
+const hollowStyles = StyleSheet.create({
+  container: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  letter: {
+    position: 'absolute',
+    fontSize: 260,
+    fontFamily: Fonts.family.extraBold,
+    textAlign: 'center' as const,
+    includeFontPadding: false,
+  },
+});
 
 const markerStyles = StyleSheet.create({
   dot: { position: 'absolute', width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', ...Shadows.sm },

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Platform,
   useWindowDimensions,
   ImageBackground,
+  Modal,
   type ImageSourcePropType,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -253,6 +254,9 @@ const cartoonStyles = StyleSheet.create({
   },
 });
 
+/** Modes that should show a capital/lowercase picker before navigating */
+const CASE_PICKER_MODES: RecognitionMode[] = ['trace-abc', 'handwrite-abc'];
+
 /**
  * Home Screen — 2×3 grid: Read / Trace / Handwrite × Letters / Numbers.
  */
@@ -260,6 +264,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const setMode = useOcrStore((s) => s.setMode);
   const { width } = useWindowDimensions();
+  const [pickerCard, setPickerCard] = useState<ModeCard | null>(null);
 
   const maxCardWidth = 160;
   const cardWidth = Math.min(maxCardWidth, (width - Spacing.lg * 3) / 2);
@@ -267,8 +272,22 @@ export default function HomeScreen() {
   const badgeSize = cardWidth * 0.45;
 
   const handleSelectMode = (card: ModeCard) => {
+    if (CASE_PICKER_MODES.includes(card.mode)) {
+      setPickerCard(card);
+      return;
+    }
     setMode(card.mode);
     router.push(card.route);
+  };
+
+  const handleCasePick = (lowercase: boolean) => {
+    if (!pickerCard) return;
+    const mode: RecognitionMode = lowercase
+      ? (pickerCard.mode + '-lower' as RecognitionMode)
+      : pickerCard.mode;
+    setMode(mode);
+    setPickerCard(null);
+    router.push(pickerCard.route);
   };
 
   return (
@@ -350,6 +369,48 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Capital / Small letter picker */}
+      <Modal
+        visible={pickerCard !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerCard(null)}
+      >
+        <TouchableOpacity
+          style={styles.pickerOverlay}
+          activeOpacity={1}
+          onPress={() => setPickerCard(null)}
+        >
+          <View style={styles.pickerSheet}>
+            <Text style={styles.pickerTitle}>Choose letter style</Text>
+
+            <TouchableOpacity
+              style={[styles.pickerOption, { borderColor: pickerCard?.borderColor ?? Colors.coral }]}
+              onPress={() => handleCasePick(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.pickerEmoji}>🔠</Text>
+              <View style={styles.pickerTextCol}>
+                <Text style={styles.pickerLabel}>Capital Letters</Text>
+                <Text style={styles.pickerPreview}>A  B  C  D  E</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.pickerOption, { borderColor: pickerCard?.borderColor ?? Colors.coral }]}
+              onPress={() => handleCasePick(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.pickerEmoji}>🔡</Text>
+              <View style={styles.pickerTextCol}>
+                <Text style={styles.pickerLabel}>Small Letters</Text>
+                <Text style={styles.pickerPreview}>a  b  c  d  e</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -464,5 +525,53 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.family.semiBold,
     fontSize: Fonts.size.sm,
     color: Colors.midGray,
+  },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pickerSheet: {
+    width: '82%',
+    maxWidth: 340,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    gap: Spacing.lg,
+    ...Shadows.lg,
+  },
+  pickerTitle: {
+    fontFamily: Fonts.family.extraBold,
+    fontSize: Fonts.size.xl,
+    color: Colors.charcoal,
+    textAlign: 'center',
+  },
+  pickerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    borderWidth: 3,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    backgroundColor: Colors.softWhite,
+  },
+  pickerEmoji: {
+    fontSize: 36,
+  },
+  pickerTextCol: {
+    flex: 1,
+  },
+  pickerLabel: {
+    fontFamily: Fonts.family.bold,
+    fontSize: Fonts.size.lg,
+    color: Colors.charcoal,
+  },
+  pickerPreview: {
+    fontFamily: Fonts.family.semiBold,
+    fontSize: Fonts.size.md,
+    color: Colors.midGray,
+    marginTop: 2,
+    letterSpacing: 3,
   },
 });
