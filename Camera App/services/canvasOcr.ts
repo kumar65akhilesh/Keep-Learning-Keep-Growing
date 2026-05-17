@@ -153,7 +153,7 @@ function strokeFallback(
 ): HandwriteResult | null {
   const candidates = mode.endsWith('-abc')
     ? LETTER_LABELS
-    : '123456789'.split('');
+    : '0123456789'.split('');
   return recognizeBestMatch(strokes, candidates);
 }
 
@@ -308,19 +308,6 @@ export async function recognizeCanvas(
     }
     if (sorted.length >= 2 && sorted[0].p - sorted[1].p < 0.1) {
       console.warn(`[TFLITE] ⚠️ Close call: "${sorted[0].c}" vs "${sorted[1].c}" (diff=${((sorted[0].p - sorted[1].p) * 100).toFixed(1)}%) — ambiguous input`);
-    }
-
-    // In digit mode skip "0" (app uses 1-9)
-    if (!isLetters && predicted === '0') {
-      console.log('[TFLITE] Digit "0" predicted but app uses 1-9, picking next best...');
-      const sorted = [...probs].map((p, i) => ({ p, i })).sort((a, b) => b.p - a.p);
-      for (const s of sorted) {
-        if (DIGIT_LABELS[s.i] !== '0') {
-          console.log(`[TFLITE] Substituted "0" → "${DIGIT_LABELS[s.i]}" (${(s.p * 100).toFixed(1)}%)`);
-          return { char: DIGIT_LABELS[s.i], confidence: s.p };
-        }
-      }
-      return null;
     }
 
     console.log(`[TFLITE] ── Result: "${predicted}" ──`);
