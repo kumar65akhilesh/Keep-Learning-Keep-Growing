@@ -248,22 +248,29 @@ export async function recognizeCanvas(
   try {
     const model = isLetters ? await getLettersModel() : await getDigitsModel();
 
-    // EMNIST images are stored column-major. The model was trained without
-    // transposing to row-major, so we must transpose our row-major rasterised
-    // grid to match what the model learned.
-    const transposedData = new Float32Array(28 * 28);
-    for (let y = 0; y < 28; y++) {
-      for (let x = 0; x < 28; x++) {
-        transposedData[x * 28 + y] = inputData[y * 28 + x];
+    // EMNIST Letters images are stored column-major. The model was trained
+    // without transposing to row-major, so we must transpose our row-major
+    // rasterised grid to match. MNIST digits are already row-major — no
+    // transpose needed for the digits model.
+    let modelInput: Float32Array;
+    if (isLetters) {
+      const transposedData = new Float32Array(28 * 28);
+      for (let y = 0; y < 28; y++) {
+        for (let x = 0; x < 28; x++) {
+          transposedData[x * 28 + y] = inputData[y * 28 + x];
+        }
       }
+      modelInput = transposedData;
+    } else {
+      modelInput = inputData;
     }
 
     if (__DEV__) {
-      let tviz = '\n[TFLITE] 28×28 input (transposed for model):\n';
+      let tviz = `\n[TFLITE] 28×28 model input${isLetters ? ' (transposed)' : ''}:\n`;
       for (let y = 0; y < 28; y++) {
         let row = '';
         for (let x = 0; x < 28; x++) {
-          const v = transposedData[y * 28 + x];
+          const v = modelInput[y * 28 + x];
           row += v > 0.7 ? '█' : v > 0.3 ? '▒' : v > 0 ? '░' : ' ';
         }
         tviz += row + '\n';
@@ -271,9 +278,9 @@ export async function recognizeCanvas(
       console.log(tviz);
     }
 
-    const buf = transposedData.buffer.slice(
-      transposedData.byteOffset,
-      transposedData.byteOffset + transposedData.byteLength,
+    const buf = modelInput.buffer.slice(
+      modelInput.byteOffset,
+      modelInput.byteOffset + modelInput.byteLength,
     ) as ArrayBuffer;
     const outputs = model.runSync([buf]);
     const probs = new Float32Array(outputs[0] as ArrayBuffer);
