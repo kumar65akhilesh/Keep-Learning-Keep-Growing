@@ -90,21 +90,31 @@ function strokesToGrid(strokes: { x: number; y: number }[][]): Float32Array {
   const offX    = (S - (maxX - minX) * scale) / 2;
   const offY    = (S - (maxY - minY) * scale) / 2;
 
-  /** Plot a point with EMNIST-matching stroke width (~2px with soft edges) */
+  /** Plot a point with EMNIST-matching stroke width (~2.5px radius for thicker, rounder strokes) */
   const plot = (cx: number, cy: number) => {
-    // Center pixel = full white
     const px0 = Math.round(cx);
     const py0 = Math.round(cy);
-    if (px0 >= 0 && px0 < S && py0 >= 0 && py0 < S) {
-      grid[py0 * S + px0] = 1.0;
-    }
-    // 4-connected neighbors = softer edge (simulates anti-aliasing)
-    const neighbors = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-    for (const [dx, dy] of neighbors) {
-      const nx = px0 + dx;
-      const ny = py0 + dy;
-      if (nx >= 0 && nx < S && ny >= 0 && ny < S) {
-        grid[ny * S + nx] = Math.max(grid[ny * S + nx], 0.5);
+    // Radius 2 disk: full white at center, graduated falloff
+    const R = 2;
+    for (let dy = -R; dy <= R; dy++) {
+      for (let dx = -R; dx <= R; dx++) {
+        const nx = px0 + dx;
+        const ny = py0 + dy;
+        if (nx < 0 || nx >= S || ny < 0 || ny >= S) continue;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        let value: number;
+        if (dist <= 0.5) {
+          value = 1.0;         // center
+        } else if (dist <= 1.0) {
+          value = 0.9;         // immediate neighbors
+        } else if (dist <= 1.5) {
+          value = 0.5;         // diagonal neighbors
+        } else if (dist <= 2.0) {
+          value = 0.25;        // outer ring (soft edge)
+        } else {
+          continue;
+        }
+        grid[ny * S + nx] = Math.max(grid[ny * S + nx], value);
       }
     }
   };
