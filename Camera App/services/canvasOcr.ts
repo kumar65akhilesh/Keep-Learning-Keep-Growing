@@ -161,14 +161,49 @@ export async function recognizeCanvas(
   mode: RecognitionMode,
   strokes?: { x: number; y: number }[][],
 ): Promise<HandwriteResult | null> {
-  if (!strokes || strokes.length === 0) return null;
+  console.log(`[TFLITE] ── recognizeCanvas called ── mode=${mode}, strokes=${strokes?.length ?? 0}`);
+
+  if (!strokes || strokes.length === 0) {
+    console.log('[TFLITE] No strokes provided, returning null');
+    return null;
+  }
 
   // Filter tiny accidental touches
   const valid = strokes.filter((s) => s.length >= 2);
-  if (valid.length === 0) return null;
+  console.log(`[TFLITE] Strokes after filtering short ones: ${valid.length}/${strokes.length} (removed ${strokes.length - valid.length} single-point strokes)`);
+  if (valid.length === 0) {
+    console.log('[TFLITE] No valid strokes remain, returning null');
+    return null;
+  }
+
+  // Log stroke details for debugging wrong results
+  for (let i = 0; i < valid.length; i++) {
+    const s = valid[i];
+    const xs = s.map((p) => p.x);
+    const ys = s.map((p) => p.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    console.log(
+      `[TFLITE]   Stroke ${i}: ${s.length} pts, bbox=[${minX.toFixed(0)},${minY.toFixed(0)} → ${maxX.toFixed(0)},${maxY.toFixed(0)}], size=${(maxX - minX).toFixed(0)}×${(maxY - minY).toFixed(0)}`
+    );
+  }
+
+  // Overall bounding box
+  const allPts = valid.flat();
+  const allXs = allPts.map((p) => p.x);
+  const allYs = allPts.map((p) => p.y);
+  const bboxMinX = Math.min(...allXs), bboxMaxX = Math.max(...allXs);
+  const bboxMinY = Math.min(...allYs), bboxMaxY = Math.max(...allYs);
+  const bboxW = bboxMaxX - bboxMinX;
+  const bboxH = bboxMaxY - bboxMinY;
+  const aspectRatio = bboxH > 0 ? (bboxW / bboxH).toFixed(2) : 'inf';
+  console.log(
+    `[TFLITE] Overall bbox: [${bboxMinX.toFixed(0)},${bboxMinY.toFixed(0)} → ${bboxMaxX.toFixed(0)},${bboxMaxY.toFixed(0)}], size=${bboxW.toFixed(0)}×${bboxH.toFixed(0)}, aspect=${aspectRatio}, totalPoints=${allPts.length}`
+  );
 
   const isLetters = mode.endsWith('-abc');
   const labels    = isLetters ? LETTER_LABELS : DIGIT_LABELS;
+  console.log(`[TFLITE] Using ${isLetters ? 'letters' : 'digits'} model (${labels.length} classes)`);
 
   // ── Rasterise strokes ───────────────────────────────────────────
   const inputData = strokesToGrid(valid);
@@ -189,7 +224,13 @@ export async function recognizeCanvas(
     for (let i = 0; i < inputData.length; i++) {
       if (inputData[i] > 0) { nonZero++; sum += inputData[i]; }
     }
-    console.log(`[TFLITE] Input stats: ${nonZero} non-zero pixels, sum=${sum.toFixed(1)}, avg=${(sum / Math.max(nonZero, 1)).toFixed(2)}`);
+    const coverage = ((nonZero / 784) * 100).toFixed(1);
+    console.log(`[TFLITE] Input stats: ${nonZero}/784 pixels filled (${coverage}% coverage), sum=${sum.toFixed(1)}, avg=${(sum / Math.max(nonZero, 1)).toFixed(2)}`);
+    if (nonZero < 10) {
+      console.warn('[TFLITE] ⚠️ Very few pixels filled — drawing may be too small or thin');
+    } else if (nonZero > 500) {
+      console.warn('[TFLITE] ⚠️ Very high pixel coverage — drawing may be too thick/blobby');
+    }
     console.log(viz);
   }
 
@@ -221,23 +262,37 @@ export async function recognizeCanvas(
     const top5 = sorted.slice(0, 5)
       .map((x) => `${x.c}(${(x.p * 100).toFixed(1)}%)`)
       .join(' ');
-    console.log(`[TFLITE] Output tensor: ${probs.length} classes, sum=${[...probs].reduce((a, b) => a + b, 0).toFixed(3)}`);
-    console.log(`[TFLITE] ✓ ${predicted} ${(bestProb * 100).toFixed(1)}% | Top 5: ${top5}`);
+    const probSum = [...probs].reduce((a, b) => a + b, 0);
+    console.log(`[TFLITE] Output tensor: ${probs.length} classes, sum=${probSum.toFixed(3)}`);
+    console.log(`[TFLITE] ✓ Predicted: "${predicted}" @ ${(bestProb * 100).toFixed(1)}% confidence`);
+    console.log(`[TFLITE] Top 5: ${top5}`);
+
+    // Confidence warnings
+    if (bestProb < 0.3) {
+      console.warn(`[TFLITE] ⚠️ Low confidence (${(bestProb * 100).toFixed(1)}%) — result may be unreliable`);
+    }
+    if (sorted.length >= 2 && sorted[0].p - sorted[1].p < 0.1) {
+      console.warn(`[TFLITE] ⚠️ Close call: "${sorted[0].c}" vs "${sorted[1].c}" (diff=${((sorted[0].p - sorted[1].p) * 100).toFixed(1)}%) — ambiguous input`);
+    }
 
     // In digit mode skip "0" (app uses 1-9)
     if (!isLetters && predicted === '0') {
+      console.log('[TFLITE] Digit "0" predicted but app uses 1-9, picking next best...');
       const sorted = [...probs].map((p, i) => ({ p, i })).sort((a, b) => b.p - a.p);
       for (const s of sorted) {
         if (DIGIT_LABELS[s.i] !== '0') {
+          console.log(`[TFLITE] Substituted "0" → "${DIGIT_LABELS[s.i]}" (${(s.p * 100).toFixed(1)}%)`);
           return { char: DIGIT_LABELS[s.i], confidence: s.p };
         }
       }
       return null;
     }
 
+    console.log(`[TFLITE] ── Result: "${predicted}" ──`);
     return { char: predicted, confidence: bestProb };
   } catch (err) {
-    console.warn('[TFLITE] Inference failed, falling back to stroke recogniser:', err);
-    return strokeFallback(valid, mode);
+    console.warn('[TFLITE] Inference failed:', err);
+    // Stroke recognizer fallback disabled
+    return null;
   }
 }

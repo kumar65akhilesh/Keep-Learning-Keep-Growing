@@ -28,10 +28,6 @@ export async function recognizeCanvas(
 ): Promise<HandwriteResult | null> {
   if (!strokes || strokes.length === 0) return null;
 
-  const candidates = mode.endsWith('-abc')
-    ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
-    : '123456789'.split('');
-
-  const result = recognizeBestMatch(strokes, candidates);
-  return result;
+  // Stroke recognizer disabled — return null until re-enabled
+  return null;
 }
