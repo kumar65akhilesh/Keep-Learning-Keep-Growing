@@ -53,6 +53,7 @@ export default function HandwriteScreen() {
   const currentStroke = useRef<Stroke>([]);
   const canvasOffset = useRef({ x: 0, y: 0 });
   const canvasRef = useRef<View>(null);
+  const layoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const modeColor = letters ? Colors.coral : Colors.sunnyYellow;
   const modeLabel = letters ? '🖊️ Handwrite ABC' : '🖊️ Handwrite 123';
@@ -64,6 +65,12 @@ export default function HandwriteScreen() {
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: (evt) => {
+          // Re-measure offset at touch start to guarantee accuracy
+          canvasRef.current?.measureInWindow?.((mx, my) => {
+            if (mx != null && my != null) {
+              canvasOffset.current = { x: mx, y: my };
+            }
+          });
           const { pageX, pageY } = evt.nativeEvent;
           const x = pageX - canvasOffset.current.x;
           const y = pageY - canvasOffset.current.y;
@@ -210,14 +217,16 @@ export default function HandwriteScreen() {
           style={styles.canvas}
           {...panResponder.panHandlers}
           onLayout={() => {
-            setTimeout(() => {
+            // Debounce: only keep the last stable measurement
+            if (layoutTimer.current) clearTimeout(layoutTimer.current);
+            layoutTimer.current = setTimeout(() => {
               canvasRef.current?.measureInWindow?.((x, y) => {
                 if (x != null && y != null) {
                   canvasOffset.current = { x, y };
-                  console.log('[HANDWRITE] Canvas offset measured:', x, y);
+                  console.log('[HANDWRITE] Canvas offset measured (stable):', x, y);
                 }
               });
-            }, 100);
+            }, 300);
           }}
         >
           {renderStrokes()}
