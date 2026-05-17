@@ -53,7 +53,13 @@ export default function TracingScreen() {
   const modeColor = letters ? Colors.grassGreen : Colors.purple;
   const modeLabel = lowercase ? '✏️ Trace abc' : letters ? '✏️ Trace ABC' : '✏️ Trace 123';
 
-  const charStrokes = useMemo(() => getStrokes(targetChar) ?? [], [targetChar]);
+  const charStrokes = useMemo(() => {
+    const strokes = getStrokes(targetChar) ?? [];
+    if (__DEV__) {
+      console.log(`[TRACING] targetChar="${targetChar}", mode="${mode}", lowercase=${lowercase}, strokeCount=${strokes.length}`);
+    }
+    return strokes;
+  }, [targetChar, mode, lowercase]);
   const totalStrokeCount = charStrokes.length;
 
   const [activeStrokeIdx, setActiveStrokeIdx] = useState(0);
@@ -326,6 +332,9 @@ export default function TracingScreen() {
         <Text style={styles.strokeLabel}>{strokeLabel}</Text>
       </View>
 
+      {/* ── Target letter reference (above canvas) ── */}
+      <Text style={[styles.targetCharRef, { color: modeColor }]}>{targetChar}</Text>
+
       <View style={styles.canvasWrapper}>
         <View
           ref={canvasRef}
@@ -345,30 +354,6 @@ export default function TracingScreen() {
             }, 150);
           }}
         >
-          {/* ── Hollow letter background ── */}
-          <View pointerEvents="none" style={hollowStyles.container}>
-            {[
-              [-2, 0], [2, 0], [0, -2], [0, 2],
-              [-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [1.4, 1.4],
-            ].map(([dx, dy], i) => (
-              <Text
-                key={`outline-${i}`}
-                style={[
-                  hollowStyles.letter,
-                  {
-                    color: Colors.lightGray,
-                    transform: [{ translateX: dx }, { translateY: dy }],
-                  },
-                ]}
-              >
-                {targetChar}
-              </Text>
-            ))}
-            <Text style={[hollowStyles.letter, { color: Colors.white }]}>
-              {targetChar}
-            </Text>
-          </View>
-
           {guideSamples.map((samples, idx) => renderGuidePath(samples, idx))}
           {renderActiveMarkers()}
           {renderUserStrokes()}
@@ -431,21 +416,6 @@ export default function TracingScreen() {
   );
 }
 
-const hollowStyles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  letter: {
-    position: 'absolute',
-    fontSize: 260,
-    fontFamily: Fonts.family.extraBold,
-    textAlign: 'center' as const,
-    includeFontPadding: false,
-  },
-});
-
 const markerStyles = StyleSheet.create({
   dot: { position: 'absolute', width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', ...Shadows.sm },
   dotText: { color: Colors.white, fontSize: 12, fontFamily: Fonts.family.bold },
@@ -461,9 +431,10 @@ const styles = StyleSheet.create({
   speakButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   progressRow: { alignItems: 'center', paddingBottom: 2 },
   progressText: { fontFamily: Fonts.family.semiBold, fontSize: Fonts.size.sm, color: Colors.midGray },
-  strokeDotsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBottom: Spacing.sm },
+  strokeDotsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingBottom: Spacing.xs },
   strokeDot: { width: 10, height: 10, borderRadius: 5 },
   strokeLabel: { fontFamily: Fonts.family.semiBold, fontSize: Fonts.size.xs, color: Colors.midGray, marginLeft: 6 },
+  targetCharRef: { fontFamily: Fonts.family.extraBold, fontSize: 64, textAlign: 'center' as const, opacity: 0.25, marginBottom: -Spacing.xs },
   canvasWrapper: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xl },
   canvas: { width: '100%', maxWidth: 320, aspectRatio: 1, borderRadius: BorderRadius.xl, borderWidth: 2, borderColor: Colors.lightGray, borderStyle: 'dashed' as const, backgroundColor: Colors.white, overflow: 'hidden' as const },
   hintText: { fontFamily: Fonts.family.semiBold, fontSize: Fonts.size.md, color: Colors.midGray, marginTop: Spacing.md, textAlign: 'center' },
