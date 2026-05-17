@@ -16,7 +16,12 @@ const DIGIT_REGEX = /^[1-9]$/;
 
 /** Helper: does this mode work with letters? */
 export function isLetterMode(mode: RecognitionMode): boolean {
-  return mode.endsWith('-abc');
+  return mode.endsWith('-abc') || mode.endsWith('-abc-lower');
+}
+
+/** Helper: is this a lowercase letter mode? */
+export function isLowercaseMode(mode: RecognitionMode): boolean {
+  return mode.endsWith('-abc-lower');
 }
 
 /** Helper: is this a reading (camera) mode? */
