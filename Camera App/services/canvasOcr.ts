@@ -42,7 +42,12 @@ function getLettersModel(): Promise<TensorflowModel> {
     lettersLoadPromise = loadTensorflowModel(
       require('../assets/emnist-letters.tflite'),
       [],
-    ).then((m) => { lettersModel = m; return m; });
+    ).then((m) => { lettersModel = m; return m; })
+     .catch((err) => {
+       // Reset so next attempt retries instead of returning cached rejection
+       lettersLoadPromise = null;
+       throw err;
+     });
     console.log('[TFLITE] Loading letters model…');
   }
   return lettersLoadPromise;
@@ -54,7 +59,11 @@ function getDigitsModel(): Promise<TensorflowModel> {
     digitsLoadPromise = loadTensorflowModel(
       require('../assets/emnist-digits.tflite'),
       [],
-    ).then((m) => { digitsModel = m; return m; });
+    ).then((m) => { digitsModel = m; return m; })
+     .catch((err) => {
+       digitsLoadPromise = null;
+       throw err;
+     });
     console.log('[TFLITE] Loading digits model…');
   }
   return digitsLoadPromise;
@@ -332,7 +341,7 @@ export async function recognizeCanvas(
     return { char: finalChar, confidence: bestProb };
   } catch (err) {
     console.warn('[TFLITE] Inference failed:', err);
-    // Stroke recognizer fallback disabled
-    return null;
+    // Re-throw with a descriptive message so the UI can show what went wrong
+    throw new Error(`TFLite failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
