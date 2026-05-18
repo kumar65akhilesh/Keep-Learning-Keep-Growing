@@ -149,7 +149,8 @@ export default function HandwriteScreen() {
     } catch (error) {
       console.error('[HANDWRITE] Recognition error:', error);
       setRecognizedChar(null);
-      Alert.alert('Oops!', 'Something went wrong. Please try again.');
+      const msg = error instanceof Error ? error.message : 'Something went wrong.';
+      Alert.alert('Oops!', msg + '\nPlease try again.');
     } finally {
       setIsRecognizing(false);
     }
