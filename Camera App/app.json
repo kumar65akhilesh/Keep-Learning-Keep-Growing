@@ -34,6 +34,17 @@
       "expo-font",
       "expo-sqlite",
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraProguardRules": "-keep class com.nickmro.tflite.** { *; }",
+            "aaptOptions": {
+              "noCompress": ["tflite"]
+            }
+          }
+        }
+      ],
+      [
         "react-native-vision-camera",
         {
           "cameraPermissionText": "Little Letters needs camera access to recognize letters and numbers.",
