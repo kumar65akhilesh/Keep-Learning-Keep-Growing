@@ -39,6 +39,11 @@ export function isHandwriteMode(mode: RecognitionMode): boolean {
   return mode.startsWith('handwrite-');
 }
 
+/** Helper: is this a scan-handwriting (camera handwriting) mode? */
+export function isScanHandwriteMode(mode: RecognitionMode): boolean {
+  return mode.startsWith('scan-handwrite-');
+}
+
 /**
  * Filter recognized characters to only those matching the active mode.
  *
@@ -53,11 +58,15 @@ export function filterByMode(
   const letters = isLetterMode(mode);
   const regex = letters ? LETTER_REGEX : DIGIT_REGEX;
 
+  const lowercase = isLowercaseMode(mode);
+
   return characters
     .filter((char) => regex.test(char.text))
     .map((char) => ({
       ...char,
-      text: letters ? char.text.toUpperCase() : char.text,
+      text: letters
+        ? (lowercase ? char.text.toLowerCase() : char.text.toUpperCase())
+        : char.text,
     }));
 }
 
