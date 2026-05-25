@@ -14,6 +14,7 @@
  */
 
 import { loadTensorflowModel, type TensorflowModel } from 'react-native-fast-tflite';
+import { Asset } from 'expo-asset';
 import type { RecognitionMode } from '../types';
 import { recognizeBestMatch } from '../utils/strokeRecognizer';
 
@@ -36,19 +37,25 @@ let digitsModel: TensorflowModel | null = null;
 let lettersLoadPromise: Promise<TensorflowModel> | null = null;
 let digitsLoadPromise: Promise<TensorflowModel> | null = null;
 
+async function resolveAssetUri(moduleId: number): Promise<string> {
+  const [asset] = await Asset.loadAsync(moduleId);
+  if (!asset.localUri) throw new Error('Failed to resolve TFLite asset to local URI');
+  return asset.localUri;
+}
+
 function getLettersModel(): Promise<TensorflowModel> {
   if (lettersModel) return Promise.resolve(lettersModel);
   if (!lettersLoadPromise) {
-    lettersLoadPromise = loadTensorflowModel(
-      require('../assets/emnist-letters.tflite'),
-      [],
-    ).then((m) => { lettersModel = m; return m; })
+    console.log('[TFLITE] Loading letters model…');
+    lettersLoadPromise = resolveAssetUri(
+      require('../assets/emnist-letters.tflite') as number,
+    ).then((uri) => loadTensorflowModel({ url: uri }, []))
+     .then((m) => { lettersModel = m; return m; })
      .catch((err) => {
        // Reset so next attempt retries instead of returning cached rejection
        lettersLoadPromise = null;
        throw err;
      });
-    console.log('[TFLITE] Loading letters model…');
   }
   return lettersLoadPromise;
 }
@@ -56,15 +63,15 @@ function getLettersModel(): Promise<TensorflowModel> {
 function getDigitsModel(): Promise<TensorflowModel> {
   if (digitsModel) return Promise.resolve(digitsModel);
   if (!digitsLoadPromise) {
-    digitsLoadPromise = loadTensorflowModel(
-      require('../assets/emnist-digits.tflite'),
-      [],
-    ).then((m) => { digitsModel = m; return m; })
+    console.log('[TFLITE] Loading digits model…');
+    digitsLoadPromise = resolveAssetUri(
+      require('../assets/emnist-digits.tflite') as number,
+    ).then((uri) => loadTensorflowModel({ url: uri }, []))
+     .then((m) => { digitsModel = m; return m; })
      .catch((err) => {
        digitsLoadPromise = null;
        throw err;
      });
-    console.log('[TFLITE] Loading digits model…');
   }
   return digitsLoadPromise;
 }
