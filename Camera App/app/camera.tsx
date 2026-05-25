@@ -250,11 +250,24 @@ export default function CameraScreen() {
           previewHeight={PREVIEW_HEIGHT}
         />
 
+        {/* Scan-handwrite guide overlay */}
+        {isScanHandwriteMode(mode) && (
+          <View style={styles.scanGuide}>
+            <View style={styles.scanGuideFrame}>
+              <Text style={styles.scanGuideText}>
+                📝 Hold phone flat over the paper
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Scanning indicator */}
         <View style={styles.scanningIndicator}>
           <View style={[styles.scanDot, { backgroundColor: modeColor }]} />
           <Text style={styles.scanText}>
-            Looking for {isLetterMode(mode) ? 'letters A–Z' : 'numbers 1–9'}
+            {isScanHandwriteMode(mode)
+              ? 'Point at handwritten letters'
+              : `Looking for ${isLetterMode(mode) ? 'letters A–Z' : 'numbers 1–9'}`}
           </Text>
         </View>
       </View>
@@ -370,6 +383,25 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.family.semiBold,
     fontSize: Fonts.size.xs,
     color: Colors.darkGray,
+  },
+  scanGuide: {
+    position: 'absolute',
+    bottom: Spacing.md,
+    left: Spacing.md,
+    right: Spacing.md,
+    alignItems: 'center',
+  },
+  scanGuideFrame: {
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+  },
+  scanGuideText: {
+    fontFamily: Fonts.family.semiBold,
+    fontSize: Fonts.size.sm,
+    color: Colors.white,
+    textAlign: 'center',
   },
   controls: {
     flexDirection: 'row',
