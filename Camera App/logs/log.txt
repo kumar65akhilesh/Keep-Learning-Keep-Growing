@@ -1,14 +1,3 @@
-# 1. Copy the updated files to the other machine, then:
-cd camera-ocr-app
-
-# 2. Install Python dependencies (new ones needed for training)
-py -m pip install tensorflow numpy tensorflow_datasets importlib_resources
-
-# 3. Retrain models (old .tflite files were wrong — only had 10 digit classes)
-py scripts/train_emnist.py
-
-# 4. Verify the letters model has 26 classes in the output (check the logs)
-#    You should see: "[CHECK] Letters .tflite output shape: [ 1 26] ✓"
-
-# 5. Rebuild the app (the .tflite assets changed)
-npx expo prebuild --clean && npx expo run:android
+npx expo prebuild --clean 2>&1 | tee prebuild-log.txt
+npx expo prebuild --clean > prebuild-log.txt 2>&1
+npx expo prebuild --clean --verbose > prebuild-log.txt 2>&1
