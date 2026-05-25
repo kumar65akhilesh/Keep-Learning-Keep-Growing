@@ -18,7 +18,8 @@ import { OcrOverlay } from '../components/camera/OcrOverlay';
 import { useOcrStore } from '../store/ocrStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { recognizeFromUri } from '../services/ocr';
-import { isLetterMode } from '../utils/characterFilter';
+import { recognizeHandwriting } from '../services/handwritingOcr';
+import { isLetterMode, isScanHandwriteMode } from '../utils/characterFilter';
 import { preprocessImage } from '../services/imagePreprocessing';
 import { speakCharacter } from '../services/tts';
 import type { RecognizedCharacter } from '../types';
@@ -117,7 +118,9 @@ export default function CameraScreen() {
       console.log('[Camera] Preprocessed URI:', processedUri);
 
       // Run OCR with mode-specific filtering
-      const result = await recognizeFromUri(processedUri, mode);
+      const result = isScanHandwriteMode(mode)
+        ? await recognizeHandwriting(processedUri, mode)
+        : await recognizeFromUri(processedUri, mode);
 
       console.log('[Camera] OCR result:', result.characters.length, 'characters found, rawText:', JSON.stringify(result.rawText));
 
@@ -209,8 +212,12 @@ export default function CameraScreen() {
     );
   }
 
-  const modeLabel = isLetterMode(mode) ? '🔤 Read ABC' : '🔢 Read 123';
-  const modeColor = isLetterMode(mode) ? Colors.skyBlue : Colors.orange;
+  const modeLabel = isScanHandwriteMode(mode)
+    ? '✍️ Scan Handwriting'
+    : isLetterMode(mode) ? '🔤 Read ABC' : '🔢 Read 123';
+  const modeColor = isScanHandwriteMode(mode)
+    ? Colors.coral
+    : isLetterMode(mode) ? Colors.skyBlue : Colors.orange;
 
   return (
     <SafeAreaView style={styles.container}>

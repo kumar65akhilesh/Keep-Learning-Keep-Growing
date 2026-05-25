@@ -154,6 +154,24 @@ const MODE_CARDS: ModeCard[] = [
       miniColor: '#F72585',
     },
   },
+  {
+    mode: 'scan-handwrite-abc',
+    title: 'Scan Handwriting',
+    subtitle: 'Read handwriting with camera',
+    preview: 'A b C d E',
+    bgColor: '#F0FFF4',
+    borderColor: '#38A169',
+    route: '/camera',
+    tileImage: require('../assets/tile-scan-handwrite.png'),
+    cartoon: {
+      bg: '#38A169',
+      icon: 'scan',
+      iconColor: '#fff',
+      accent: '✍️',
+      miniIcon: 'document-text',
+      miniColor: '#FFD60A',
+    },
+  },
 ];
 
 /** Cartoon icon badge — layered circle with icon, sparkle, and mini-icon */
@@ -255,7 +273,7 @@ const cartoonStyles = StyleSheet.create({
 });
 
 /** Modes that should show a capital/lowercase picker before navigating */
-const CASE_PICKER_MODES: RecognitionMode[] = ['trace-abc', 'handwrite-abc'];
+const CASE_PICKER_MODES: RecognitionMode[] = ['trace-abc', 'handwrite-abc', 'scan-handwrite-abc'];
 
 /**
  * Home Screen — 2×3 grid: Read / Trace / Handwrite × Letters / Numbers.
