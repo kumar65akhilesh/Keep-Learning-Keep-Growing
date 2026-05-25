@@ -1,9 +1,10 @@
-taskkill /F /IM java.exe 2>nul
-taskkill /F /IM adb.exe 2>nul
-rd /s /q android
-npx expo prebuild --clean --verbose > prebuild-log.txt 2>&1
+Get-ChildItem -Path "c:\Camera App\camera-ocr-app" -Recurse -Directory -Filter "tmp_*" | Remove-Item -Recurse -Force
 
+Remove-Item -Recurse -Force "c:\Camera App\camera-ocr-app\android"
+cd "c:\Camera App\camera-ocr-app"
+npx expo prebuild --platform android
 
-rd /s /q android && npx expo prebuild --clean --verbose > prebuild-log.txt 2>&1
-
-Remove-Item -Recurse -Force android; npx expo prebuild --clean --verbose 2>&1 | Out-File prebuild-log.txt
+cd "c:/Camera App/camera-ocr-app"
+find . -type d -name "tmp_*" -exec rm -rf {} + 2>/dev/null
+rm -rf android
+npx expo prebuild --platform android
