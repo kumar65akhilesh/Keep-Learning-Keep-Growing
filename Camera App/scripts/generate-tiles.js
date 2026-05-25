@@ -162,6 +162,32 @@ const tiles = [
       <text x="${s*0.05}" y="${s*0.4}" font-size="${s*0.04}" opacity="0.15">✨</text>
     </svg>`,
   },
+  {
+    name: 'tile-scan-handwrite',
+    bg: '#F0FFF4',
+    accent: '#38A169',
+    dark: '#276749',
+    // Camera scanning handwritten text on paper
+    svg: (s) => `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">
+      <rect width="${s}" height="${s}" fill="#F0FFF4"/>
+      <!-- Paper with lines -->
+      <rect x="${s*0.15}" y="${s*0.15}" width="${s*0.7}" height="${s*0.7}" rx="${s*0.03}" fill="white" opacity="0.5"/>
+      <line x1="${s*0.22}" y1="${s*0.35}" x2="${s*0.78}" y2="${s*0.35}" stroke="#38A169" stroke-width="1" opacity="0.15"/>
+      <line x1="${s*0.22}" y1="${s*0.5}" x2="${s*0.78}" y2="${s*0.5}" stroke="#38A169" stroke-width="1" opacity="0.15"/>
+      <line x1="${s*0.22}" y1="${s*0.65}" x2="${s*0.78}" y2="${s*0.65}" stroke="#38A169" stroke-width="1" opacity="0.15"/>
+      <!-- Handwritten letters on paper -->
+      <text x="${s*0.25}" y="${s*0.48}" font-family="Comic Sans MS,cursive" font-size="${s*0.15}" fill="#38A169" opacity="0.25" transform="rotate(-3,${s*0.25},${s*0.48})">Hello</text>
+      <text x="${s*0.3}" y="${s*0.63}" font-family="Comic Sans MS,cursive" font-size="${s*0.12}" fill="#38A169" opacity="0.2" transform="rotate(1,${s*0.3},${s*0.63})">ABC</text>
+      <!-- Camera scan lines -->
+      <line x1="${s*0.12}" y1="${s*0.12}" x2="${s*0.25}" y2="${s*0.12}" stroke="#38A169" stroke-width="3" opacity="0.3"/>
+      <line x1="${s*0.12}" y1="${s*0.12}" x2="${s*0.12}" y2="${s*0.25}" stroke="#38A169" stroke-width="3" opacity="0.3"/>
+      <line x1="${s*0.75}" y1="${s*0.88}" x2="${s*0.88}" y2="${s*0.88}" stroke="#38A169" stroke-width="3" opacity="0.3"/>
+      <line x1="${s*0.88}" y1="${s*0.75}" x2="${s*0.88}" y2="${s*0.88}" stroke="#38A169" stroke-width="3" opacity="0.3"/>
+      <!-- Sparkles -->
+      <text x="${s*0.8}" y="${s*0.2}" font-size="${s*0.06}" opacity="0.3">✍️</text>
+      <text x="${s*0.08}" y="${s*0.88}" font-size="${s*0.05}" opacity="0.2">📝</text>
+    </svg>`,
+  },
 ];
 
 async function generateTiles() {
