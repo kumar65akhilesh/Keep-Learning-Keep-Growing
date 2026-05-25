@@ -17,8 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.letterlens.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Little Letters needs camera access to recognize letters and numbers.",
-        "NSSpeechRecognitionUsageDescription": "Little Letters uses speech to read recognized characters aloud."
+        "NSCameraUsageDescription": "Little Letters needs camera access to recognize letters and numbers."
       }
     },
     "android": {
@@ -34,24 +33,14 @@
       "expo-font",
       "expo-sqlite",
       [
-        "expo-build-properties",
-        {
-          "android": {
-            "extraProguardRules": "-keep class com.nickmro.tflite.** { *; }",
-            "aaptOptions": {
-              "noCompress": ["tflite"]
-            }
-          }
-        }
-      ],
-      [
         "react-native-vision-camera",
         {
           "cameraPermissionText": "Little Letters needs camera access to recognize letters and numbers.",
           "enableFrameProcessors": true
         }
       ],
-      "react-native-fast-tflite"
+      "react-native-fast-tflite",
+      "./plugins/withHandwritingOcr"
     ],
     "experiments": {
       "typedRoutes": true
