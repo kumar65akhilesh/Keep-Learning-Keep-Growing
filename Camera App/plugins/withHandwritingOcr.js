@@ -2,105 +2,220 @@
  * Expo Config Plugin — Handwriting OCR Native Module
  *
  * Injects:
- *   • Android: Kotlin native module using ML Kit Text Recognition v2
- *   • iOS: Swift native module using Apple Vision framework
- *   • Gradle dependency for ML Kit v2
+ *   • Android: Kotlin native module for image segmentation (grayscale → adaptive
+ *     threshold → connected-component labelling → 28×28 EMNIST crops)
+ *   • iOS: Swift native module with equivalent segmentation pipeline
+ *
+ * The JS layer receives 28×28 pixel arrays and runs them through the
+ * existing EMNIST TFLite model, keeping this approach fully offline and
+ * isolated from the other OCR tiles.
  *
  * This plugin runs during `npx expo prebuild` so the native code
  * is regenerated every time, surviving `--clean` rebuilds.
  */
 
-const {
-  withMainApplication,
-  withAppBuildGradle,
-  withDangerousMod,
-} = require('expo/config-plugins');
+const { withMainApplication, withDangerousMod } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
-// ─── Android: Kotlin Native Module ───────────────────────────────
+// ─── Android: Kotlin Native Module (Image Segmentation) ─────────
 
 const HANDWRITING_MODULE_KT = `package com.letterlens.app
 
 import com.facebook.react.bridge.*
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.net.Uri
+import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.LinkedList
 
 class HandwritingOcrModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     override fun getName() = "HandwritingOcrModule"
 
-    private val recognizer by lazy {
-        TextRecognition.getClient(TextRecognizerOptions.Builder().build())
+    companion object {
+        private const val TAG = "ScanOCR"
+        private const val GRID = 28
+        private const val INNER = 20            // centred content area
+        private const val MAX_WORK_W = 800      // downscale for speed
     }
 
     @ReactMethod
     fun recognizeHandwriting(imageUri: String, promise: Promise) {
-        try {
-            val uri = Uri.parse(imageUri)
-            val image = InputImage.fromFilePath(reactApplicationContext, uri)
+        Thread {
+            try {
+                Log.d(TAG, "segmentCharacters called, uri=$imageUri")
+                val uri = Uri.parse(imageUri)
+                val input = reactApplicationContext.contentResolver.openInputStream(uri)
+                    ?: return@Thread promise.reject("SEG_ERR", "Cannot open image")
+                val original = BitmapFactory.decodeStream(input)
+                input.close()
+                if (original == null) return@Thread promise.reject("SEG_ERR", "Cannot decode image")
 
-            recognizer.process(image)
-                .addOnSuccessListener { visionText ->
-                    val results = JSONArray()
+                // ── Down-scale ────────────────────────────────────────
+                val scale = if (original.width > MAX_WORK_W)
+                    MAX_WORK_W.toFloat() / original.width else 1f
+                val w = (original.width * scale).toInt()
+                val h = (original.height * scale).toInt()
+                val bmp = Bitmap.createScaledBitmap(original, w, h, true)
+                if (bmp !== original) original.recycle()
+                Log.d(TAG, "Working size: \${w}x\${h}")
 
-                    val fullText = visionText.text
-                    val imageWidth = image.width.toFloat().coerceAtLeast(1f)
-                    val imageHeight = image.height.toFloat().coerceAtLeast(1f)
+                // ── Grayscale ─────────────────────────────────────────
+                val gray = IntArray(w * h)
+                for (y in 0 until h) {
+                    for (x in 0 until w) {
+                        val px = bmp.getPixel(x, y)
+                        gray[y * w + x] = ((0.299 * Color.red(px)
+                                          + 0.587 * Color.green(px)
+                                          + 0.114 * Color.blue(px))).toInt()
+                    }
+                }
+                bmp.recycle()
 
-                    for (block in visionText.textBlocks) {
-                        for (line in block.lines) {
-                            for (element in line.elements) {
-                                val text = element.text
-                                val box = element.boundingBox
-                                val confidence = element.confidence ?: 0.8f
+                // ── Integral image for adaptive threshold ─────────────
+                val integral = LongArray((w + 1) * (h + 1))
+                for (y in 0 until h) {
+                    var rowSum = 0L
+                    for (x in 0 until w) {
+                        rowSum += gray[y * w + x]
+                        integral[(y + 1) * (w + 1) + (x + 1)] =
+                            rowSum + integral[y * (w + 1) + (x + 1)]
+                    }
+                }
 
-                                // Split element text into individual characters
-                                val chars = text.toCharArray()
-                                val elementWidth = box?.width()?.toFloat() ?: 0f
-                                val charWidth = if (chars.isNotEmpty()) elementWidth / chars.size else 0f
+                val winHalf = maxOf(w, h) / 16   // ~6 % of image
+                val binary = BooleanArray(w * h)
+                for (y in 0 until h) {
+                    for (x in 0 until w) {
+                        val x1 = maxOf(0, x - winHalf)
+                        val y1 = maxOf(0, y - winHalf)
+                        val x2 = minOf(w - 1, x + winHalf)
+                        val y2 = minOf(h - 1, y + winHalf)
+                        val cnt = (x2 - x1 + 1) * (y2 - y1 + 1)
+                        val sum = integral[(y2 + 1) * (w + 1) + (x2 + 1)] -
+                                  integral[y1 * (w + 1) + (x2 + 1)] -
+                                  integral[(y2 + 1) * (w + 1) + x1] +
+                                  integral[y1 * (w + 1) + x1]
+                        // Ink = darker than local mean minus small offset
+                        binary[y * w + x] = gray[y * w + x] < (sum / cnt - 12)
+                    }
+                }
 
-                                for ((i, char) in chars.withIndex()) {
-                                    val charObj = JSONObject()
-                                    charObj.put("text", char.toString())
-                                    charObj.put("confidence", confidence.toDouble())
+                // ── Connected-component labelling (8-connected BFS) ──
+                val labels = IntArray(w * h)
+                var nextLabel = 1
+                val bounds = mutableMapOf<Int, IntArray>() // label→[minX,minY,maxX,maxY,pixCount]
 
-                                    val bbox = JSONObject()
-                                    if (box != null) {
-                                        bbox.put("x", ((box.left + i * charWidth) / imageWidth).toDouble())
-                                        bbox.put("y", (box.top.toFloat() / imageHeight).toDouble())
-                                        bbox.put("width", (charWidth / imageWidth).toDouble())
-                                        bbox.put("height", (box.height().toFloat() / imageHeight).toDouble())
-                                    } else {
-                                        bbox.put("x", 0)
-                                        bbox.put("y", 0)
-                                        bbox.put("width", 0)
-                                        bbox.put("height", 0)
-                                    }
-                                    charObj.put("boundingBox", bbox)
-                                    results.put(charObj)
+                for (y in 0 until h) {
+                    for (x in 0 until w) {
+                        val idx = y * w + x
+                        if (!binary[idx] || labels[idx] != 0) continue
+                        val lbl = nextLabel++
+                        val b = intArrayOf(x, y, x, y, 0)
+                        val q = LinkedList<Int>()
+                        q.add(idx); labels[idx] = lbl
+                        while (q.isNotEmpty()) {
+                            val cur = q.poll()
+                            val cx = cur % w; val cy = cur / w
+                            b[0] = minOf(b[0], cx); b[1] = minOf(b[1], cy)
+                            b[2] = maxOf(b[2], cx); b[3] = maxOf(b[3], cy)
+                            b[4]++
+                            for (dy in -1..1) for (dx in -1..1) {
+                                if (dx == 0 && dy == 0) continue
+                                val nx = cx + dx; val ny = cy + dy
+                                if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue
+                                val ni = ny * w + nx
+                                if (binary[ni] && labels[ni] == 0) {
+                                    labels[ni] = lbl; q.add(ni)
                                 }
                             }
                         }
+                        bounds[lbl] = b
+                    }
+                }
+                Log.d(TAG, "Raw components: \${bounds.size}")
+
+                // ── Filter noise (too small / too large) ─────────────
+                val minDim = maxOf(w, h) * 0.015
+                val maxDim = maxOf(w, h) * 0.85
+                val minPx  = (w * h * 0.00005).toInt().coerceAtLeast(4)
+
+                val valid = bounds.filter { (_, b) ->
+                    val bw = b[2] - b[0]; val bh = b[3] - b[1]
+                    val dim = maxOf(bw, bh)
+                    dim >= minDim && dim <= maxDim && b[4] >= minPx && bw >= 2 && bh >= 2
+                }
+                Log.d(TAG, "After filter: \${valid.size} components")
+
+                // ── Sort left→right ──────────────────────────────────
+                val sorted = valid.entries.sortedBy { it.value[0] }
+
+                // ── Build 28×28 EMNIST grid for each component ───────
+                val results = JSONArray()
+                for ((lbl, b) in sorted) {
+                    val bx = b[0]; val by = b[1]
+                    val bw = b[2] - bx + 1; val bh = b[3] - by + 1
+                    val maxRange = maxOf(bw, bh).toFloat()
+                    val s = INNER / maxRange
+                    val ox = (GRID - bw * s) / 2f
+                    val oy = (GRID - bh * s) / 2f
+
+                    val grid = FloatArray(GRID * GRID)
+                    for (py in by..b[3]) for (px in bx..b[2]) {
+                        if (labels[py * w + px] != lbl) continue
+                        val gv = (255 - gray[py * w + px]) / 255f   // invert
+                        val gx = ((px - bx) * s + ox).toInt()
+                        val gy = ((py - by) * s + oy).toInt()
+                        if (gx in 0 until GRID && gy in 0 until GRID) {
+                            val gi = gy * GRID + gx
+                            grid[gi] = maxOf(grid[gi], gv)
+                        }
                     }
 
-                    val response = JSONObject()
-                    response.put("characters", results)
-                    response.put("rawText", fullText)
+                    // Thicken strokes slightly (1-px dilate max) for EMNIST match
+                    val thick = grid.copyOf()
+                    for (gy in 0 until GRID) for (gx in 0 until GRID) {
+                        if (grid[gy * GRID + gx] > 0.3f) continue
+                        var mx = 0f
+                        for (dy in -1..1) for (dx in -1..1) {
+                            val nx = gx + dx; val ny = gy + dy
+                            if (nx in 0 until GRID && ny in 0 until GRID)
+                                mx = maxOf(mx, grid[ny * GRID + nx])
+                        }
+                        if (mx > 0.5f) thick[gy * GRID + gx] = mx * 0.4f
+                    }
 
-                    promise.resolve(response.toString())
+                    val pxArr = JSONArray()
+                    for (v in thick) pxArr.put(v.toDouble())
+
+                    val bbox = JSONObject()
+                    bbox.put("x", bx.toDouble() / w)
+                    bbox.put("y", by.toDouble() / h)
+                    bbox.put("width", bw.toDouble() / w)
+                    bbox.put("height", bh.toDouble() / h)
+
+                    val obj = JSONObject()
+                    obj.put("pixels", pxArr)
+                    obj.put("boundingBox", bbox)
+                    results.put(obj)
                 }
-                .addOnFailureListener { e ->
-                    promise.reject("HANDWRITING_OCR_ERROR", e.message, e)
-                }
-        } catch (e: Exception) {
-            promise.reject("HANDWRITING_OCR_ERROR", e.message, e)
-        }
+
+                val resp = JSONObject()
+                resp.put("characters", results)
+                resp.put("count", results.length())
+                Log.d(TAG, "Returning \${results.length()} character crops")
+
+                promise.resolve(resp.toString())
+            } catch (e: Exception) {
+                Log.e(TAG, "Segmentation failed", e)
+                promise.reject("SEG_ERR", e.message, e)
+            }
+        }.start()
     }
 }
 `;
@@ -123,91 +238,181 @@ class HandwritingOcrPackage : ReactPackage {
 }
 `;
 
-// ─── iOS: Swift Native Module ────────────────────────────────────
+// ─── iOS: Swift Native Module (Image Segmentation) ──────────────
 
 const HANDWRITING_MODULE_SWIFT = `import Foundation
-import Vision
 import UIKit
 
 @objc(HandwritingOcrModule)
 class HandwritingOcrModule: NSObject {
 
-  @objc
-  static func requiresMainQueueSetup() -> Bool { return false }
+  @objc static func requiresMainQueueSetup() -> Bool { return false }
+
+  private let GRID = 28
+  private let INNER: Float = 20
+  private let MAX_WORK: CGFloat = 800
 
   @objc
-  func recognizeHandwriting(_ imageUri: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
-    guard let url = URL(string: imageUri),
-          let imageData = try? Data(contentsOf: url),
-          let image = UIImage(data: imageData),
-          let cgImage = image.cgImage else {
-      reject("HANDWRITING_OCR_ERROR", "Failed to load image from URI", nil)
-      return
-    }
-
-    let imageWidth = CGFloat(cgImage.width)
-    let imageHeight = CGFloat(cgImage.height)
-
-    let request = VNRecognizeTextRequest { request, error in
-      if let error = error {
-        reject("HANDWRITING_OCR_ERROR", error.localizedDescription, error)
+  func recognizeHandwriting(_ imageUri: String,
+                             resolver resolve: @escaping RCTPromiseResolveBlock,
+                             rejecter reject: @escaping RCTPromiseRejectBlock) {
+    DispatchQueue.global(qos: .userInitiated).async { [self] in
+      guard let url = URL(string: imageUri),
+            let data = try? Data(contentsOf: url),
+            let original = UIImage(data: data),
+            let cgOrig = original.cgImage else {
+        reject("SEG_ERR", "Cannot load image", nil)
         return
       }
 
-      guard let observations = request.results as? [VNRecognizedTextObservation] else {
-        resolve("{\\"characters\\":[],\\"rawText\\":\\"\\"}")
-        return
+      // ── Downscale ──────────────────────────────────────────────
+      let origW = cgOrig.width
+      let origH = cgOrig.height
+      let scale = origW > Int(MAX_WORK) ? MAX_WORK / CGFloat(origW) : 1.0
+      let w = Int(CGFloat(origW) * scale)
+      let h = Int(CGFloat(origH) * scale)
+
+      // Render to 8-bit grayscale
+      let colorSpace = CGColorSpaceCreateDeviceGray()
+      guard let ctx = CGContext(data: nil, width: w, height: h,
+                                bitsPerComponent: 8, bytesPerRow: w,
+                                space: colorSpace,
+                                bitmapInfo: CGImageAlphaInfo.none.rawValue) else {
+        reject("SEG_ERR", "Cannot create CGContext", nil); return
+      }
+      ctx.draw(cgOrig, in: CGRect(x: 0, y: 0, width: w, height: h))
+      guard let grayPtr = ctx.data?.assumingMemoryBound(to: UInt8.self) else {
+        reject("SEG_ERR", "Cannot access pixel data", nil); return
       }
 
-      var characters: [[String: Any]] = []
-      var fullText = ""
+      let gray = Array(UnsafeBufferPointer(start: grayPtr, count: w * h))
 
-      for observation in observations {
-        guard let candidate = observation.topCandidates(1).first else { continue }
-        let text = candidate.string
-        fullText += text + " "
-
-        let box = observation.boundingBox
-        let chars = Array(text)
-        let charWidth = box.width / CGFloat(max(chars.count, 1))
-
-        for (i, char) in chars.enumerated() {
-          let charDict: [String: Any] = [
-            "text": String(char),
-            "confidence": Double(observation.confidence),
-            "boundingBox": [
-              "x": Double(box.origin.x + CGFloat(i) * charWidth),
-              "y": Double(1.0 - box.origin.y - box.height),
-              "width": Double(charWidth),
-              "height": Double(box.height)
-            ]
-          ]
-          characters.append(charDict)
+      // ── Integral image for adaptive threshold ──────────────────
+      var integral = [Int64](repeating: 0, count: (w + 1) * (h + 1))
+      for y in 0..<h {
+        var rowSum: Int64 = 0
+        for x in 0..<w {
+          rowSum += Int64(gray[y * w + x])
+          integral[(y + 1) * (w + 1) + (x + 1)] = rowSum + integral[y * (w + 1) + (x + 1)]
         }
       }
 
-      let response: [String: Any] = [
-        "characters": characters,
-        "rawText": fullText.trimmingCharacters(in: .whitespaces)
-      ]
-
-      if let jsonData = try? JSONSerialization.data(withJSONObject: response),
-         let jsonString = String(data: jsonData, encoding: .utf8) {
-        resolve(jsonString)
-      } else {
-        resolve("{\\"characters\\":[],\\"rawText\\":\\"\\"}")
+      let winHalf = max(w, h) / 16
+      var binary = [Bool](repeating: false, count: w * h)
+      for y in 0..<h {
+        for x in 0..<w {
+          let x1 = max(0, x - winHalf)
+          let y1 = max(0, y - winHalf)
+          let x2 = min(w - 1, x + winHalf)
+          let y2 = min(h - 1, y + winHalf)
+          let cnt = (x2 - x1 + 1) * (y2 - y1 + 1)
+          let sum = integral[(y2 + 1) * (w + 1) + (x2 + 1)]
+                  - integral[y1 * (w + 1) + (x2 + 1)]
+                  - integral[(y2 + 1) * (w + 1) + x1]
+                  + integral[y1 * (w + 1) + x1]
+          binary[y * w + x] = Int64(gray[y * w + x]) < (sum / Int64(cnt) - 12)
+        }
       }
-    }
 
-    request.recognitionLevel = .accurate
-    request.usesLanguageCorrection = false
+      // ── Connected-component labelling (8-connected BFS) ────────
+      var labels = [Int](repeating: 0, count: w * h)
+      var nextLabel = 1
+      var bounds = [Int: [Int]]()  // label → [minX, minY, maxX, maxY, pixCount]
 
-    let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-    DispatchQueue.global(qos: .userInitiated).async {
-      do {
-        try handler.perform([request])
-      } catch {
-        reject("HANDWRITING_OCR_ERROR", error.localizedDescription, error)
+      for y in 0..<h {
+        for x in 0..<w {
+          let idx = y * w + x
+          guard binary[idx] && labels[idx] == 0 else { continue }
+          let lbl = nextLabel; nextLabel += 1
+          var b = [x, y, x, y, 0]
+          var queue = [idx]; labels[idx] = lbl
+          var qi = 0
+          while qi < queue.count {
+            let cur = queue[qi]; qi += 1
+            let cx = cur % w; let cy = cur / w
+            b[0] = min(b[0], cx); b[1] = min(b[1], cy)
+            b[2] = max(b[2], cx); b[3] = max(b[3], cy)
+            b[4] += 1
+            for dy in -1...1 { for dx in -1...1 {
+              if dx == 0 && dy == 0 { continue }
+              let nx = cx + dx; let ny = cy + dy
+              guard nx >= 0 && nx < w && ny >= 0 && ny < h else { continue }
+              let ni = ny * w + nx
+              if binary[ni] && labels[ni] == 0 { labels[ni] = lbl; queue.append(ni) }
+            }}
+          }
+          bounds[lbl] = b
+        }
+      }
+
+      // ── Filter noise ───────────────────────────────────────────
+      let minDim = Float(max(w, h)) * 0.015
+      let maxDim = Float(max(w, h)) * 0.85
+      let minPx  = max(Int(Float(w * h) * 0.00005), 4)
+
+      let valid = bounds.filter { (_, b) in
+        let bw = b[2] - b[0]; let bh = b[3] - b[1]
+        let dim = max(bw, bh)
+        return Float(dim) >= minDim && Float(dim) <= maxDim && b[4] >= minPx && bw >= 2 && bh >= 2
+      }
+
+      // ── Sort left → right ─────────────────────────────────────
+      let sorted = valid.sorted { $0.value[0] < $1.value[0] }
+
+      // ── Build 28×28 EMNIST grids ───────────────────────────────
+      var results = [[String: Any]]()
+      for (lbl, b) in sorted {
+        let bx = b[0]; let by = b[1]
+        let bw = b[2] - bx + 1; let bh = b[3] - by + 1
+        let maxRange = Float(max(bw, bh))
+        let s = INNER / maxRange
+        let ox = (Float(GRID) - Float(bw) * s) / 2.0
+        let oy = (Float(GRID) - Float(bh) * s) / 2.0
+
+        var grid = [Float](repeating: 0, count: GRID * GRID)
+        for py in by...b[3] { for px in bx...b[2] {
+          guard labels[py * w + px] == lbl else { continue }
+          let gv = Float(255 - gray[py * w + px]) / 255.0
+          let gx = Int(Float(px - bx) * s + ox)
+          let gy = Int(Float(py - by) * s + oy)
+          if gx >= 0 && gx < GRID && gy >= 0 && gy < GRID {
+            let gi = gy * GRID + gx
+            grid[gi] = max(grid[gi], gv)
+          }
+        }}
+
+        // Thicken strokes (1-px dilate)
+        var thick = grid
+        for gy in 0..<GRID { for gx in 0..<GRID {
+          if grid[gy * GRID + gx] > 0.3 { continue }
+          var mx: Float = 0
+          for dy in -1...1 { for dx in -1...1 {
+            let nx = gx + dx; let ny = gy + dy
+            if nx >= 0 && nx < GRID && ny >= 0 && ny < GRID {
+              mx = max(mx, grid[ny * GRID + nx])
+            }
+          }}
+          if mx > 0.5 { thick[gy * GRID + gx] = mx * 0.4 }
+        }}
+
+        let charDict: [String: Any] = [
+          "pixels": thick.map { Double($0) },
+          "boundingBox": [
+            "x": Double(bx) / Double(w),
+            "y": Double(by) / Double(h),
+            "width": Double(bw) / Double(w),
+            "height": Double(bh) / Double(h)
+          ]
+        ]
+        results.append(charDict)
+      }
+
+      let response: [String: Any] = ["characters": results, "count": results.count]
+      if let jsonData = try? JSONSerialization.data(withJSONObject: response),
+         let jsonStr = String(data: jsonData, encoding: .utf8) {
+        resolve(jsonStr)
+      } else {
+        resolve("{\\"characters\\":[],\\"count\\":0}")
       }
     }
   }
@@ -226,19 +431,7 @@ RCT_EXTERN_METHOD(recognizeHandwriting:(NSString *)imageUri
 // ─── Plugin: Android modifications ───────────────────────────────
 
 function withHandwritingOcrAndroid(config) {
-  // 1. Add ML Kit v2 dependency to build.gradle
-  config = withAppBuildGradle(config, (config) => {
-    const contents = config.modResults.contents;
-    if (!contents.includes('com.google.mlkit:text-recognition')) {
-      config.modResults.contents = contents.replace(
-        /dependencies\s*\{/,
-        `dependencies {\n    implementation 'com.google.mlkit:text-recognition:16.0.1'`
-      );
-    }
-    return config;
-  });
-
-  // 2. Register HandwritingOcrPackage in MainApplication
+  // Register HandwritingOcrPackage in MainApplication
   config = withMainApplication(config, (config) => {
     const contents = config.modResults.contents;
     if (!contents.includes('HandwritingOcrPackage')) {
@@ -263,7 +456,7 @@ function withHandwritingOcrAndroid(config) {
     return config;
   });
 
-  // 3. Write Kotlin source files
+  // Write Kotlin source files
   config = withDangerousMod(config, [
     'android',
     async (config) => {
