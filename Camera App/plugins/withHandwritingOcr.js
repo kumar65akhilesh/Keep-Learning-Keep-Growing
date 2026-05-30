@@ -30,7 +30,9 @@ import android.net.Uri
 import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.io.FileOutputStream
+import java.io.FileWriter
 import java.util.LinkedList
 
 class HandwritingOcrModule(reactContext: ReactApplicationContext) :
@@ -48,19 +50,55 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
         private const val WIN_DIVISOR = 12
     }
 
+    // Single active log file path for the current scan (debug builds only)
+    @Volatile private var currentLogFile: File? = null
+    private val logLock = Any()
+
+    private fun logDir(): File {
+        val ext = reactApplicationContext.getExternalFilesDir(null)
+        return ext ?: reactApplicationContext.filesDir
+    }
+
+    private fun appendLogLine(line: String) {
+        if (!BuildConfig.DEBUG) return
+        val f = currentLogFile ?: return
+        try {
+            synchronized(logLock) { FileWriter(f, true).use { it.append(line).append('\\n') } }
+        } catch (e: Exception) { Log.w(TAG, "log append failed: \${e.message}") }
+    }
+
+    @ReactMethod
+    fun appendLog(line: String, promise: Promise) {
+        appendLogLine(line)
+        promise.resolve(null)
+    }
+
     @ReactMethod
     fun recognizeHandwriting(imageUri: String, promise: Promise) {
         Thread {
             try {
                 val t0 = System.currentTimeMillis()
-                Log.d(TAG, "── recognizeHandwriting START uri=$imageUri")
+
+                // Open per-scan log file (debug only). Truncates each scan.
+                if (BuildConfig.DEBUG) {
+                    val f = File(logDir(), "scanocr_\${t0}.log")
+                    try { f.writeText("") } catch (_: Exception) {}
+                    currentLogFile = f
+                    // Also maintain a stable "latest" symlink-like copy by writing path marker
+                    try { File(logDir(), "scanocr_latest.txt").writeText(f.absolutePath) } catch (_: Exception) {}
+                }
+
+                fun lg(m: String) { Log.d(TAG, m); appendLogLine(m) }
+                fun lw(m: String) { Log.w(TAG, m); appendLogLine("W " + m) }
+
+                lg("── recognizeHandwriting START uri=$imageUri")
                 val uri = Uri.parse(imageUri)
                 val input = reactApplicationContext.contentResolver.openInputStream(uri)
                     ?: return@Thread promise.reject("SEG_ERR", "Cannot open image")
                 val original = BitmapFactory.decodeStream(input)
                 input.close()
                 if (original == null) return@Thread promise.reject("SEG_ERR", "Cannot decode image")
-                Log.d(TAG, "Original image: \${original.width}x\${original.height}")
+                lg("Original image: \${original.width}x\${original.height}")
 
                 // ── Down-scale ────────────────────────────────────────
                 val scale = if (original.width > MAX_WORK_W)
@@ -69,7 +107,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 val h = (original.height * scale).toInt()
                 val bmp = Bitmap.createScaledBitmap(original, w, h, true)
                 if (bmp !== original) original.recycle()
-                Log.d(TAG, "Working size: \${w}x\${h} (scale=\${scale})")
+                lg("Working size: \${w}x\${h} (scale=\${scale})")
 
                 // ── Grayscale ─────────────────────────────────────────
                 val gray = IntArray(w * h)
@@ -87,7 +125,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     }
                 }
                 bmp.recycle()
-                Log.d(TAG, "Gray stats: min=\$grayMin max=\$grayMax mean=\${graySum / (w*h)}")
+                lg("Gray stats: min=\$grayMin max=\$grayMax mean=\${graySum / (w*h)}")
 
                 // ── Integral image for adaptive threshold ─────────────
                 val integral = LongArray((w + 1) * (h + 1))
@@ -101,7 +139,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 }
 
                 val winHalf = maxOf(w, h) / WIN_DIVISOR
-                Log.d(TAG, "Adaptive thresh: winHalf=\$winHalf offset=\$THRESH_OFFSET")
+                lg("Adaptive thresh: winHalf=\$winHalf offset=\$THRESH_OFFSET")
                 val binary = BooleanArray(w * h)
                 var inkCount = 0
                 for (y in 0 until h) {
@@ -120,7 +158,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                         if (isInk) inkCount++
                     }
                 }
-                Log.d(TAG, "Binary: inkPixels=\$inkCount (\${"%.2f".format(100.0 * inkCount / (w*h))}%)")
+                lg("Binary: inkPixels=\$inkCount (\${"%.2f".format(100.0 * inkCount / (w*h))}%)")
 
                 // ── Connected-component labelling (8-connected BFS) ──
                 val labels = IntArray(w * h)
@@ -154,20 +192,20 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                         bounds[lbl] = b
                     }
                 }
-                Log.d(TAG, "Raw components: \${bounds.size}")
+                lg("Raw components: \${bounds.size}")
                 if (bounds.size <= 50) {
                     for ((lbl, b) in bounds) {
-                        Log.d(TAG, "  raw lbl=\$lbl x=\${b[0]} y=\${b[1]} w=\${b[2]-b[0]+1} h=\${b[3]-b[1]+1} px=\${b[4]}")
+                        lg("  raw lbl=\$lbl x=\${b[0]} y=\${b[1]} w=\${b[2]-b[0]+1} h=\${b[3]-b[1]+1} px=\${b[4]}")
                     }
                 } else {
-                    Log.d(TAG, "  (skipping per-component dump; too many)")
+                    lg("  (skipping per-component dump; too many)")
                 }
 
                 // ── Filter noise (Phase 2 tightened) ─────────────────
                 val minDim = maxOf(w, h) * 0.03
                 val maxDim = maxOf(w, h) * 0.85
                 val minPx  = (maxOf(w, h) * 0.4).toInt().coerceAtLeast(8)
-                Log.d(TAG, "Filter: minDim=\${"%.1f".format(minDim)} maxDim=\${"%.1f".format(maxDim)} minPx=\$minPx aspect=1/8..8")
+                lg("Filter: minDim=\${"%.1f".format(minDim)} maxDim=\${"%.1f".format(maxDim)} minPx=\$minPx aspect=1/8..8")
 
                 val valid = mutableMapOf<Int, IntArray>()
                 for ((lbl, b) in bounds) {
@@ -185,19 +223,18 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     if (reason == null) {
                         valid[lbl] = b
                     } else if (bounds.size <= 50) {
-                        Log.d(TAG, "  REJECT lbl=\$lbl reason=\$reason bw=\$bw bh=\$bh px=\${b[4]}")
+                        lg("  REJECT lbl=\$lbl reason=\$reason bw=\$bw bh=\$bh px=\${b[4]}")
                     }
                 }
-                Log.d(TAG, "After filter: \${valid.size} components")
+                lg("After filter: \${valid.size} components")
 
                 // ── Phase 2: Merge nearby components (one char per group) ──
-                // Group label keys; merge by proximity using median height H.
                 val keys = valid.keys.toList()
                 val heights = keys.map { valid[it]!![3] - valid[it]!![1] + 1 }.sorted()
                 val medH = if (heights.isEmpty()) 0 else heights[heights.size / 2]
                 val gapMaxX = medH * 0.4
                 val gapMaxY = medH * 1.5
-                Log.d(TAG, "Merge: medH=\$medH gapMaxX=\${"%.1f".format(gapMaxX)} gapMaxY=\${"%.1f".format(gapMaxY)}")
+                lg("Merge: medH=\$medH gapMaxX=\${"%.1f".format(gapMaxX)} gapMaxY=\${"%.1f".format(gapMaxY)}")
 
                 val parent = IntArray(keys.size) { it }
                 fun find(i: Int): Int { var r = i; while (parent[r] != r) r = parent[r]; var c = i; while (parent[c] != c) { val n = parent[c]; parent[c] = r; c = n }; return r }
@@ -210,12 +247,11 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     val dx = maxOf(0, maxOf(ax1, bx1) - minOf(ax2, bx2))
                     val dy = maxOf(0, maxOf(ay1, by1) - minOf(ay2, by2))
                     if (dx <= gapMaxX && dy <= gapMaxY) {
-                        Log.d(TAG, "  MERGE lbl=\${keys[i]} + lbl=\${keys[j]} dx=\$dx dy=\$dy")
+                        lg("  MERGE lbl=\${keys[i]} + lbl=\${keys[j]} dx=\$dx dy=\$dy")
                         union(i, j)
                     }
                 }
 
-                // Build groups: rootIdx -> merged bbox + member labels
                 data class Group(var x1: Int, var y1: Int, var x2: Int, var y2: Int, val members: MutableList<Int>)
                 val groups = mutableMapOf<Int, Group>()
                 for (i in keys.indices) {
@@ -229,25 +265,22 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                         g.members.add(keys[i])
                     }
                 }
-                Log.d(TAG, "After merge: \${groups.size} character groups")
+                lg("After merge: \${groups.size} character groups")
 
-                // ── Sort groups left→right ───────────────────────────
                 val sortedGroups = groups.values.sortedBy { it.x1 }
                 for ((idx, g) in sortedGroups.withIndex()) {
-                    Log.d(TAG, "  group#\$idx x=\${g.x1} y=\${g.y1} w=\${g.x2-g.x1+1} h=\${g.y2-g.y1+1} members=\${g.members}")
+                    lg("  group#\$idx x=\${g.x1} y=\${g.y1} w=\${g.x2-g.x1+1} h=\${g.y2-g.y1+1} members=\${g.members}")
                 }
 
                 // ── Optional debug overlay dump (DEBUG builds only) ──
                 var debugOverlayUri: String? = null
                 if (BuildConfig.DEBUG) {
                     try {
-                        val outDir = reactApplicationContext.getExternalFilesDir(null)
-                            ?: reactApplicationContext.filesDir
+                        val outDir = logDir()
                         val overlay = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
                         for (y in 0 until h) for (x in 0 until w) {
                             overlay.setPixel(x, y, if (binary[y * w + x]) Color.BLACK else Color.WHITE)
                         }
-                        // Mark group bboxes in red
                         for (g in sortedGroups) {
                             for (x in g.x1..g.x2) {
                                 if (g.y1 in 0 until h) overlay.setPixel(x, g.y1, Color.RED)
@@ -258,13 +291,13 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                                 if (g.x2 in 0 until w) overlay.setPixel(g.x2, y, Color.RED)
                             }
                         }
-                        val debugFile = java.io.File(outDir, "scanocr_debug_\${t0}.png")
+                        val debugFile = File(outDir, "scanocr_debug_\${t0}.png")
                         FileOutputStream(debugFile).use { overlay.compress(Bitmap.CompressFormat.PNG, 90, it) }
                         overlay.recycle()
                         debugOverlayUri = "file://\${debugFile.absolutePath}"
-                        Log.d(TAG, "Debug overlay saved: \${debugFile.absolutePath}")
+                        lg("Debug overlay saved: \${debugFile.absolutePath}")
                     } catch (e: Exception) {
-                        Log.w(TAG, "Failed to write debug overlay: \${e.message}")
+                        lw("Failed to write debug overlay: \${e.message}")
                     }
                 }
 
@@ -286,7 +319,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     for (py in g.y1..g.y2) for (px in g.x1..g.x2) {
                         val lbl = labels[py * w + px]
                         if (lbl == 0 || !memberSet.contains(lbl)) continue
-                        val gv = (255 - gray[py * w + px]) / 255f   // invert
+                        val gv = (255 - gray[py * w + px]) / 255f
                         val gx = ((px - bx) * s + ox).toInt()
                         val gy = ((py - by) * s + oy).toInt()
                         if (gx in 0 until GRID && gy in 0 until GRID) {
@@ -295,7 +328,6 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                         }
                     }
 
-                    // Thicken strokes slightly (1-px dilate max) for EMNIST match
                     val thick = grid.copyOf()
                     for (gy in 0 until GRID) for (gx in 0 until GRID) {
                         if (grid[gy * GRID + gx] > 0.3f) continue
@@ -327,12 +359,14 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 resp.put("characters", results)
                 resp.put("count", results.length())
                 if (debugOverlayUri != null) resp.put("debugOverlayUri", debugOverlayUri)
+                currentLogFile?.let { resp.put("debugLogUri", "file://\${it.absolutePath}") }
                 val dt = System.currentTimeMillis() - t0
-                Log.d(TAG, "── recognizeHandwriting END count=\${results.length()} took=\${dt}ms")
+                lg("── recognizeHandwriting END count=\${results.length()} took=\${dt}ms")
 
                 promise.resolve(resp.toString())
             } catch (e: Exception) {
                 Log.e(TAG, "Segmentation failed", e)
+                appendLogLine("E Segmentation failed: \${e.message}")
                 promise.reject("SEG_ERR", e.message, e)
             }
         }.start()
@@ -377,13 +411,64 @@ class HandwritingOcrModule: NSObject {
   private let WIN_DIVISOR = 12
   private let log = OSLog(subsystem: "com.letterlens.app", category: "ScanOCR")
 
+  // Active per-scan log file path (DEBUG only)
+  private var currentLogPath: URL?
+  private let logQueue = DispatchQueue(label: "com.letterlens.scanocr.log")
+
+  private func logsDir() -> URL {
+    return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+  }
+
+  private func appendLogLine(_ line: String) {
+    #if DEBUG
+    guard let path = currentLogPath else { return }
+    logQueue.async {
+      if let data = (line + "\\n").data(using: .utf8) {
+        if let handle = try? FileHandle(forWritingTo: path) {
+          handle.seekToEndOfFile()
+          handle.write(data)
+          try? handle.close()
+        } else {
+          try? data.write(to: path)
+        }
+      }
+    }
+    #endif
+  }
+
+  @objc
+  func appendLog(_ line: String,
+                 resolver resolve: @escaping RCTPromiseResolveBlock,
+                 rejecter reject: @escaping RCTPromiseRejectBlock) {
+    appendLogLine(line)
+    resolve(nil)
+  }
+
   @objc
   func recognizeHandwriting(_ imageUri: String,
                              resolver resolve: @escaping RCTPromiseResolveBlock,
                              rejecter reject: @escaping RCTPromiseRejectBlock) {
     DispatchQueue.global(qos: .userInitiated).async { [self] in
       let t0 = Date()
-      os_log("── recognizeHandwriting START uri=%{public}@", log: log, type: .debug, imageUri)
+      let t0ms = Int(t0.timeIntervalSince1970 * 1000)
+
+      #if DEBUG
+      let logPath = logsDir().appendingPathComponent("scanocr_\\(t0ms).log")
+      try? "".write(to: logPath, atomically: true, encoding: .utf8)
+      currentLogPath = logPath
+      try? logPath.absoluteString.write(to: logsDir().appendingPathComponent("scanocr_latest.txt"), atomically: true, encoding: .utf8)
+      #endif
+
+      func dbg(_ m: String) {
+        os_log("%{public}@", log: log, type: .debug, m)
+        appendLogLine(m)
+      }
+      func dbgW(_ m: String) {
+        os_log("%{public}@", log: log, type: .info, m)
+        appendLogLine("W " + m)
+      }
+
+      dbg("── recognizeHandwriting START uri=\\(imageUri)")
       guard let url = URL(string: imageUri),
             let data = try? Data(contentsOf: url),
             let original = UIImage(data: data),
@@ -391,7 +476,7 @@ class HandwritingOcrModule: NSObject {
         reject("SEG_ERR", "Cannot load image", nil)
         return
       }
-      os_log("Original image: %dx%d", log: log, type: .debug, cgOrig.width, cgOrig.height)
+      dbg("Original image: \\(cgOrig.width)x\\(cgOrig.height)")
 
       // ── Downscale ──────────────────────────────────────────────
       let origW = cgOrig.width
@@ -399,9 +484,8 @@ class HandwritingOcrModule: NSObject {
       let scale = origW > Int(MAX_WORK) ? MAX_WORK / CGFloat(origW) : 1.0
       let w = Int(CGFloat(origW) * scale)
       let h = Int(CGFloat(origH) * scale)
-      os_log("Working size: %dx%d scale=%.3f", log: log, type: .debug, w, h, Double(scale))
+      dbg("Working size: \\(w)x\\(h) scale=\\(String(format: \"%.3f\", Double(scale)))")
 
-      // Render to 8-bit grayscale
       let colorSpace = CGColorSpaceCreateDeviceGray()
       guard let ctx = CGContext(data: nil, width: w, height: h,
                                 bitsPerComponent: 8, bytesPerRow: w,
@@ -418,7 +502,7 @@ class HandwritingOcrModule: NSObject {
 
       var gmin: UInt8 = 255; var gmax: UInt8 = 0; var gsum: Int64 = 0
       for v in gray { if v < gmin { gmin = v }; if v > gmax { gmax = v }; gsum += Int64(v) }
-      os_log("Gray stats: min=%d max=%d mean=%lld", log: log, type: .debug, Int(gmin), Int(gmax), gsum / Int64(w * h))
+      dbg("Gray stats: min=\\(gmin) max=\\(gmax) mean=\\(gsum / Int64(w * h))")
 
       // ── Integral image for adaptive threshold ──────────────────
       var integral = [Int64](repeating: 0, count: (w + 1) * (h + 1))
@@ -431,7 +515,7 @@ class HandwritingOcrModule: NSObject {
       }
 
       let winHalf = max(w, h) / WIN_DIVISOR
-      os_log("Adaptive thresh: winHalf=%d offset=%lld", log: log, type: .debug, winHalf, THRESH_OFFSET)
+      dbg("Adaptive thresh: winHalf=\\(winHalf) offset=\\(THRESH_OFFSET)")
       var binary = [Bool](repeating: false, count: w * h)
       var inkCount = 0
       for y in 0..<h {
@@ -450,12 +534,12 @@ class HandwritingOcrModule: NSObject {
           if isInk { inkCount += 1 }
         }
       }
-      os_log("Binary: inkPixels=%d (%.2f%%)", log: log, type: .debug, inkCount, 100.0 * Double(inkCount) / Double(w * h))
+      dbg("Binary: inkPixels=\\(inkCount) (\\(String(format: \"%.2f\", 100.0 * Double(inkCount) / Double(w * h)))%)")
 
       // ── Connected-component labelling (8-connected BFS) ────────
       var labels = [Int](repeating: 0, count: w * h)
       var nextLabel = 1
-      var bounds = [Int: [Int]]()  // label → [minX, minY, maxX, maxY, pixCount]
+      var bounds = [Int: [Int]]()
 
       for y in 0..<h {
         for x in 0..<w {
@@ -482,10 +566,10 @@ class HandwritingOcrModule: NSObject {
           bounds[lbl] = b
         }
       }
-      os_log("Raw components: %d", log: log, type: .debug, bounds.count)
+      dbg("Raw components: \\(bounds.count)")
       if bounds.count <= 50 {
         for (lbl, b) in bounds {
-          os_log("  raw lbl=%d x=%d y=%d w=%d h=%d px=%d", log: log, type: .debug, lbl, b[0], b[1], b[2]-b[0]+1, b[3]-b[1]+1, b[4])
+          dbg("  raw lbl=\\(lbl) x=\\(b[0]) y=\\(b[1]) w=\\(b[2]-b[0]+1) h=\\(b[3]-b[1]+1) px=\\(b[4])")
         }
       }
 
@@ -493,7 +577,7 @@ class HandwritingOcrModule: NSObject {
       let minDim = Float(max(w, h)) * 0.03
       let maxDim = Float(max(w, h)) * 0.85
       let minPx  = max(Int(Float(max(w, h)) * 0.4), 8)
-      os_log("Filter: minDim=%.1f maxDim=%.1f minPx=%d aspect=1/8..8", log: log, type: .debug, Double(minDim), Double(maxDim), minPx)
+      dbg("Filter: minDim=\\(String(format: \"%.1f\", Double(minDim))) maxDim=\\(String(format: \"%.1f\", Double(maxDim))) minPx=\\(minPx) aspect=1/8..8")
 
       var valid = [Int: [Int]]()
       for (lbl, b) in bounds {
@@ -508,10 +592,10 @@ class HandwritingOcrModule: NSObject {
         else if aspect > 8.0 || aspect < 0.125 { reason = "bad_aspect" }
         if reason == nil { valid[lbl] = b }
         else if bounds.count <= 50 {
-          os_log("  REJECT lbl=%d reason=%{public}@ bw=%d bh=%d px=%d", log: log, type: .debug, lbl, reason!, bw, bh, b[4])
+          dbg("  REJECT lbl=\\(lbl) reason=\\(reason!) bw=\\(bw) bh=\\(bh) px=\\(b[4])")
         }
       }
-      os_log("After filter: %d components", log: log, type: .debug, valid.count)
+      dbg("After filter: \\(valid.count) components")
 
       // ── Phase 2: Merge nearby components ───────────────────────
       let keys = Array(valid.keys)
@@ -519,7 +603,7 @@ class HandwritingOcrModule: NSObject {
       let medH = heights.isEmpty ? 0 : heights[heights.count / 2]
       let gapMaxX = Double(medH) * 0.4
       let gapMaxY = Double(medH) * 1.5
-      os_log("Merge: medH=%d gapMaxX=%.1f gapMaxY=%.1f", log: log, type: .debug, medH, gapMaxX, gapMaxY)
+      dbg("Merge: medH=\\(medH) gapMaxX=\\(String(format: \"%.1f\", gapMaxX)) gapMaxY=\\(String(format: \"%.1f\", gapMaxY))")
 
       var parent = Array(0..<keys.count)
       func find(_ i: Int) -> Int { var r = i; while parent[r] != r { r = parent[r] }; var c = i; while parent[c] != c { let n = parent[c]; parent[c] = r; c = n }; return r }
@@ -530,7 +614,7 @@ class HandwritingOcrModule: NSObject {
         let dx = max(0, max(a[0], b[0]) - min(a[2], b[2]))
         let dy = max(0, max(a[1], b[1]) - min(a[3], b[3]))
         if Double(dx) <= gapMaxX && Double(dy) <= gapMaxY {
-          os_log("  MERGE lbl=%d + lbl=%d dx=%d dy=%d", log: log, type: .debug, keys[i], keys[j], dx, dy)
+          dbg("  MERGE lbl=\\(keys[i]) + lbl=\\(keys[j]) dx=\\(dx) dy=\\(dy)")
           union(i, j)
         }
       }}
@@ -548,19 +632,18 @@ class HandwritingOcrModule: NSObject {
           groups[root] = (b[0], b[1], b[2], b[3], [keys[i]])
         }
       }
-      os_log("After merge: %d character groups", log: log, type: .debug, groups.count)
+      dbg("After merge: \\(groups.count) character groups")
 
       let sortedGroups = groups.values.sorted { $0.x1 < $1.x1 }
       for (idx, g) in sortedGroups.enumerated() {
-        os_log("  group#%d x=%d y=%d w=%d h=%d members=%d", log: log, type: .debug, idx, g.x1, g.y1, g.x2-g.x1+1, g.y2-g.y1+1, g.members.count)
+        dbg("  group#\\(idx) x=\\(g.x1) y=\\(g.y1) w=\\(g.x2-g.x1+1) h=\\(g.y2-g.y1+1) members=\\(g.members.count)")
       }
 
       // ── Optional debug overlay dump ────────────────────────────
       var debugOverlayUri: String? = nil
       #if DEBUG
       do {
-        let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let overlayPath = docsDir.appendingPathComponent("scanocr_debug_\\(Int(t0.timeIntervalSince1970 * 1000)).png")
+        let overlayPath = logsDir().appendingPathComponent("scanocr_debug_\\(t0ms).png")
         let bytesPerRow = w * 4
         var pixels = [UInt8](repeating: 255, count: w * h * 4)
         for y in 0..<h { for x in 0..<w {
@@ -590,7 +673,7 @@ class HandwritingOcrModule: NSObject {
            let pngData = UIImage(cgImage: cg).pngData() {
           try? pngData.write(to: overlayPath)
           debugOverlayUri = overlayPath.absoluteString
-          os_log("Debug overlay saved: %{public}@", log: log, type: .debug, overlayPath.path)
+          dbg("Debug overlay saved: \\(overlayPath.path)")
         }
       }
       #endif
@@ -619,7 +702,6 @@ class HandwritingOcrModule: NSObject {
           }
         }}
 
-        // Thicken strokes (1-px dilate)
         var thick = grid
         for gy in 0..<GRID { for gx in 0..<GRID {
           if grid[gy * GRID + gx] > 0.3 { continue }
@@ -646,10 +728,11 @@ class HandwritingOcrModule: NSObject {
       }
 
       let dt = Int(Date().timeIntervalSince(t0) * 1000)
-      os_log("── recognizeHandwriting END count=%d took=%dms", log: log, type: .debug, results.count, dt)
+      dbg("── recognizeHandwriting END count=\\(results.count) took=\\(dt)ms")
 
       var response: [String: Any] = ["characters": results, "count": results.count]
       if let uri = debugOverlayUri { response["debugOverlayUri"] = uri }
+      if let path = currentLogPath { response["debugLogUri"] = path.absoluteString }
       if let jsonData = try? JSONSerialization.data(withJSONObject: response),
          let jsonStr = String(data: jsonData, encoding: .utf8) {
         resolve(jsonStr)
@@ -665,6 +748,9 @@ const HANDWRITING_MODULE_M = `#import <React/RCTBridgeModule.h>
 
 @interface RCT_EXTERN_MODULE(HandwritingOcrModule, NSObject)
 RCT_EXTERN_METHOD(recognizeHandwriting:(NSString *)imageUri
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(appendLog:(NSString *)line
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 @end
