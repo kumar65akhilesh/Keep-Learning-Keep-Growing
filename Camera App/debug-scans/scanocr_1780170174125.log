@@ -1,0 +1,47 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/176c4e99-8098-4778-b210-d1000ddd1bcc.jpg
+Original image: 1280x960
+Working size: 800x600 (scale=0.625)
+Gray stats: min=68 max=175 mean=144
+Adaptive thresh: winHalf=66 offset=18
+Binary: inkPixels=1115 (0.23%)
+Raw components: 15
+  raw lbl=1 x=478 y=356 w=1 h=1 px=1
+  raw lbl=2 x=476 y=362 w=2 h=1 px=2
+  raw lbl=3 x=478 y=364 w=1 h=1 px=1
+  raw lbl=4 x=480 y=364 w=1 h=1 px=1
+  raw lbl=5 x=477 y=366 w=1 h=2 px=2
+  raw lbl=6 x=461 y=371 w=23 h=44 px=588
+  raw lbl=7 x=483 y=371 w=1 h=2 px=2
+  raw lbl=8 x=383 y=372 w=19 h=37 px=392
+  raw lbl=9 x=473 y=372 w=1 h=1 px=1
+  raw lbl=10 x=485 y=378 w=1 h=1 px=1
+  raw lbl=11 x=400 y=385 w=1 h=1 px=1
+  raw lbl=12 x=483 y=387 w=1 h=1 px=1
+  raw lbl=13 x=330 y=401 w=17 h=16 px=120
+  raw lbl=14 x=345 y=408 w=1 h=1 px=1
+  raw lbl=15 x=788 y=558 w=1 h=1 px=1
+Filter: minDim=24.0 maxDim=680.0 minPx=320 aspect=1/8..8
+  REJECT lbl=1 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=2 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=3 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=4 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=5 reason=tiny_bw_bh bw=0 bh=1 px=2
+  REJECT lbl=7 reason=tiny_bw_bh bw=0 bh=1 px=2
+  REJECT lbl=9 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=10 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=11 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=12 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=13 reason=too_small_dim(16<24) bw=16 bh=15 px=120
+  REJECT lbl=14 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=15 reason=tiny_bw_bh bw=0 bh=0 px=1
+After filter: 2 components
+Merge: medH=44 gapMaxX=17.6 gapMaxY=66.0
+After merge: 2 character groups
+  group#0 x=383 y=372 w=19 h=37 members=[8]
+  group#1 x=461 y=371 w=23 h=44 members=[6]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1780170174125.png
+── recognizeHandwriting END count=2 took=463ms
+[ScanOCR]   Char[0] "I" @ 33.5% | bbox=(0.48,0.62,0.02,0.06) | probs[min=3.07e-5 max=3.35e-1 sum=1.000] | top5: I(33.5%) L(25.4%) C(9.3%) E(8.2%) Z(6.1%)
+[ScanOCR]   Char[1] "I" @ 53.9% | bbox=(0.58,0.62,0.03,0.07) | probs[min=1.01e-5 max=5.39e-1 sum=1.000] | top5: I(53.9%) L(29.1%) B(5.3%) D(3.9%) J(3.0%)
+[ScanOCR] FINAL count=2 (raw=2) text="II" rawText="II"
+[Camera] OCR result: 2 characters found, rawText: "II"

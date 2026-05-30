@@ -1,0 +1,40 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/c161cbc5-829d-48ff-ab22-1bb9ca348c0e.jpg
+Original image: 1280x960
+Working size: 800x600 (scale=0.625)
+Gray stats: min=73 max=171 mean=146
+Adaptive thresh: winHalf=66 offset=18
+Binary: inkPixels=674 (0.14%)
+Raw components: 13
+  raw lbl=1 x=793 y=260 w=1 h=1 px=1
+  raw lbl=2 x=421 y=359 w=1 h=1 px=1
+  raw lbl=3 x=425 y=361 w=1 h=1 px=1
+  raw lbl=4 x=342 y=362 w=16 h=31 px=271
+  raw lbl=5 x=407 y=362 w=19 h=32 px=316
+  raw lbl=6 x=425 y=365 w=1 h=1 px=1
+  raw lbl=7 x=286 y=368 w=1 h=1 px=1
+  raw lbl=8 x=290 y=368 w=1 h=1 px=1
+  raw lbl=9 x=300 y=388 w=1 h=1 px=1
+  raw lbl=10 x=296 y=390 w=14 h=10 px=77
+  raw lbl=11 x=297 y=391 w=1 h=1 px=1
+  raw lbl=12 x=305 y=401 w=1 h=1 px=1
+  raw lbl=13 x=799 y=493 w=1 h=1 px=1
+Filter: minDim=24.0 maxDim=680.0 minPx=320 aspect=1/8..8
+  REJECT lbl=1 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=2 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=3 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=4 reason=too_few_px(271<320) bw=15 bh=30 px=271
+  REJECT lbl=5 reason=too_few_px(316<320) bw=18 bh=31 px=316
+  REJECT lbl=6 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=7 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=8 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=9 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=10 reason=too_small_dim(13<24) bw=13 bh=9 px=77
+  REJECT lbl=11 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=12 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=13 reason=tiny_bw_bh bw=0 bh=0 px=1
+After filter: 0 components
+Merge: medH=0 gapMaxX=0.0 gapMaxY=0.0
+After merge: 0 character groups
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1780170077196.png
+── recognizeHandwriting END count=0 took=376ms
+[Camera] OCR result: 0 characters found, rawText: ""
