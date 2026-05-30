@@ -10,3 +10,7 @@ export async function preprocessImage(uri: string): Promise<string> {
 export async function cropRegion(uri: string): Promise<string> {
   return uri;
 }
+
+export async function centerCrop(uri: string): Promise<string> {
+  return uri;
+}

@@ -46,7 +46,39 @@ export async function preprocessImage(
 }
 
 /**
- * Crop a region from an image (for isolating a detected character).
+ * Center-crop an image to a fraction of its original size.
+ * Useful when shooting from a distance — removes empty margins.
+ *
+ * @param uri   - Local URI of the image
+ * @param ratio - Fraction of the image to keep (0.3 = center 30%, 1.0 = no crop)
+ * @returns URI of the cropped image (or original URI if ratio ≥ 1)
+ */
+export async function centerCrop(
+  uri: string,
+  ratio: number,
+): Promise<string> {
+  if (ratio >= 1) return uri;
+  const r = Math.max(0.1, Math.min(1, ratio));
+
+  // Need image dimensions — do a no-op manipulate to get info
+  const info = await ImageManipulator.manipulateAsync(uri, [], {
+    compress: 1,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+  const w = info.width;
+  const h = info.height;
+  const cropW = Math.round(w * r);
+  const cropH = Math.round(h * r);
+  const originX = Math.round((w - cropW) / 2);
+  const originY = Math.round((h - cropH) / 2);
+
+  const result = await ImageManipulator.manipulateAsync(
+    uri,
+    [{ crop: { originX, originY, width: cropW, height: cropH } }],
+    { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG },
+  );
+  return result.uri;
+}
  *
  * @param uri - Source image URI
  * @param region - Crop region in pixels
