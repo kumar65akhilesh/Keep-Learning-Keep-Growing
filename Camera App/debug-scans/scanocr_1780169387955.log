@@ -1,0 +1,23 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/5f7cdc0b-2c0c-4d00-94db-c66262b2222a.jpg
+Original image: 1280x1706
+Working size: 800x1066 (scale=0.625)
+Gray stats: min=0 max=180 mean=148
+Adaptive thresh: winHalf=88 offset=18
+Binary: inkPixels=27529 (3.23%)
+Raw components: 147
+  (skipping per-component dump; too many)
+Filter: minDim=32.0 maxDim=906.1 minPx=426 aspect=1/8..8
+After filter: 4 components
+Merge: medH=217 gapMaxX=86.8 gapMaxY=325.5
+  MERGE lbl=2 + lbl=4 dx=26 dy=0
+  MERGE lbl=2 + lbl=36 dx=0 dy=29
+  MERGE lbl=4 + lbl=36 dx=29 dy=0
+After merge: 2 character groups
+  group#0 x=0 y=963 w=20 h=103 members=[142]
+  group#1 x=4 y=0 w=796 h=623 members=[2, 4, 36]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1780169387955.png
+── recognizeHandwriting END count=2 took=623ms
+[ScanOCR]   Char[0] "I" @ 60.6% | bbox=(0.00,0.90,0.03,0.10) | probs[min=1.36e-9 max=6.06e-1 sum=1.000] | top5: I(60.6%) L(39.4%) J(0.0%) U(0.0%) Y(0.0%)
+[ScanOCR]   Char[1] "N" @ 78.7% | bbox=(0.01,0.00,0.99,0.58) | probs[min=5.56e-7 max=7.87e-1 sum=1.000] | top5: N(78.7%) Y(7.3%) D(5.3%) J(2.4%) G(1.5%)
+[ScanOCR] FINAL count=2 (raw=2) text="IN" rawText="IN"
+[Camera] OCR result: 2 characters found, rawText: "IN"
