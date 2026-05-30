@@ -44,10 +44,14 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
         private const val TAG = "ScanOCR"
         private const val GRID = 28
         private const val INNER = 20            // centred content area
-        private const val MAX_WORK_W = 800      // downscale for speed
-        // Phase 2 tuning
-        private const val THRESH_OFFSET = 18
-        private const val WIN_DIVISOR = 12
+        // Phase 3 (pencil-on-paper tuning):
+        //   - Keep more resolution so thin pencil strokes survive.
+        //   - Smaller adaptive window (local context ≈ stroke thickness).
+        //   - Lower offset so light gray pencil pixels pass the threshold.
+        //   - Morphological close runs after binarization to bridge gaps.
+        private const val MAX_WORK_W = 1280
+        private const val THRESH_OFFSET = 8     // was 18 (markers/pens)
+        private const val WIN_DIVISOR = 25      // was 12 (gives ~50px window)
     }
 
     // Single active log file path for the current scan (debug builds only)
@@ -160,6 +164,33 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 }
                 lg("Binary: inkPixels=\$inkCount (\${"%.2f".format(100.0 * inkCount / (w*h))}%)")
 
+                // ── Morphological close (dilate → erode) bridges ≤ 1px stroke gaps ──
+                run {
+                    val dilated = BooleanArray(w * h)
+                    for (y in 0 until h) for (x in 0 until w) {
+                        if (binary[y * w + x]) {
+                            dilated[y * w + x] = true
+                            for (dy in -1..1) for (dx in -1..1) {
+                                val nx = x + dx; val ny = y + dy
+                                if (nx in 0 until w && ny in 0 until h) dilated[ny * w + nx] = true
+                            }
+                        }
+                    }
+                    var closed = 0
+                    for (y in 0 until h) for (x in 0 until w) {
+                        if (!dilated[y * w + x]) { binary[y * w + x] = false; continue }
+                        var ok = true
+                        loop@ for (dy in -1..1) for (dx in -1..1) {
+                            val nx = x + dx; val ny = y + dy
+                            if (nx !in 0 until w || ny !in 0 until h) continue
+                            if (!dilated[ny * w + nx]) { ok = false; break@loop }
+                        }
+                        binary[y * w + x] = ok
+                        if (ok) closed++
+                    }
+                    lg("After morph close: inkPixels=\$closed")
+                }
+
                 // ── Connected-component labelling (8-connected BFS) ──
                 val labels = IntArray(w * h)
                 var nextLabel = 1
@@ -201,10 +232,10 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     lg("  (skipping per-component dump; too many)")
                 }
 
-                // ── Filter noise (Phase 2 tightened) ─────────────────
-                val minDim = maxOf(w, h) * 0.03
+                // ── Filter noise (Phase 3 — pencil-friendly) ─────────────
+                val minDim = maxOf(w, h) * 0.02
                 val maxDim = maxOf(w, h) * 0.85
-                val minPx  = (maxOf(w, h) * 0.4).toInt().coerceAtLeast(8)
+                val minPx  = (maxOf(w, h) * 0.10).toInt().coerceAtLeast(20)
                 lg("Filter: minDim=\${"%.1f".format(minDim)} maxDim=\${"%.1f".format(maxDim)} minPx=\$minPx aspect=1/8..8")
 
                 val valid = mutableMapOf<Int, IntArray>()
@@ -405,10 +436,10 @@ class HandwritingOcrModule: NSObject {
 
   private let GRID = 28
   private let INNER: Float = 20
-  private let MAX_WORK: CGFloat = 800
-  // Phase 2 tuning
-  private let THRESH_OFFSET: Int64 = 18
-  private let WIN_DIVISOR = 12
+  // Phase 3 (pencil-on-paper tuning) — see Android module for rationale.
+  private let MAX_WORK: CGFloat = 1280
+  private let THRESH_OFFSET: Int64 = 8
+  private let WIN_DIVISOR = 25
   private let log = OSLog(subsystem: "com.letterlens.app", category: "ScanOCR")
 
   // Active per-scan log file path (DEBUG only)
@@ -536,6 +567,33 @@ class HandwritingOcrModule: NSObject {
       }
       dbg("Binary: inkPixels=\\(inkCount) (\\(String(format: \"%.2f\", 100.0 * Double(inkCount) / Double(w * h)))%)")
 
+      // ── Morphological close (dilate → erode) bridges ≤ 1px stroke gaps ──
+      do {
+        var dilated = [Bool](repeating: false, count: w * h)
+        for y in 0..<h { for x in 0..<w {
+          if binary[y * w + x] {
+            dilated[y * w + x] = true
+            for dy in -1...1 { for dx in -1...1 {
+              let nx = x + dx; let ny = y + dy
+              if nx >= 0 && nx < w && ny >= 0 && ny < h { dilated[ny * w + nx] = true }
+            }}
+          }
+        }}
+        var closed = 0
+        for y in 0..<h { for x in 0..<w {
+          if !dilated[y * w + x] { binary[y * w + x] = false; continue }
+          var ok = true
+          outer: for dy in -1...1 { for dx in -1...1 {
+            let nx = x + dx; let ny = y + dy
+            if nx < 0 || nx >= w || ny < 0 || ny >= h { continue }
+            if !dilated[ny * w + nx] { ok = false; break outer }
+          }}
+          binary[y * w + x] = ok
+          if ok { closed += 1 }
+        }}
+        dbg("After morph close: inkPixels=\\(closed)")
+      }
+
       // ── Connected-component labelling (8-connected BFS) ────────
       var labels = [Int](repeating: 0, count: w * h)
       var nextLabel = 1
@@ -573,10 +631,10 @@ class HandwritingOcrModule: NSObject {
         }
       }
 
-      // ── Filter noise (Phase 2 tightened) ───────────────────────
-      let minDim = Float(max(w, h)) * 0.03
+      // ── Filter noise (Phase 3 — pencil-friendly) ───────────────────
+      let minDim = Float(max(w, h)) * 0.02
       let maxDim = Float(max(w, h)) * 0.85
-      let minPx  = max(Int(Float(max(w, h)) * 0.4), 8)
+      let minPx  = max(Int(Float(max(w, h)) * 0.10), 20)
       dbg("Filter: minDim=\\(String(format: \"%.1f\", Double(minDim))) maxDim=\\(String(format: \"%.1f\", Double(maxDim))) minPx=\\(minPx) aspect=1/8..8")
 
       var valid = [Int: [Int]]()
