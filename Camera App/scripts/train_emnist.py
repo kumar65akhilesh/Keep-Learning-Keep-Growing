@@ -242,7 +242,7 @@ def load_emnist_byclass():
     Load EMNIST ByClass dataset (62 classes: 0-9, A-Z, a-z).
     Returns x_train, y_train, x_test, y_test with labels 0-61.
     """
-    # ── Strategy 1: emnist pip package ────────────────────────────
+    # ── Strategy 1: emnist pip package (with cache-clear retry) ───
     try:
         try:
             from emnist import extract_training_samples, extract_test_samples
@@ -252,8 +252,32 @@ def load_emnist_byclass():
             from emnist import extract_training_samples, extract_test_samples
 
         print("[INFO] Loading EMNIST ByClass via emnist package...")
-        x_train, y_train = extract_training_samples('byclass')
-        x_test, y_test = extract_test_samples('byclass')
+        try:
+            x_train, y_train = extract_training_samples('byclass')
+            x_test, y_test = extract_test_samples('byclass')
+        except Exception as e_zip:
+            # Corrupted cache — clear it and retry
+            print(f"[WARN] emnist cache may be corrupted ({e_zip}), clearing...")
+            import emnist as emnist_mod
+            cache_candidates = [
+                os.path.join(os.path.dirname(emnist_mod.__file__), 'data'),
+                os.path.join(os.path.dirname(emnist_mod.__file__)),
+            ]
+            for d in cache_candidates:
+                for f in os.listdir(d):
+                    if 'byclass' in f.lower() or f.endswith('.gz') or f.endswith('.zip'):
+                        path = os.path.join(d, f)
+                        print(f"  Removing cached file: {path}")
+                        os.remove(path)
+            # Also clear any user-level cache
+            import shutil
+            user_cache = os.path.join(os.path.expanduser("~"), ".cache", "emnist")
+            if os.path.isdir(user_cache):
+                print(f"  Clearing user cache: {user_cache}")
+                shutil.rmtree(user_cache, ignore_errors=True)
+            # Retry
+            x_train, y_train = extract_training_samples('byclass')
+            x_test, y_test = extract_test_samples('byclass')
 
         print(f"  ByClass Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
         print(f"  ByClass Test:  {x_test.shape},  labels range: {y_test.min()}-{y_test.max()}")
@@ -323,9 +347,44 @@ def load_emnist_byclass():
     except Exception as e2:
         print(f"[WARN] NIST ByClass mirror download failed: {e2}")
 
+    # ── Strategy 3: tensorflow_datasets ───────────────────────────
+    try:
+        try:
+            import tensorflow_datasets as tfds
+        except ImportError:
+            print("[INFO] Installing tensorflow_datasets...")
+            os.system(f'"{sys.executable}" -m pip install tensorflow_datasets')
+            import tensorflow_datasets as tfds
+
+        print("[INFO] Loading EMNIST ByClass via tensorflow_datasets...")
+        ds_train = tfds.load('emnist/byclass', split='train', as_supervised=True)
+        ds_test = tfds.load('emnist/byclass', split='test', as_supervised=True)
+
+        x_train, y_train = [], []
+        for img, label in ds_train:
+            x_train.append(img.numpy().squeeze())
+            y_train.append(label.numpy())
+        x_train = np.array(x_train)
+        y_train = np.array(y_train)
+
+        x_test, y_test = [], []
+        for img, label in ds_test:
+            x_test.append(img.numpy().squeeze())
+            y_test.append(label.numpy())
+        x_test = np.array(x_test)
+        y_test = np.array(y_test)
+
+        print(f"  ByClass Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
+        print(f"  ByClass Test:  {x_test.shape},  labels range: {y_test.min()}-{y_test.max()}")
+        return x_train, y_train, x_test, y_test
+    except Exception as e3:
+        print(f"[WARN] tensorflow_datasets ByClass failed: {e3}")
+
     raise RuntimeError(
         "FATAL: Could not load EMNIST ByClass from any source.\n"
-        "Try: pip install emnist"
+        "Try one of:\n"
+        "  pip install emnist\n"
+        "  pip install tensorflow_datasets"
     )
 
 
@@ -452,7 +511,8 @@ def main():
     print("=" * 60)
 
     # Train Uppercase Letters model (A-Z) from ByClass — pure uppercase only
-    x_train, y_train, x_test, y_test, n_classes = load_emnist_uppercase()
+    byclass_data = load_emnist_byclass()
+    x_train, y_train, x_test, y_test, n_classes = _filter_uppercase(*byclass_data)
     assert n_classes == 26, f"Uppercase model must have 26 classes, got {n_classes}!"
     print(f"[CHECK] Uppercase dataset: {n_classes} classes ✓")
     upper_acc = train_and_export(
@@ -467,7 +527,7 @@ def main():
     print(f"[CHECK] Letters .tflite output shape: {out_shape} ✓")
 
     # Train Lowercase Letters model (a-z) from ByClass — pure lowercase only
-    x_train, y_train, x_test, y_test, n_classes = load_emnist_lowercase()
+    x_train, y_train, x_test, y_test, n_classes = _filter_lowercase(*byclass_data)
     assert n_classes == 26, f"Lowercase model must have 26 classes, got {n_classes}!"
     print(f"[CHECK] Lowercase dataset: {n_classes} classes ✓")
     lower_acc = train_and_export(
