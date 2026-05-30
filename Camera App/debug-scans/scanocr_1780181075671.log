@@ -1,0 +1,23 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/c52115f1-dccd-4f8c-85e6-8efc9239ea56.jpg
+EXIF orientation: 0
+Original image: 768x1024
+Working size: 768x1024 (scale=1.0)
+Gray stats: min=91 max=165 mean=142
+Adaptive thresh: winHalf=40 offset=8
+Binary: inkPixels=8757 (1.11%)
+Polarity: normal (dark-on-light)
+After morph close (R=2): inkPixels=10103
+Raw components: 79
+  (skipping per-component dump; too many)
+Filter: minDim=41.0 maxDim=870.4 minPx=204 aspect=1/8..8
+After filter: 2 components
+Merge: medH=179 gapMaxX=71.6 gapMaxY=268.5
+  MERGE lbl=35 + lbl=45 dx=0 dy=0
+After merge: 1 character groups
+  group#0 x=266 y=531 w=159 h=179 members=[35, 45]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1780181075671.png
+── recognizeHandwriting END count=1 took=559ms
+[ScanOCR]   Char[0] "A" @ 38.0% | bbox=(0.35,0.52,0.21,0.17) | probs[min=3.77e-4 max=3.80e-1 sum=1.000] | top5: A(38.0%) Q(32.1%) G(9.7%) D(4.6%) O(3.4%)
+[ScanOCR]   ↳ SKIPPED (confidence 38.0% < 40% threshold)
+[ScanOCR] FINAL count=0 (raw=0) text="" rawText=""
+[Camera] OCR result: 0 characters found, rawText: ""

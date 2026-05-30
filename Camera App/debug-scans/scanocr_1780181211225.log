@@ -1,0 +1,111 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/7ff36673-3d13-4831-b799-794dbdbd77b9.jpg
+EXIF orientation: 0
+Original image: 768x1024
+Working size: 768x1024 (scale=1.0)
+Gray stats: min=94 max=165 mean=139
+Adaptive thresh: winHalf=40 offset=8
+Binary: inkPixels=6547 (0.83%)
+Polarity: normal (dark-on-light)
+After morph close (R=2): inkPixels=7293
+Raw components: 46
+  raw lbl=1 x=313 y=0 w=26 h=43 px=834
+  raw lbl=2 x=365 y=0 w=73 h=43 px=1395
+  raw lbl=3 x=321 y=47 w=1 h=1 px=1
+  raw lbl=4 x=568 y=63 w=1 h=1 px=1
+  raw lbl=5 x=464 y=237 w=1 h=1 px=1
+  raw lbl=6 x=60 y=314 w=1 h=1 px=1
+  raw lbl=7 x=16 y=384 w=1 h=1 px=1
+  raw lbl=8 x=3 y=421 w=1 h=1 px=1
+  raw lbl=9 x=31 y=452 w=1 h=1 px=1
+  raw lbl=10 x=336 y=452 w=1 h=1 px=1
+  raw lbl=11 x=344 y=454 w=1 h=1 px=1
+  raw lbl=12 x=370 y=454 w=38 h=49 px=1288
+  raw lbl=13 x=13 y=455 w=1 h=1 px=1
+  raw lbl=14 x=576 y=483 w=1 h=1 px=1
+  raw lbl=15 x=397 y=519 w=56 h=82 px=1693
+  raw lbl=16 x=340 y=526 w=49 h=80 px=2020
+  raw lbl=17 x=517 y=530 w=1 h=1 px=1
+  raw lbl=18 x=62 y=536 w=2 h=2 px=3
+  raw lbl=19 x=396 y=546 w=2 h=2 px=4
+  raw lbl=20 x=745 y=552 w=2 h=1 px=2
+  raw lbl=21 x=425 y=559 w=1 h=1 px=1
+  raw lbl=22 x=682 y=585 w=1 h=1 px=1
+  raw lbl=23 x=343 y=602 w=3 h=2 px=4
+  raw lbl=24 x=4 y=638 w=3 h=1 px=3
+  raw lbl=25 x=256 y=674 w=1 h=1 px=1
+  raw lbl=26 x=112 y=680 w=1 h=1 px=1
+  raw lbl=27 x=0 y=746 w=2 h=2 px=4
+  raw lbl=28 x=151 y=775 w=1 h=1 px=1
+  raw lbl=29 x=431 y=797 w=1 h=1 px=1
+  raw lbl=30 x=676 y=799 w=2 h=1 px=2
+  raw lbl=31 x=687 y=820 w=1 h=1 px=1
+  raw lbl=32 x=69 y=821 w=1 h=3 px=3
+  raw lbl=33 x=279 y=826 w=1 h=1 px=1
+  raw lbl=34 x=154 y=831 w=1 h=1 px=1
+  raw lbl=35 x=128 y=856 w=1 h=1 px=1
+  raw lbl=36 x=220 y=871 w=1 h=1 px=1
+  raw lbl=37 x=522 y=874 w=2 h=1 px=2
+  raw lbl=38 x=110 y=896 w=1 h=1 px=1
+  raw lbl=39 x=134 y=896 w=1 h=1 px=1
+  raw lbl=40 x=512 y=908 w=1 h=2 px=2
+  raw lbl=41 x=135 y=910 w=1 h=1 px=1
+  raw lbl=42 x=476 y=1003 w=3 h=1 px=3
+  raw lbl=43 x=618 y=1003 w=1 h=1 px=1
+  raw lbl=44 x=468 y=1006 w=1 h=1 px=1
+  raw lbl=45 x=128 y=1015 w=2 h=1 px=2
+  raw lbl=46 x=743 y=1015 w=1 h=1 px=1
+Filter: minDim=41.0 maxDim=870.4 minPx=204 aspect=1/8..8
+  REJECT lbl=3 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=4 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=5 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=6 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=7 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=8 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=9 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=10 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=11 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=13 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=14 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=17 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=18 reason=tiny_bw_bh bw=1 bh=1 px=3
+  REJECT lbl=19 reason=tiny_bw_bh bw=1 bh=1 px=4
+  REJECT lbl=20 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=21 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=22 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=23 reason=tiny_bw_bh bw=2 bh=1 px=4
+  REJECT lbl=24 reason=tiny_bw_bh bw=2 bh=0 px=3
+  REJECT lbl=25 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=26 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=27 reason=tiny_bw_bh bw=1 bh=1 px=4
+  REJECT lbl=28 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=29 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=30 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=31 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=32 reason=tiny_bw_bh bw=0 bh=2 px=3
+  REJECT lbl=33 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=34 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=35 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=36 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=37 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=38 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=39 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=40 reason=tiny_bw_bh bw=0 bh=1 px=2
+  REJECT lbl=41 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=42 reason=tiny_bw_bh bw=2 bh=0 px=3
+  REJECT lbl=43 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=44 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=45 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=46 reason=tiny_bw_bh bw=0 bh=0 px=1
+After filter: 5 components
+Merge: medH=49 gapMaxX=19.6 gapMaxY=73.5
+  MERGE lbl=12 + lbl=15 dx=0 dy=17
+  MERGE lbl=12 + lbl=16 dx=0 dy=24
+  MERGE lbl=15 + lbl=16 dx=9 dy=0
+After merge: 3 character groups
+Keeping largest group only: 113x152 (dropped 2 smaller)
+  group#0 x=340 y=454 w=113 h=152 members=[12, 15, 16]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1780181211225.png
+── recognizeHandwriting END count=1 took=583ms
+[ScanOCR]   Char[0] "H" @ 64.7% | bbox=(0.44,0.44,0.15,0.15) | probs[min=3.05e-4 max=6.47e-1 sum=1.000] | top5: H(64.7%) A(10.1%) N(6.8%) L(4.2%) R(2.4%)
+[ScanOCR] FINAL count=1 (raw=1) text="H" rawText="H"
+[Camera] OCR result: 1 characters found, rawText: "H"
