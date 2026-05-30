@@ -22,6 +22,19 @@ import { filterByMode, isLetterMode, isLowercaseMode } from '../utils/characterF
 
 const { HandwritingOcrModule } = NativeModules;
 
+/**
+ * Log to console AND persist to the native debug log file (DEBUG builds only).
+ * Failures (e.g. no native module on web) are silently ignored.
+ */
+function scanLog(line: string) {
+  console.log(line);
+  try {
+    HandwritingOcrModule?.appendLog?.(line);
+  } catch {
+    /* noop */
+  }
+}
+
 // ─── Label maps ───────────────────────────────────────────────────
 
 const LETTER_LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -160,7 +173,7 @@ export async function recognizeHandwriting(
     let pMin = probs[0], pMax = probs[0], pSum = 0;
     for (const v of probs) { if (v < pMin) pMin = v; if (v > pMax) pMax = v; pSum += v; }
     const bb = crop.boundingBox;
-    console.log(
+    scanLog(
       `[ScanOCR]   Char[${i}] "${finalChar}" @ ${(bestProb * 100).toFixed(1)}% | bbox=(${bb.x.toFixed(2)},${bb.y.toFixed(2)},${bb.width.toFixed(2)},${bb.height.toFixed(2)}) | probs[min=${pMin.toExponential(2)} max=${pMax.toExponential(2)} sum=${pSum.toFixed(3)}] | top5: ${top5}`
     );
 
@@ -175,7 +188,7 @@ export async function recognizeHandwriting(
   // ── Step 4: Filter by mode ──────────────────────────────────────
   const filtered = filterByMode(recognized, mode);
   const rawText = rawChars.join('');
-  console.log(
+  scanLog(
     `[ScanOCR] FINAL count=${filtered.length} (raw=${recognized.length}) text="${filtered.map((c) => c.text).join('')}" rawText="${rawText}"`
   );
 
