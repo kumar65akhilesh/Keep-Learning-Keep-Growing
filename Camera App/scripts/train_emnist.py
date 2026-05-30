@@ -41,6 +41,7 @@ ASSETS_DIR = os.path.join(PROJECT_DIR, "assets")
 os.makedirs(ASSETS_DIR, exist_ok=True)
 
 LETTERS_TFLITE = os.path.join(ASSETS_DIR, "emnist-letters.tflite")
+LETTERS_LOWER_TFLITE = os.path.join(ASSETS_DIR, "emnist-letters-lower.tflite")
 DIGITS_TFLITE = os.path.join(ASSETS_DIR, "emnist-digits.tflite")
 
 # ─── EMNIST Letters ───────────────────────────────────────────────
@@ -234,6 +235,142 @@ def load_emnist_letters():
     )
 
 
+# ─── EMNIST ByClass (uppercase-only / lowercase-only) ────────────
+
+def load_emnist_byclass():
+    """
+    Load EMNIST ByClass dataset (62 classes: 0-9, A-Z, a-z).
+    Returns x_train, y_train, x_test, y_test with labels 0-61.
+    """
+    # ── Strategy 1: emnist pip package ────────────────────────────
+    try:
+        try:
+            from emnist import extract_training_samples, extract_test_samples
+        except ImportError:
+            print("[INFO] Installing 'emnist' package...")
+            os.system(f'"{sys.executable}" -m pip install emnist')
+            from emnist import extract_training_samples, extract_test_samples
+
+        print("[INFO] Loading EMNIST ByClass via emnist package...")
+        x_train, y_train = extract_training_samples('byclass')
+        x_test, y_test = extract_test_samples('byclass')
+
+        print(f"  ByClass Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
+        print(f"  ByClass Test:  {x_test.shape},  labels range: {y_test.min()}-{y_test.max()}")
+        return x_train, y_train, x_test, y_test
+    except Exception as e1:
+        print(f"[WARN] emnist ByClass via pip failed: {e1}")
+
+    # ── Strategy 2: Manual NIST gzip download ─────────────────────
+    try:
+        import urllib.request
+        import gzip
+        import struct
+
+        MIRRORS = [
+            "https://biometrics.nist.gov/cs_links/EMNIST/gzip/",
+            "https://www.itl.nist.gov/iaui/vip/cs_links/EMNIST/gzip/",
+        ]
+        files = {
+            "train_images": "emnist-byclass-train-images-idx3-ubyte.gz",
+            "train_labels": "emnist-byclass-train-labels-idx1-ubyte.gz",
+            "test_images": "emnist-byclass-test-images-idx3-ubyte.gz",
+            "test_labels": "emnist-byclass-test-labels-idx1-ubyte.gz",
+        }
+
+        cache_dir = os.path.join(PROJECT_DIR, ".emnist_cache")
+        os.makedirs(cache_dir, exist_ok=True)
+
+        def download_file(filename):
+            filepath = os.path.join(cache_dir, filename)
+            if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
+                return filepath
+            for base_url in MIRRORS:
+                try:
+                    url = base_url + filename
+                    print(f"  Downloading {url} ...")
+                    urllib.request.urlretrieve(url, filepath)
+                    if os.path.getsize(filepath) > 1000:
+                        return filepath
+                except Exception:
+                    continue
+            raise RuntimeError(f"Could not download {filename} from any mirror")
+
+        def parse_images(filename):
+            filepath = download_file(filename)
+            with gzip.open(filepath, 'rb') as f:
+                magic, num, rows, cols = struct.unpack('>IIII', f.read(16))
+                data = np.frombuffer(f.read(), dtype=np.uint8).reshape(num, rows, cols)
+            data = np.transpose(data, (0, 2, 1))
+            return data
+
+        def parse_labels(filename):
+            filepath = download_file(filename)
+            with gzip.open(filepath, 'rb') as f:
+                magic, num = struct.unpack('>II', f.read(8))
+                labels = np.frombuffer(f.read(), dtype=np.uint8)
+            return labels
+
+        print("[INFO] Downloading EMNIST ByClass from NIST mirrors...")
+        x_train = parse_images(files["train_images"])
+        y_train = parse_labels(files["train_labels"])
+        x_test = parse_images(files["test_images"])
+        y_test = parse_labels(files["test_labels"])
+
+        print(f"  ByClass Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
+        print(f"  ByClass Test:  {x_test.shape},  labels range: {y_test.min()}-{y_test.max()}")
+        return x_train, y_train, x_test, y_test
+    except Exception as e2:
+        print(f"[WARN] NIST ByClass mirror download failed: {e2}")
+
+    raise RuntimeError(
+        "FATAL: Could not load EMNIST ByClass from any source.\n"
+        "Try: pip install emnist"
+    )
+
+
+def load_emnist_uppercase():
+    """
+    Load EMNIST ByClass and extract only uppercase letters (A-Z).
+    ByClass labels: 10=A, 11=B, ..., 35=Z → remap to 0-25.
+    Returns 26 classes.
+    """
+    x_train, y_train, x_test, y_test = load_emnist_byclass()
+
+    # Filter to labels 10-35 (uppercase A-Z)
+    train_mask = (y_train >= 10) & (y_train <= 35)
+    test_mask = (y_test >= 10) & (y_test <= 35)
+
+    x_train, y_train = x_train[train_mask], y_train[train_mask] - 10
+    x_test, y_test = x_test[test_mask], y_test[test_mask] - 10
+
+    print(f"  Uppercase Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
+    print(f"  Uppercase Test:  {x_test.shape},  labels range: {y_test.min()}-{y_test.max()}")
+    assert y_train.max() == 25, f"Expected 26 classes (0-25), got max label {y_train.max()}"
+    return x_train, y_train, x_test, y_test, 26
+
+
+def load_emnist_lowercase():
+    """
+    Load EMNIST ByClass and extract only lowercase letters (a-z).
+    ByClass labels: 36=a, 37=b, ..., 61=z → remap to 0-25.
+    Returns 26 classes.
+    """
+    x_train, y_train, x_test, y_test = load_emnist_byclass()
+
+    # Filter to labels 36-61 (lowercase a-z)
+    train_mask = (y_train >= 36) & (y_train <= 61)
+    test_mask = (y_test >= 36) & (y_test <= 61)
+
+    x_train, y_train = x_train[train_mask], y_train[train_mask] - 36
+    x_test, y_test = x_test[test_mask], y_test[test_mask] - 36
+
+    print(f"  Lowercase Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
+    print(f"  Lowercase Test:  {x_test.shape},  labels range: {y_test.min()}-{y_test.max()}")
+    assert y_train.max() == 25, f"Expected 26 classes (0-25), got max label {y_train.max()}"
+    return x_train, y_train, x_test, y_test, 26
+
+
 def load_emnist_digits():
     """Load MNIST digits dataset (0-9). We'll filter to 1-9 in the app."""
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
@@ -314,20 +451,35 @@ def main():
     print("EMNIST Model Training for Little Letters App")
     print("=" * 60)
 
-    # Train Letters model (A-Z) — MUST be 26 classes
-    x_train, y_train, x_test, y_test, n_classes = load_emnist_letters()
-    assert n_classes == 26, f"Letters model must have 26 classes, got {n_classes}!"
-    print(f"[CHECK] Letters dataset: {n_classes} classes ✓")
-    letters_acc = train_and_export(
-        "Letters (A-Z)", x_train, y_train, x_test, y_test, n_classes, LETTERS_TFLITE
+    # Train Uppercase Letters model (A-Z) from ByClass — pure uppercase only
+    x_train, y_train, x_test, y_test, n_classes = load_emnist_uppercase()
+    assert n_classes == 26, f"Uppercase model must have 26 classes, got {n_classes}!"
+    print(f"[CHECK] Uppercase dataset: {n_classes} classes ✓")
+    upper_acc = train_and_export(
+        "Uppercase Letters (A-Z)", x_train, y_train, x_test, y_test, n_classes, LETTERS_TFLITE
     )
 
-    # Verify exported letters model has 26 output classes
+    # Verify exported uppercase model has 26 output classes
     interpreter = tf.lite.Interpreter(model_path=LETTERS_TFLITE)
     interpreter.allocate_tensors()
     out_shape = interpreter.get_output_details()[0]['shape']
     assert out_shape[-1] == 26, f"Letters .tflite has {out_shape[-1]} outputs, expected 26!"
     print(f"[CHECK] Letters .tflite output shape: {out_shape} ✓")
+
+    # Train Lowercase Letters model (a-z) from ByClass — pure lowercase only
+    x_train, y_train, x_test, y_test, n_classes = load_emnist_lowercase()
+    assert n_classes == 26, f"Lowercase model must have 26 classes, got {n_classes}!"
+    print(f"[CHECK] Lowercase dataset: {n_classes} classes ✓")
+    lower_acc = train_and_export(
+        "Lowercase Letters (a-z)", x_train, y_train, x_test, y_test, n_classes, LETTERS_LOWER_TFLITE
+    )
+
+    # Verify exported lowercase model has 26 output classes
+    interpreter = tf.lite.Interpreter(model_path=LETTERS_LOWER_TFLITE)
+    interpreter.allocate_tensors()
+    out_shape = interpreter.get_output_details()[0]['shape']
+    assert out_shape[-1] == 26, f"Letters-lower .tflite has {out_shape[-1]} outputs, expected 26!"
+    print(f"[CHECK] Letters-lower .tflite output shape: {out_shape} ✓")
 
     # Train Digits model (0-9)
     x_train, y_train, x_test, y_test, n_classes = load_emnist_digits()
@@ -338,9 +490,11 @@ def main():
 
     print("\n" + "=" * 60)
     print("DONE!")
-    print(f"  Letters accuracy: {letters_acc*100:.1f}%")
-    print(f"  Digits accuracy:  {digits_acc*100:.1f}%")
+    print(f"  Uppercase accuracy: {upper_acc*100:.1f}%")
+    print(f"  Lowercase accuracy: {lower_acc*100:.1f}%")
+    print(f"  Digits accuracy:    {digits_acc*100:.1f}%")
     print(f"  Output: {LETTERS_TFLITE}")
+    print(f"  Output: {LETTERS_LOWER_TFLITE}")
     print(f"  Output: {DIGITS_TFLITE}")
     print("=" * 60)
 
