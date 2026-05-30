@@ -280,9 +280,9 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 }
 
                 // ── Filter noise (Phase 3 — pencil-friendly) ─────────────
-                val minDim = maxOf(w, h) * 0.02
+                val minDim = maxOf(w, h) * 0.04
                 val maxDim = maxOf(w, h) * 0.85
-                val minPx  = (maxOf(w, h) * 0.10).toInt().coerceAtLeast(20)
+                val minPx  = (maxOf(w, h) * 0.20).toInt().coerceAtLeast(50)
                 lg("Filter: minDim=\${"%.1f".format(minDim)} maxDim=\${"%.1f".format(maxDim)} minPx=\$minPx aspect=1/8..8")
 
                 val valid = mutableMapOf<Int, IntArray>()
@@ -704,9 +704,9 @@ class HandwritingOcrModule: NSObject {
       }
 
       // ── Filter noise (Phase 3 — pencil-friendly) ───────────────────
-      let minDim = Float(max(w, h)) * 0.02
+      let minDim = Float(max(w, h)) * 0.04
       let maxDim = Float(max(w, h)) * 0.85
-      let minPx  = max(Int(Float(max(w, h)) * 0.10), 20)
+      let minPx  = max(Int(Float(max(w, h)) * 0.20), 50)
       dbg("Filter: minDim=\\(String(format: \"%.1f\", Double(minDim))) maxDim=\\(String(format: \"%.1f\", Double(maxDim))) minPx=\\(minPx) aspect=1/8..8")
 
       var valid = [Int: [Int]]()
