@@ -177,6 +177,12 @@ export async function recognizeHandwriting(
       `[ScanOCR]   Char[${i}] "${finalChar}" @ ${(bestProb * 100).toFixed(1)}% | bbox=(${bb.x.toFixed(2)},${bb.y.toFixed(2)},${bb.width.toFixed(2)},${bb.height.toFixed(2)}) | probs[min=${pMin.toExponential(2)} max=${pMax.toExponential(2)} sum=${pSum.toFixed(3)}] | top5: ${top5}`
     );
 
+    // Skip low-confidence noise detections
+    if (bestProb < 0.40) {
+      scanLog(`[ScanOCR]   ↳ SKIPPED (confidence ${(bestProb * 100).toFixed(1)}% < 40% threshold)`);
+      continue;
+    }
+
     rawChars.push(finalChar);
     recognized.push({
       text: finalChar,
