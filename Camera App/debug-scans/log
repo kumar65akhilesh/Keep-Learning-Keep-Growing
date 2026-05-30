@@ -1,1 +1,3 @@
 
+python scripts/train_emnist.py   # trains all 3 models (~5-10 min)
+npx expo prebuild --clean        # rebuild native modules
