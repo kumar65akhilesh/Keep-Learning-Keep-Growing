@@ -84,12 +84,21 @@ export async function recognizeHandwriting(
   }
 
   // ── Step 1: Native segmentation ─────────────────────────────────
+  const tSeg = Date.now();
   const jsonString: string = await HandwritingOcrModule.recognizeHandwriting(imageUri);
   const parsed = JSON.parse(jsonString);
   const crops = parsed.characters ?? [];
-  console.log('[ScanOCR] Segmentation returned', crops.length, 'character regions');
+  console.log(`[ScanOCR] Segmentation returned ${crops.length} regions (took ${Date.now() - tSeg}ms)`);
+  if (parsed.debugOverlayUri) {
+    console.log(`[ScanOCR] 🔍 Debug overlay PNG: ${parsed.debugOverlayUri}`);
+  }
+  for (let i = 0; i < crops.length; i++) {
+    const bb = crops[i].boundingBox;
+    console.log(`[ScanOCR]   crop[${i}] bbox x=${bb.x.toFixed(3)} y=${bb.y.toFixed(3)} w=${bb.width.toFixed(3)} h=${bb.height.toFixed(3)}`);
+  }
 
   if (crops.length === 0) {
+    console.log('[ScanOCR] FINAL count=0 (no segments)');
     return { characters: [], mode, timestamp: Date.now(), imageUri, rawText: '' };
   }
 
@@ -141,14 +150,19 @@ export async function recognizeHandwriting(
                     : isLetters ? predicted.toUpperCase()
                     : predicted;
 
-    // Top-3 for logging
+    // Top-5 for logging + prob distribution stats
     const sorted = [...probs]
       .map((p, idx) => ({ p, c: labels[idx] }))
       .sort((a, b) => b.p - a.p);
-    const top3 = sorted.slice(0, 3)
-      .map((x) => `${x.c}(${(x.p * 100).toFixed(0)}%)`)
+    const top5 = sorted.slice(0, 5)
+      .map((x) => `${x.c}(${(x.p * 100).toFixed(1)}%)`)
       .join(' ');
-    console.log(`[ScanOCR]   Char ${i}: "${finalChar}" @ ${(bestProb * 100).toFixed(1)}% | ${top3}`);
+    let pMin = probs[0], pMax = probs[0], pSum = 0;
+    for (const v of probs) { if (v < pMin) pMin = v; if (v > pMax) pMax = v; pSum += v; }
+    const bb = crop.boundingBox;
+    console.log(
+      `[ScanOCR]   Char[${i}] "${finalChar}" @ ${(bestProb * 100).toFixed(1)}% | bbox=(${bb.x.toFixed(2)},${bb.y.toFixed(2)},${bb.width.toFixed(2)},${bb.height.toFixed(2)}) | probs[min=${pMin.toExponential(2)} max=${pMax.toExponential(2)} sum=${pSum.toFixed(3)}] | top5: ${top5}`
+    );
 
     rawChars.push(finalChar);
     recognized.push({
@@ -160,13 +174,16 @@ export async function recognizeHandwriting(
 
   // ── Step 4: Filter by mode ──────────────────────────────────────
   const filtered = filterByMode(recognized, mode);
-  console.log('[ScanOCR] After filter:', filtered.length, '/', recognized.length);
+  const rawText = rawChars.join('');
+  console.log(
+    `[ScanOCR] FINAL count=${filtered.length} (raw=${recognized.length}) text="${filtered.map((c) => c.text).join('')}" rawText="${rawText}"`
+  );
 
   return {
     characters: filtered,
     mode,
     timestamp: Date.now(),
     imageUri,
-    rawText: rawChars.join(''),
+    rawText,
   };
 }
