@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Dimensions,
   Platform,
   NativeModules,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -21,7 +22,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { recognizeFromUri } from '../services/ocr';
 import { recognizeHandwriting } from '../services/handwritingOcr';
 import { isLetterMode, isScanHandwriteMode } from '../utils/characterFilter';
-import { preprocessImage } from '../services/imagePreprocessing';
+import { preprocessImage, centerCrop } from '../services/imagePreprocessing';
 import { speakCharacter } from '../services/tts';
 import type { RecognizedCharacter } from '../types';
 
@@ -55,12 +56,46 @@ export default function CameraScreen() {
   const [facing, setFacing] = useState<'front' | 'back'>('back');
   const [flash, setFlash] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [zoom, setZoom] = useState(0);
+  const zoomOpacity = useRef(new Animated.Value(0)).current;
+  const zoomHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPinchDist = useRef<number | null>(null);
 
   const mode = useOcrStore((s) => s.mode);
   const liveCharacters = useOcrStore((s) => s.liveCharacters);
   const setCurrentResult = useOcrStore((s) => s.setCurrentResult);
   const setIsProcessing = useOcrStore((s) => s.setIsProcessing);
   const soundEffects = useSettingsStore((s) => s.soundEffects);
+
+  /** Show zoom indicator briefly */
+  const flashZoomIndicator = useCallback(() => {
+    zoomOpacity.setValue(1);
+    if (zoomHideTimer.current) clearTimeout(zoomHideTimer.current);
+    zoomHideTimer.current = setTimeout(() => {
+      Animated.timing(zoomOpacity, { toValue: 0, duration: 600, useNativeDriver: true }).start();
+    }, 1200);
+  }, [zoomOpacity]);
+
+  /** Pinch-to-zoom handler on the camera preview */
+  const handleTouchEvent = useCallback(
+    (evt: any) => {
+      const touches = evt.nativeEvent.touches;
+      if (!touches || touches.length < 2) {
+        lastPinchDist.current = null;
+        return;
+      }
+      const dx = touches[0].pageX - touches[1].pageX;
+      const dy = touches[0].pageY - touches[1].pageY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (lastPinchDist.current !== null) {
+        const delta = (dist - lastPinchDist.current) / 400;
+        setZoom((prev) => Math.min(1, Math.max(0, prev + delta)));
+        flashZoomIndicator();
+      }
+      lastPinchDist.current = dist;
+    },
+    [flashZoomIndicator],
+  );
 
   // Request camera permission on mount (native only)
   useEffect(() => {
@@ -116,12 +151,16 @@ export default function CameraScreen() {
         quality: 0.9,
       });
 
-      console.log('[Camera] Preprocessed URI:', processedUri);
+      // Auto-crop to center — effective when shooting from distance
+      const cropRatio = Math.max(0.3, 0.6 - zoom * 0.4);
+      const croppedUri = await centerCrop(processedUri, cropRatio);
+
+      console.log('[Camera] Preprocessed URI:', processedUri, 'crop:', (cropRatio * 100).toFixed(0) + '%');
 
       // Run OCR with mode-specific filtering
       const result = isScanHandwriteMode(mode)
-        ? await recognizeHandwriting(processedUri, mode)
-        : await recognizeFromUri(processedUri, mode);
+        ? await recognizeHandwriting(croppedUri, mode)
+        : await recognizeFromUri(croppedUri, mode);
 
       const resultLine = `[Camera] OCR result: ${result.characters.length} characters found, rawText: ${JSON.stringify(result.rawText)}`;
       console.log(resultLine);
@@ -238,12 +277,17 @@ export default function CameraScreen() {
       </View>
 
       {/* Camera preview */}
-      <View style={styles.previewContainer}>
+      <View
+        style={styles.previewContainer}
+        onTouchMove={handleTouchEvent}
+        onTouchEnd={() => { lastPinchDist.current = null; }}
+      >
         <CameraView
           ref={cameraRef}
           style={styles.camera}
           facing={facing}
           flash={flash ? 'on' : 'off'}
+          zoom={zoom}
         />
 
         {/* OCR overlay on top of camera */}
@@ -273,7 +317,10 @@ export default function CameraScreen() {
               : `Looking for ${isLetterMode(mode) ? 'letters A–Z' : 'numbers 1–9'}`}
           </Text>
         </View>
-      </View>
+        {/* Zoom level indicator */}
+        <Animated.View style={[styles.zoomIndicator, { opacity: zoomOpacity }]}>
+          <Text style={styles.zoomText}>{(1 + zoom * 9).toFixed(1)}×</Text>
+        </Animated.View>      </View>
 
       {/* Live result strip */}
       <LiveResultStrip
@@ -405,6 +452,20 @@ const styles = StyleSheet.create({
     fontSize: Fonts.size.sm,
     color: Colors.white,
     textAlign: 'center',
+  },
+  zoomIndicator: {
+    position: 'absolute',
+    top: Spacing.md,
+    right: Spacing.md,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+  },
+  zoomText: {
+    fontFamily: Fonts.family.bold,
+    fontSize: Fonts.size.sm,
+    color: Colors.white,
   },
   controls: {
     flexDirection: 'row',
