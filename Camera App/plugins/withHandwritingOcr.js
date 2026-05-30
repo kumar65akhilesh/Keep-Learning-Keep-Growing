@@ -412,12 +412,12 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     for (gy in 0 until GRID) for (gx in 0 until GRID) {
                         if (grid[gy * GRID + gx] > 0.3f) continue
                         var mx = 0f
-                        for (dy in -1..1) for (dx in -1..1) {
+                        for (dy in -2..2) for (dx in -2..2) {
                             val nx = gx + dx; val ny = gy + dy
                             if (nx in 0 until GRID && ny in 0 until GRID)
                                 mx = maxOf(mx, grid[ny * GRID + nx])
                         }
-                        if (mx > 0.5f) thick[gy * GRID + gx] = mx * 0.4f
+                        if (mx > 0.3f) thick[gy * GRID + gx] = mx * 0.35f
                     }
 
                     val pxArr = JSONArray()
@@ -851,13 +851,13 @@ class HandwritingOcrModule: NSObject {
         for gy in 0..<GRID { for gx in 0..<GRID {
           if grid[gy * GRID + gx] > 0.3 { continue }
           var mx: Float = 0
-          for dy in -1...1 { for dx in -1...1 {
+          for dy in -2...2 { for dx in -2...2 {
             let nx = gx + dx; let ny = gy + dy
             if nx >= 0 && nx < GRID && ny >= 0 && ny < GRID {
               mx = max(mx, grid[ny * GRID + nx])
             }
           }}
-          if mx > 0.5 { thick[gy * GRID + gx] = mx * 0.4 }
+          if mx > 0.3 { thick[gy * GRID + gx] = mx * 0.35 }
         }}
 
         let charDict: [String: Any] = [
