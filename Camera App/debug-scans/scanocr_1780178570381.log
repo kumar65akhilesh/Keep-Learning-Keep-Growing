@@ -1,0 +1,33 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/d78f9166-da1d-402b-8204-743e7fd5f418.jpg
+EXIF orientation: 0
+Original image: 768x1024
+Working size: 768x1024 (scale=1.0)
+Gray stats: min=94 max=172 mean=146
+Adaptive thresh: winHalf=40 offset=8
+Binary: inkPixels=6205 (0.79%)
+Polarity: normal (dark-on-light)
+After morph close (R=2): inkPixels=9830
+Raw components: 466
+  (skipping per-component dump; too many)
+Filter: minDim=20.5 maxDim=870.4 minPx=102 aspect=1/8..8
+After filter: 8 components
+Merge: medH=37 gapMaxX=14.8 gapMaxY=55.5
+  MERGE lbl=126 + lbl=170 dx=5 dy=47
+  MERGE lbl=296 + lbl=338 dx=7 dy=0
+After merge: 6 character groups
+  group#0 x=7 y=571 w=77 h=63 members=[296, 338]
+  group#1 x=37 y=146 w=53 h=70 members=[56]
+  group#2 x=40 y=344 w=26 h=37 members=[177]
+  group#3 x=86 y=263 w=89 h=124 members=[126, 170]
+  group#4 x=103 y=614 w=29 h=25 members=[349]
+  group#5 x=154 y=120 w=23 h=24 members=[27]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1780178570381.png
+── recognizeHandwriting END count=6 took=754ms
+[ScanOCR]   Char[0] "M" @ 61.1% | bbox=(0.01,0.56,0.10,0.06) | probs[min=3.51e-4 max=6.11e-1 sum=1.000] | top5: M(61.1%) A(11.0%) U(8.0%) N(5.7%) Z(1.8%)
+[ScanOCR]   Char[1] "A" @ 18.2% | bbox=(0.05,0.14,0.07,0.07) | probs[min=7.14e-3 max=1.82e-1 sum=1.000] | top5: A(18.2%) Z(13.6%) R(8.0%) U(5.8%) G(5.4%)
+[ScanOCR]   Char[2] "P" @ 10.8% | bbox=(0.05,0.34,0.03,0.04) | probs[min=2.46e-3 max=1.08e-1 sum=1.000] | top5: P(10.8%) Z(10.8%) E(9.6%) F(8.7%) R(8.6%)
+[ScanOCR]   Char[3] "H" @ 32.0% | bbox=(0.11,0.26,0.12,0.12) | probs[min=2.93e-5 max=3.20e-1 sum=1.000] | top5: H(32.0%) J(17.1%) F(16.8%) I(7.1%) T(4.9%)
+[ScanOCR]   Char[4] "K" @ 58.8% | bbox=(0.13,0.60,0.04,0.02) | probs[min=1.63e-6 max=5.88e-1 sum=1.000] | top5: K(58.8%) X(21.8%) F(3.7%) A(3.4%) T(2.9%)
+[ScanOCR]   Char[5] "F" @ 42.0% | bbox=(0.20,0.12,0.03,0.02) | probs[min=8.29e-5 max=4.20e-1 sum=1.000] | top5: F(42.0%) J(13.2%) T(9.7%) I(6.2%) E(4.4%)
+[ScanOCR] FINAL count=6 (raw=6) text="MAPHKF" rawText="MAPHKF"
+[Camera] OCR result: 6 characters found, rawText: "MAPHKF"

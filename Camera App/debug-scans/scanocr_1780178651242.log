@@ -1,0 +1,25 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/e7418c50-8be8-4584-a365-1c6ff0b57e0b.jpg
+EXIF orientation: 0
+Original image: 593x790
+Working size: 593x790 (scale=1.0)
+Gray stats: min=2 max=195 mean=146
+Adaptive thresh: winHalf=31 offset=8
+Binary: inkPixels=8490 (1.81%)
+Polarity: normal (dark-on-light)
+After morph close (R=2): inkPixels=9117
+Raw components: 248
+  (skipping per-component dump; too many)
+Filter: minDim=15.8 maxDim=671.5 minPx=79 aspect=1/8..8
+After filter: 3 components
+Merge: medH=30 gapMaxX=12.0 gapMaxY=45.0
+After merge: 3 character groups
+  group#0 x=90 y=120 w=159 h=226 members=[41]
+  group#1 x=207 y=400 w=100 h=30 members=[123]
+  group#2 x=386 y=348 w=13 h=27 members=[108]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1780178651242.png
+── recognizeHandwriting END count=3 took=343ms
+[ScanOCR]   Char[0] "B" @ 100.0% | bbox=(0.15,0.15,0.27,0.29) | probs[min=3.93e-10 max=1.00e+0 sum=1.000] | top5: B(100.0%) G(0.0%) R(0.0%) E(0.0%) D(0.0%)
+[ScanOCR]   Char[1] "V" @ 60.7% | bbox=(0.35,0.51,0.17,0.04) | probs[min=1.79e-5 max=6.07e-1 sum=1.000] | top5: V(60.7%) Y(12.6%) L(8.3%) R(5.2%) J(1.9%)
+[ScanOCR]   Char[2] "L" @ 33.3% | bbox=(0.65,0.44,0.02,0.03) | probs[min=1.08e-6 max=3.33e-1 sum=1.000] | top5: L(33.3%) I(32.2%) J(30.9%) G(0.9%) D(0.7%)
+[ScanOCR] FINAL count=3 (raw=3) text="BVL" rawText="BVL"
+[Camera] OCR result: 3 characters found, rawText: "BVL"
