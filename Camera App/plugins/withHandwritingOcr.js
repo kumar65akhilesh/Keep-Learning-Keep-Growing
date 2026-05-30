@@ -345,7 +345,14 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 }
                 lg("After merge: \${groups.size} character groups")
 
-                val sortedGroups = groups.values.sortedBy { it.x1 }
+                // Keep only the largest group (by pixel area) — single-letter scanning
+                val sortedGroups = if (groups.size > 1) {
+                    val largest = groups.values.maxByOrNull { (it.x2 - it.x1 + 1) * (it.y2 - it.y1 + 1) }!!
+                    lg("Keeping largest group only: \${largest.x2-largest.x1+1}x\${largest.y2-largest.y1+1} (dropped \${groups.size - 1} smaller)")
+                    listOf(largest)
+                } else {
+                    groups.values.sortedBy { it.x1 }
+                }
                 for ((idx, g) in sortedGroups.withIndex()) {
                     lg("  group#\$idx x=\${g.x1} y=\${g.y1} w=\${g.x2-g.x1+1} h=\${g.y2-g.y1+1} members=\${g.members}")
                 }
@@ -764,7 +771,17 @@ class HandwritingOcrModule: NSObject {
       }
       dbg("After merge: \\(groups.count) character groups")
 
-      let sortedGroups = groups.values.sorted { $0.x1 < $1.x1 }
+      // Keep only the largest group (by pixel area) — single-letter scanning
+      let sortedGroups: [(x1: Int, y1: Int, x2: Int, y2: Int, members: [Int])]
+      if groups.count > 1 {
+        let largest = groups.values.max(by: { a, b in
+          (a.x2 - a.x1 + 1) * (a.y2 - a.y1 + 1) < (b.x2 - b.x1 + 1) * (b.y2 - b.y1 + 1)
+        })!
+        dbg("Keeping largest group only: \\(largest.x2-largest.x1+1)x\\(largest.y2-largest.y1+1) (dropped \\(groups.count - 1) smaller)")
+        sortedGroups = [largest]
+      } else {
+        sortedGroups = groups.values.sorted { $0.x1 < $1.x1 }
+      }
       for (idx, g) in sortedGroups.enumerated() {
         dbg("  group#\\(idx) x=\\(g.x1) y=\\(g.y1) w=\\(g.x2-g.x1+1) h=\\(g.y2-g.y1+1) members=\\(g.members.count)")
       }
