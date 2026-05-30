@@ -26,6 +26,8 @@ import com.facebook.react.bridge.*
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.util.Log
 import org.json.JSONArray
@@ -99,9 +101,42 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 val uri = Uri.parse(imageUri)
                 val input = reactApplicationContext.contentResolver.openInputStream(uri)
                     ?: return@Thread promise.reject("SEG_ERR", "Cannot open image")
-                val original = BitmapFactory.decodeStream(input)
+                val decoded = BitmapFactory.decodeStream(input)
                 input.close()
-                if (original == null) return@Thread promise.reject("SEG_ERR", "Cannot decode image")
+                if (decoded == null) return@Thread promise.reject("SEG_ERR", "Cannot decode image")
+
+                // ── EXIF orientation correction ───────────────────────
+                val original: Bitmap = try {
+                    val exifStream = reactApplicationContext.contentResolver.openInputStream(uri)
+                    val exif = if (exifStream != null) ExifInterface(exifStream) else null
+                    exifStream?.close()
+                    val orientation = exif?.getAttributeInt(
+                        ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL
+                    ) ?: ExifInterface.ORIENTATION_NORMAL
+                    lg("EXIF orientation: \$orientation")
+                    val matrix = Matrix()
+                    when (orientation) {
+                        ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                        ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                        ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                        ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.postScale(-1f, 1f)
+                        ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.postScale(1f, -1f)
+                        ExifInterface.ORIENTATION_TRANSPOSE -> { matrix.postRotate(90f); matrix.postScale(-1f, 1f) }
+                        ExifInterface.ORIENTATION_TRANSVERSE -> { matrix.postRotate(270f); matrix.postScale(-1f, 1f) }
+                    }
+                    val needsTransform = !matrix.isIdentity
+                    if (needsTransform) {
+                        val rotated = Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+                        if (rotated !== decoded) decoded.recycle()
+                        lg("EXIF transform applied → \${rotated.width}x\${rotated.height}")
+                        rotated
+                    } else {
+                        decoded
+                    }
+                } catch (e: Exception) {
+                    lw("EXIF read failed: \${e.message}, using original")
+                    decoded
+                }
                 lg("Original image: \${original.width}x\${original.height}")
 
                 // ── Down-scale ────────────────────────────────────────
@@ -164,13 +199,25 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 }
                 lg("Binary: inkPixels=\$inkCount (\${"%.2f".format(100.0 * inkCount / (w*h))}%)")
 
-                // ── Morphological close (dilate → erode) bridges ≤ 1px stroke gaps ──
+                // ── Auto-polarity detection (chalkboard/light-on-dark) ──
+                val totalPx = w * h
+                val inverted = inkCount > totalPx * 0.40
+                if (inverted) {
+                    lg("Polarity: INVERTED (ink=\${"%.1f".format(100.0 * inkCount / totalPx)}%% > 40%%) — flipping binary")
+                    for (i in binary.indices) binary[i] = !binary[i]
+                    inkCount = binary.count { it }
+                    lg("After invert: inkPixels=\$inkCount (\${"%.2f".format(100.0 * inkCount / totalPx)}%%)")
+                } else {
+                    lg("Polarity: normal (dark-on-light)")
+                }
+
+                // ── Morphological close (dilate → erode) bridges ≤ 2px stroke gaps ──
                 run {
+                    val R = 2
                     val dilated = BooleanArray(w * h)
                     for (y in 0 until h) for (x in 0 until w) {
                         if (binary[y * w + x]) {
-                            dilated[y * w + x] = true
-                            for (dy in -1..1) for (dx in -1..1) {
+                            for (dy in -R..R) for (dx in -R..R) {
                                 val nx = x + dx; val ny = y + dy
                                 if (nx in 0 until w && ny in 0 until h) dilated[ny * w + nx] = true
                             }
@@ -180,7 +227,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     for (y in 0 until h) for (x in 0 until w) {
                         if (!dilated[y * w + x]) { binary[y * w + x] = false; continue }
                         var ok = true
-                        loop@ for (dy in -1..1) for (dx in -1..1) {
+                        loop@ for (dy in -R..R) for (dx in -R..R) {
                             val nx = x + dx; val ny = y + dy
                             if (nx !in 0 until w || ny !in 0 until h) continue
                             if (!dilated[ny * w + nx]) { ok = false; break@loop }
@@ -188,7 +235,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                         binary[y * w + x] = ok
                         if (ok) closed++
                     }
-                    lg("After morph close: inkPixels=\$closed")
+                    lg("After morph close (R=2): inkPixels=\$closed")
                 }
 
                 // ── Connected-component labelling (8-connected BFS) ──
@@ -333,7 +380,6 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 }
 
                 // ── Build 28×28 EMNIST grid per group ────────────────
-                val memberSet = HashSet<Int>()
                 val results = JSONArray()
                 for (g in sortedGroups) {
                     val bx = g.x1; val by = g.y1
@@ -343,14 +389,10 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     val ox = (GRID - bw * s) / 2f
                     val oy = (GRID - bh * s) / 2f
 
-                    memberSet.clear()
-                    memberSet.addAll(g.members)
-
                     val grid = FloatArray(GRID * GRID)
                     for (py in g.y1..g.y2) for (px in g.x1..g.x2) {
-                        val lbl = labels[py * w + px]
-                        if (lbl == 0 || !memberSet.contains(lbl)) continue
-                        val gv = (255 - gray[py * w + px]) / 255f
+                        if (!binary[py * w + px]) continue
+                        val gv = if (inverted) gray[py * w + px] / 255f else (255 - gray[py * w + px]) / 255f
                         val gx = ((px - bx) * s + ox).toInt()
                         val gy = ((py - by) * s + oy).toInt()
                         if (gx in 0 until GRID && gy in 0 until GRID) {
@@ -502,9 +544,27 @@ class HandwritingOcrModule: NSObject {
       dbg("── recognizeHandwriting START uri=\\(imageUri)")
       guard let url = URL(string: imageUri),
             let data = try? Data(contentsOf: url),
-            let original = UIImage(data: data),
-            let cgOrig = original.cgImage else {
+            let loadedImage = UIImage(data: data) else {
         reject("SEG_ERR", "Cannot load image", nil)
+        return
+      }
+
+      // ── EXIF orientation correction ────────────────────────────
+      let original: UIImage
+      if loadedImage.imageOrientation != .up, let cgImg = loadedImage.cgImage {
+        let orientVal = loadedImage.imageOrientation.rawValue
+        dbg("EXIF orientation: \\(orientVal) — correcting")
+        UIGraphicsBeginImageContextWithOptions(loadedImage.size, false, loadedImage.scale)
+        loadedImage.draw(in: CGRect(origin: .zero, size: loadedImage.size))
+        original = UIGraphicsGetImageFromCurrentImageContext() ?? loadedImage
+        UIGraphicsEndImageContext()
+        dbg("Rotated → \\(Int(original.size.width))x\\(Int(original.size.height))")
+      } else {
+        dbg("EXIF orientation: up (no correction needed)")
+        original = loadedImage
+      }
+      guard let cgOrig = original.cgImage else {
+        reject("SEG_ERR", "Cannot get CGImage", nil)
         return
       }
       dbg("Original image: \\(cgOrig.width)x\\(cgOrig.height)")
@@ -567,13 +627,25 @@ class HandwritingOcrModule: NSObject {
       }
       dbg("Binary: inkPixels=\\(inkCount) (\\(String(format: \"%.2f\", 100.0 * Double(inkCount) / Double(w * h)))%)")
 
-      // ── Morphological close (dilate → erode) bridges ≤ 1px stroke gaps ──
+      // ── Auto-polarity detection (chalkboard/light-on-dark) ─────
+      let totalPx = w * h
+      let inverted = inkCount > Int(Double(totalPx) * 0.40)
+      if inverted {
+        dbg("Polarity: INVERTED (ink=\\(String(format: \"%.1f\", 100.0 * Double(inkCount) / Double(totalPx)))% > 40%) — flipping binary")
+        for i in 0..<binary.count { binary[i] = !binary[i] }
+        inkCount = binary.filter { $0 }.count
+        dbg("After invert: inkPixels=\\(inkCount) (\\(String(format: \"%.2f\", 100.0 * Double(inkCount) / Double(totalPx)))%)")
+      } else {
+        dbg("Polarity: normal (dark-on-light)")
+      }
+
+      // ── Morphological close (dilate → erode) bridges ≤ 2px stroke gaps ──
       do {
+        let R = 2
         var dilated = [Bool](repeating: false, count: w * h)
         for y in 0..<h { for x in 0..<w {
           if binary[y * w + x] {
-            dilated[y * w + x] = true
-            for dy in -1...1 { for dx in -1...1 {
+            for dy in -R...R { for dx in -R...R {
               let nx = x + dx; let ny = y + dy
               if nx >= 0 && nx < w && ny >= 0 && ny < h { dilated[ny * w + nx] = true }
             }}
@@ -583,7 +655,7 @@ class HandwritingOcrModule: NSObject {
         for y in 0..<h { for x in 0..<w {
           if !dilated[y * w + x] { binary[y * w + x] = false; continue }
           var ok = true
-          outer: for dy in -1...1 { for dx in -1...1 {
+          outer: for dy in -R...R { for dx in -R...R {
             let nx = x + dx; let ny = y + dy
             if nx < 0 || nx >= w || ny < 0 || ny >= h { continue }
             if !dilated[ny * w + nx] { ok = false; break outer }
@@ -591,7 +663,7 @@ class HandwritingOcrModule: NSObject {
           binary[y * w + x] = ok
           if ok { closed += 1 }
         }}
-        dbg("After morph close: inkPixels=\\(closed)")
+        dbg("After morph close (R=2): inkPixels=\\(closed)")
       }
 
       // ── Connected-component labelling (8-connected BFS) ────────
@@ -745,13 +817,11 @@ class HandwritingOcrModule: NSObject {
         let s = INNER / maxRange
         let ox = (Float(GRID) - Float(bw) * s) / 2.0
         let oy = (Float(GRID) - Float(bh) * s) / 2.0
-        let memberSet = Set(g.members)
 
         var grid = [Float](repeating: 0, count: GRID * GRID)
         for py in g.y1...g.y2 { for px in g.x1...g.x2 {
-          let lbl = labels[py * w + px]
-          guard lbl != 0 && memberSet.contains(lbl) else { continue }
-          let gv = Float(255 - gray[py * w + px]) / 255.0
+          guard binary[py * w + px] else { continue }
+          let gv = inverted ? Float(gray[py * w + px]) / 255.0 : Float(255 - gray[py * w + px]) / 255.0
           let gx = Int(Float(px - bx) * s + ox)
           let gy = Int(Float(py - by) * s + oy)
           if gx >= 0 && gx < GRID && gy >= 0 && gy < GRID {
