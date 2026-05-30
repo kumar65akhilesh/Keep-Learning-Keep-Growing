@@ -1,0 +1,21 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/235b0149-8267-4eb1-8f90-efeb99ca8305.jpg
+Original image: 1280x960
+Working size: 1280x960 (scale=1.0)
+Gray stats: min=85 max=181 mean=145
+Adaptive thresh: winHalf=51 offset=8
+Binary: inkPixels=6354 (0.52%)
+After morph close: inkPixels=7331
+Raw components: 254
+  (skipping per-component dump; too many)
+Filter: minDim=25.6 maxDim=1088.0 minPx=128 aspect=1/8..8
+After filter: 3 components
+Merge: medH=62 gapMaxX=24.8 gapMaxY=93.0
+  MERGE lbl=9 + lbl=30 dx=0 dy=24
+  MERGE lbl=30 + lbl=62 dx=0 dy=16
+After merge: 1 character groups
+  group#0 x=684 y=336 w=136 h=225 members=[9, 30, 62]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1780173476391.png
+── recognizeHandwriting END count=1 took=876ms
+[ScanOCR]   Char[0] "S" @ 77.4% | bbox=(0.53,0.35,0.11,0.23) | probs[min=2.14e-6 max=7.74e-1 sum=1.000] | top5: S(77.4%) J(15.8%) G(3.4%) Z(1.1%) F(1.0%)
+[ScanOCR] FINAL count=1 (raw=1) text="S" rawText="S"
+[Camera] OCR result: 1 characters found, rawText: "S"
