@@ -37,15 +37,18 @@ function scanLog(line: string) {
 
 // ─── Label maps ───────────────────────────────────────────────────
 
-const LETTER_LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-const DIGIT_LABELS  = '0123456789'.split('');
+const LETTER_LABELS       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const LOWER_LETTER_LABELS = 'abcdefghijklmnopqrstuvwxyz'.split('');
+const DIGIT_LABELS        = '0123456789'.split('');
 
 // ─── Lazy model singletons (isolated from canvasOcr) ─────────────
 
-let lettersModel: TensorflowModel | null = null;
-let digitsModel:  TensorflowModel | null = null;
-let lettersP: Promise<TensorflowModel> | null = null;
-let digitsP:  Promise<TensorflowModel> | null = null;
+let lettersModel:      TensorflowModel | null = null;
+let lettersLowerModel: TensorflowModel | null = null;
+let digitsModel:       TensorflowModel | null = null;
+let lettersP:      Promise<TensorflowModel> | null = null;
+let lettersLowerP: Promise<TensorflowModel> | null = null;
+let digitsP:       Promise<TensorflowModel> | null = null;
 
 async function resolveAssetUri(moduleId: number): Promise<string> {
   const [asset] = await Asset.loadAsync(moduleId);
@@ -56,13 +59,25 @@ async function resolveAssetUri(moduleId: number): Promise<string> {
 function getLettersModel(): Promise<TensorflowModel> {
   if (lettersModel) return Promise.resolve(lettersModel);
   if (!lettersP) {
-    console.log('[ScanOCR] Loading letters model…');
+    console.log('[ScanOCR] Loading uppercase letters model…');
     lettersP = resolveAssetUri(require('../assets/emnist-letters.tflite') as number)
       .then((uri) => loadTensorflowModel({ url: uri }, []))
       .then((m) => { lettersModel = m; return m; })
       .catch((e) => { lettersP = null; throw e; });
   }
   return lettersP;
+}
+
+function getLettersLowerModel(): Promise<TensorflowModel> {
+  if (lettersLowerModel) return Promise.resolve(lettersLowerModel);
+  if (!lettersLowerP) {
+    console.log('[ScanOCR] Loading lowercase letters model…');
+    lettersLowerP = resolveAssetUri(require('../assets/emnist-letters-lower.tflite') as number)
+      .then((uri) => loadTensorflowModel({ url: uri }, []))
+      .then((m) => { lettersLowerModel = m; return m; })
+      .catch((e) => { lettersLowerP = null; throw e; });
+  }
+  return lettersLowerP;
 }
 
 function getDigitsModel(): Promise<TensorflowModel> {
@@ -118,9 +133,13 @@ export async function recognizeHandwriting(
   // ── Step 2: Load EMNIST model ───────────────────────────────────
   const isLetters  = isLetterMode(mode);
   const isLower    = isLowercaseMode(mode);
-  const model      = isLetters ? await getLettersModel() : await getDigitsModel();
-  const labels     = isLetters ? LETTER_LABELS : DIGIT_LABELS;
-  console.log('[ScanOCR] Using', isLetters ? 'letters' : 'digits', 'model');
+  const model      = isLower ? await getLettersLowerModel()
+                   : isLetters ? await getLettersModel()
+                   : await getDigitsModel();
+  const labels     = isLower ? LOWER_LETTER_LABELS
+                   : isLetters ? LETTER_LABELS
+                   : DIGIT_LABELS;
+  console.log('[ScanOCR] Using', isLower ? 'lowercase letters' : isLetters ? 'uppercase letters' : 'digits', 'model');
 
   // ── Step 3: Run EMNIST inference on each crop ───────────────────
   const recognized: RecognizedCharacter[] = [];
@@ -159,9 +178,7 @@ export async function recognizeHandwriting(
     }
 
     const predicted = labels[bestIdx];
-    const finalChar = isLower ? predicted.toLowerCase()
-                    : isLetters ? predicted.toUpperCase()
-                    : predicted;
+    const finalChar = predicted;
 
     // Top-5 for logging + prob distribution stats
     const sorted = [...probs]
@@ -178,8 +195,8 @@ export async function recognizeHandwriting(
     );
 
     // Skip low-confidence noise detections
-    if (bestProb < 0.40) {
-      scanLog(`[ScanOCR]   ↳ SKIPPED (confidence ${(bestProb * 100).toFixed(1)}% < 40% threshold)`);
+    if (bestProb < 0.25) {
+      scanLog(`[ScanOCR]   \u21b3 SKIPPED (confidence ${(bestProb * 100).toFixed(1)}% < 25% threshold)`);
       continue;
     }
 
