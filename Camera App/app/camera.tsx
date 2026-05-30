@@ -7,6 +7,7 @@ import {
   Alert,
   Dimensions,
   Platform,
+  NativeModules,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -122,7 +123,9 @@ export default function CameraScreen() {
         ? await recognizeHandwriting(processedUri, mode)
         : await recognizeFromUri(processedUri, mode);
 
-      console.log('[Camera] OCR result:', result.characters.length, 'characters found, rawText:', JSON.stringify(result.rawText));
+      const resultLine = `[Camera] OCR result: ${result.characters.length} characters found, rawText: ${JSON.stringify(result.rawText)}`;
+      console.log(resultLine);
+      try { (NativeModules as any).HandwritingOcrModule?.appendLog?.(resultLine); } catch { /* noop */ }
 
       setCurrentResult(result);
 
