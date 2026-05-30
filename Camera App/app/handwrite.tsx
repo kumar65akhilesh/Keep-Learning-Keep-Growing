@@ -121,6 +121,7 @@ export default function HandwriteScreen() {
     try {
       // Pass strokes for web fallback (ignored on native)
       const match = await recognizeCanvas(canvasRef as React.RefObject<any>, mode, strokes);
+      console.log('[HANDWRITE] result:', match ? `char="${match.char}" confidence=${match.confidence}` : 'null (no match)');
 
       if (match) {
         setRecognizedChar(match.char);
