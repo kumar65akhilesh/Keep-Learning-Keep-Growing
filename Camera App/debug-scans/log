@@ -1,3 +1,34 @@
 
 python scripts/train_emnist.py   # trains all 3 models (~5-10 min)
 npx expo prebuild --clean        # rebuild native modules
+
+PS C:\Camera App> python scripts/train_emnist.py
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1780182284.085977   25300 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1780182300.090747   25300 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+============================================================
+EMNIST Model Training for Little Letters App
+============================================================
+[INFO] Loading EMNIST ByClass via emnist package...
+[WARN] emnist ByClass via pip failed: File is not a zip file
+[INFO] Downloading EMNIST ByClass from NIST mirrors...
+  Downloading https://biometrics.nist.gov/cs_links/EMNIST/gzip/emnist-byclass-train-images-idx3-ubyte.gz ...
+  Downloading https://www.itl.nist.gov/iaui/vip/cs_links/EMNIST/gzip/emnist-byclass-train-images-idx3-ubyte.gz ...
+[WARN] NIST ByClass mirror download failed: Could not download emnist-byclass-train-images-idx3-ubyte.gz from any mirror
+Traceback (most recent call last):
+  File "C:\Camera App\scripts\train_emnist.py", line 503, in <module>
+    main()
+    ~~~~^^
+  File "C:\Camera App\scripts\train_emnist.py", line 455, in main
+    x_train, y_train, x_test, y_test, n_classes = load_emnist_uppercase()
+                                                  ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Camera App\scripts\train_emnist.py", line 338, in load_emnist_uppercase
+    x_train, y_train, x_test, y_test = load_emnist_byclass()
+                                       ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Camera App\scripts\train_emnist.py", line 326, in load_emnist_byclass
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: FATAL: Could not load EMNIST ByClass from any source.
+Try: pip install emnist
