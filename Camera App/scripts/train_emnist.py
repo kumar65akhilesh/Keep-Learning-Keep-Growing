@@ -264,6 +264,8 @@ def load_emnist_byclass():
                 os.path.join(os.path.dirname(emnist_mod.__file__)),
             ]
             for d in cache_candidates:
+                if not os.path.isdir(d):
+                    continue
                 for f in os.listdir(d):
                     if 'byclass' in f.lower() or f.endswith('.gz') or f.endswith('.zip'):
                         path = os.path.join(d, f)
@@ -379,6 +381,56 @@ def load_emnist_byclass():
         return x_train, y_train, x_test, y_test
     except Exception as e3:
         print(f"[WARN] tensorflow_datasets ByClass failed: {e3}")
+
+    # ── Strategy 4: Load directly from tfds tfrecord files ────────
+    # tfds may have downloaded the data but failed on the API layer
+    # (e.g. protobuf version mismatch). Parse the raw tfrecords.
+    try:
+        import glob
+
+        tfrecord_dir = os.path.join(
+            os.path.expanduser("~"), "tensorflow_datasets", "emnist", "byclass", "3.1.0"
+        )
+
+        if not os.path.isdir(tfrecord_dir):
+            raise FileNotFoundError(f"tfrecord dir not found: {tfrecord_dir}")
+
+        train_files = sorted(glob.glob(os.path.join(tfrecord_dir, "emnist-train.tfrecord*")))
+        test_files = sorted(glob.glob(os.path.join(tfrecord_dir, "emnist-test.tfrecord*")))
+
+        if not train_files or not test_files:
+            raise FileNotFoundError(f"No tfrecord files found in {tfrecord_dir}")
+
+        print(f"[INFO] Loading EMNIST ByClass from tfrecord files ({len(train_files)} train, {len(test_files)} test)...")
+
+        feature_desc = {
+            'image': tf.io.FixedLenFeature([], tf.string),
+            'label': tf.io.FixedLenFeature([], tf.int64),
+        }
+
+        def parse_fn(example_proto):
+            parsed = tf.io.parse_single_example(example_proto, feature_desc)
+            image = tf.io.decode_png(parsed['image'], channels=1)
+            image = tf.squeeze(image)  # (28, 28)
+            return image, parsed['label']
+
+        def load_from_tfrecords(file_list):
+            dataset = tf.data.TFRecordDataset(file_list)
+            images, labels = [], []
+            for raw in dataset:
+                img, lbl = parse_fn(raw)
+                images.append(img.numpy())
+                labels.append(lbl.numpy())
+            return np.array(images), np.array(labels)
+
+        x_train, y_train = load_from_tfrecords(train_files)
+        x_test, y_test = load_from_tfrecords(test_files)
+
+        print(f"  ByClass Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
+        print(f"  ByClass Test:  {x_test.shape},  labels range: {y_test.min()}-{y_test.max()}")
+        return x_train, y_train, x_test, y_test
+    except Exception as e4:
+        print(f"[WARN] Direct tfrecord loading failed: {e4}")
 
     raise RuntimeError(
         "FATAL: Could not load EMNIST ByClass from any source.\n"
