@@ -388,14 +388,12 @@ def load_emnist_byclass():
     )
 
 
-def load_emnist_uppercase():
+def _filter_uppercase(x_train, y_train, x_test, y_test):
     """
-    Load EMNIST ByClass and extract only uppercase letters (A-Z).
+    Filter ByClass data to only uppercase letters (A-Z).
     ByClass labels: 10=A, 11=B, ..., 35=Z → remap to 0-25.
     Returns 26 classes.
     """
-    x_train, y_train, x_test, y_test = load_emnist_byclass()
-
     # Filter to labels 10-35 (uppercase A-Z)
     train_mask = (y_train >= 10) & (y_train <= 35)
     test_mask = (y_test >= 10) & (y_test <= 35)
@@ -409,14 +407,12 @@ def load_emnist_uppercase():
     return x_train, y_train, x_test, y_test, 26
 
 
-def load_emnist_lowercase():
+def _filter_lowercase(x_train, y_train, x_test, y_test):
     """
-    Load EMNIST ByClass and extract only lowercase letters (a-z).
+    Filter ByClass data to only lowercase letters (a-z).
     ByClass labels: 36=a, 37=b, ..., 61=z → remap to 0-25.
     Returns 26 classes.
     """
-    x_train, y_train, x_test, y_test = load_emnist_byclass()
-
     # Filter to labels 36-61 (lowercase a-z)
     train_mask = (y_train >= 36) & (y_train <= 61)
     test_mask = (y_test >= 36) & (y_test <= 61)
