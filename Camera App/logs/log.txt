@@ -1,2 +1,2 @@
-rm ~/Desktop/GitHub\ Repository\ Local/.git/.MERGE_MSG.swp
+rm "/c/Users/kumar/Desktop/GitHub Repository Local/.git/.MERGE_MSG.swp"
 git commit --no-edit
