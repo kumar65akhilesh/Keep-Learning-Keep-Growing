@@ -1,0 +1,39 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/0f435891-6ea1-4eb8-b302-f208276879db.jpg
+EXIF orientation: 0
+Original image: 768x1024
+Working size: 768x1024 (scale=1.0)
+Gray stats: min=116 max=170 mean=154
+Adaptive thresh: winHalf=40 offset=8
+Binary: inkPixels=7316 (0.93%)
+Polarity: normal (dark-on-light)
+After morph close (R=2): inkPixels=8006
+Raw components: 8
+  raw lbl=1 x=282 y=471 w=76 h=66 px=1844
+  raw lbl=2 x=280 y=534 w=1 h=1 px=1
+  raw lbl=3 x=285 y=539 w=1 h=2 px=2
+  raw lbl=4 x=268 y=552 w=31 h=46 px=857
+  raw lbl=5 x=303 y=556 w=93 h=32 px=1934
+  raw lbl=6 x=268 y=600 w=78 h=41 px=1608
+  raw lbl=7 x=365 y=603 w=33 h=82 px=1759
+  raw lbl=8 x=384 y=607 w=1 h=1 px=1
+Filter: minDim=41.0 maxDim=870.4 minPx=204 aspect=1/8..8
+  REJECT lbl=2 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=3 reason=tiny_bw_bh bw=0 bh=1 px=2
+  REJECT lbl=8 reason=tiny_bw_bh bw=0 bh=0 px=1
+After filter: 5 components
+Merge: medH=46 gapMaxX=18.4 gapMaxY=69.0
+  MERGE lbl=1 + lbl=4 dx=0 dy=16
+  MERGE lbl=1 + lbl=5 dx=0 dy=20
+  MERGE lbl=1 + lbl=6 dx=0 dy=64
+  MERGE lbl=1 + lbl=7 dx=8 dy=67
+  MERGE lbl=4 + lbl=5 dx=5 dy=0
+  MERGE lbl=4 + lbl=6 dx=0 dy=3
+  MERGE lbl=5 + lbl=6 dx=0 dy=13
+  MERGE lbl=5 + lbl=7 dx=0 dy=16
+After merge: 1 character groups
+  group#0 x=268 y=471 w=130 h=214 members=[1, 4, 5, 6, 7]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1780257253106.png
+── recognizeHandwriting END count=1 took=583ms
+[ScanOCR]   Char[0] "F" @ 25.4% | bbox=(0.35,0.46,0.17,0.21) | probs[min=4.20e-4 max=2.54e-1 sum=1.000] | top5: F(25.4%) S(21.5%) E(21.0%) C(9.8%) G(5.6%)
+[ScanOCR] FINAL count=1 (raw=1) text="F" rawText="F"
+[Camera] OCR result: 1 characters found, rawText: "F"
