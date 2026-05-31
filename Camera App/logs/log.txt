@@ -1,21 +1,2 @@
-On branch main
-You have unmerged paths.
-  (fix conflicts and run "git commit")
-  (use "git merge --abort" to abort the merge)
-
-Changes to be committed:
-        new file:   Camera App/assets/emnist-digits.tflite
-        new file:   Camera App/assets/emnist-letters-lower.tflite
-        new file:   Camera App/assets/emnist-letters.tflite
-
-Unmerged paths:
-  (use "git add/rm <file>..." as appropriate to mark resolution)
-        deleted by us:   Camera App/debug-scans/log
-
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-        Camera App/.expo/
-        Camera App/.gitignore
-        Camera App/android/
-        Camera App/package-copy.json
-
+rm ~/Desktop/GitHub\ Repository\ Local/.git/.MERGE_MSG.swp
+git commit --no-edit
