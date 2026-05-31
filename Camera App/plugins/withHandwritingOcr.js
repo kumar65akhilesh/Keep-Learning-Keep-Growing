@@ -52,7 +52,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
         //   - Lower offset so light gray pencil pixels pass the threshold.
         //   - Morphological close runs after binarization to bridge gaps.
         private const val MAX_WORK_W = 1280
-        private const val THRESH_OFFSET = 8     // was 18 (markers/pens)
+        private const val THRESH_OFFSET = 5     // was 8→5 (preserve light pencil curves)
         private const val WIN_DIVISOR = 25      // was 12 (gives ~50px window)
     }
 
@@ -211,9 +211,9 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     lg("Polarity: normal (dark-on-light)")
                 }
 
-                // ── Morphological close (dilate → erode) bridges ≤ 2px stroke gaps ──
+                // ── Morphological close (dilate → erode) bridges ≤ 3px stroke gaps ──
                 run {
-                    val R = 2
+                    val R = 3
                     val dilated = BooleanArray(w * h)
                     for (y in 0 until h) for (x in 0 until w) {
                         if (binary[y * w + x]) {
@@ -235,7 +235,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                         binary[y * w + x] = ok
                         if (ok) closed++
                     }
-                    lg("After morph close (R=2): inkPixels=\$closed")
+                    lg("After morph close (R=3): inkPixels=\$closed")
                 }
 
                 // ── Connected-component labelling (8-connected BFS) ──
@@ -487,7 +487,7 @@ class HandwritingOcrModule: NSObject {
   private let INNER: Float = 20
   // Phase 3 (pencil-on-paper tuning) — see Android module for rationale.
   private let MAX_WORK: CGFloat = 1280
-  private let THRESH_OFFSET: Int64 = 8
+  private let THRESH_OFFSET: Int64 = 5
   private let WIN_DIVISOR = 25
   private let log = OSLog(subsystem: "com.letterlens.app", category: "ScanOCR")
 
@@ -646,9 +646,9 @@ class HandwritingOcrModule: NSObject {
         dbg("Polarity: normal (dark-on-light)")
       }
 
-      // ── Morphological close (dilate → erode) bridges ≤ 2px stroke gaps ──
+      // ── Morphological close (dilate → erode) bridges ≤ 3px stroke gaps ──
       do {
-        let R = 2
+        let R = 3
         var dilated = [Bool](repeating: false, count: w * h)
         for y in 0..<h { for x in 0..<w {
           if binary[y * w + x] {
@@ -670,7 +670,7 @@ class HandwritingOcrModule: NSObject {
           binary[y * w + x] = ok
           if ok { closed += 1 }
         }}
-        dbg("After morph close (R=2): inkPixels=\\(closed)")
+        dbg("After morph close (R=3): inkPixels=\\(closed)")
       }
 
       // ── Connected-component labelling (8-connected BFS) ────────
