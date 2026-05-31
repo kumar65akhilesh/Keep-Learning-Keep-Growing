@@ -1,21 +1,23 @@
-On branch main
-You have unmerged paths.
-  (fix conflicts and run "git commit")
-  (use "git merge --abort" to abort the merge)
 
-Changes to be committed:
-        new file:   Camera App/assets/emnist-digits.tflite
-        new file:   Camera App/assets/emnist-letters-lower.tflite
-        new file:   Camera App/assets/emnist-letters.tflite
+Found a swap file by the name "~/Desktop/GitHub Repository Local/.git/.MERGE_MSG.swp"
+          owned by: kumar   dated: Sun Jan 05 16:09:54 2025
+         file name: ~kumar/Desktop/GitHub Repository Local/.git/MERGE_MSG
+          modified: YES
+         user name: kumar   host name: DESKTOP-1MTFCGM
+        process ID: 1233
+While opening file "/c/Users/kumar/Desktop/GitHub Repository Local/.git/MERGE_MSG"
+             dated: Sun May 31 15:16:53 2026
+      NEWER than swap file!
 
-Unmerged paths:
-  (use "git add/rm <file>..." as appropriate to mark resolution)
-        deleted by us:   Camera App/debug-scans/log
+(1) Another program may be editing the same file.  If this is the case,
+    be careful not to end up with two different instances of the same
+    file when making changes.  Quit, or continue with caution.
+(2) An edit session for this file crashed.
+    If this is the case, use ":recover" or "vim -r /c/Users/kumar/Desktop/GitHub Repository Local/.git/MERGE_MSG"
+    to recover the changes (see ":help recovery").
+    If you did this already, delete the swap file "/c/Users/kumar/Desktop/GitHub Repository Local/.git/.MERGE_MSG.swp"
+    to avoid this message.
 
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-        Camera App/.expo/
-        Camera App/.gitignore
-        Camera App/android/
-        Camera App/package-copy.json
+Swap file "~/Desktop/GitHub Repository Local/.git/.MERGE_MSG.swp" already exists!
+[O]pen Read-Only, (E)dit anyway, (R)ecover, (D)elete it, (Q)uit, (A)bort:
 
