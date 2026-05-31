@@ -1,0 +1,42 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/1e2fb154-977c-4fa0-8657-5189c2e45ffd.jpg
+EXIF orientation: 0
+Original image: 768x1024
+Working size: 768x1024 (scale=1.0)
+Gray stats: min=118 max=169 mean=153
+Adaptive thresh: winHalf=40 offset=5
+Binary: inkPixels=9622 (1.22%)
+Polarity: normal (dark-on-light)
+After morph close (R=3): inkPixels=10168
+Raw components: 11
+  raw lbl=1 x=495 y=163 w=1 h=1 px=1
+  raw lbl=2 x=504 y=166 w=3 h=3 px=7
+  raw lbl=3 x=197 y=290 w=131 h=198 px=10120
+  raw lbl=4 x=543 y=376 w=1 h=3 px=3
+  raw lbl=5 x=543 y=391 w=1 h=1 px=1
+  raw lbl=6 x=312 y=520 w=1 h=1 px=1
+  raw lbl=7 x=312 y=617 w=1 h=1 px=1
+  raw lbl=8 x=386 y=714 w=1 h=1 px=1
+  raw lbl=9 x=375 y=728 w=9 h=8 px=28
+  raw lbl=10 x=370 y=736 w=4 h=1 px=4
+  raw lbl=11 x=311 y=875 w=1 h=1 px=1
+Filter: minDim=41.0 maxDim=870.4 minPx=204 aspect=1/8..8
+  REJECT lbl=1 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=2 reason=too_small_dim(2<41) bw=2 bh=2 px=7
+  REJECT lbl=4 reason=tiny_bw_bh bw=0 bh=2 px=3
+  REJECT lbl=5 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=6 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=7 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=8 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=9 reason=too_small_dim(8<41) bw=8 bh=7 px=28
+  REJECT lbl=10 reason=tiny_bw_bh bw=3 bh=0 px=4
+  REJECT lbl=11 reason=tiny_bw_bh bw=0 bh=0 px=1
+After filter: 1 components
+Merge: medH=198 gapMaxX=79.2 gapMaxY=297.0
+After merge: 1 character groups
+  group#0 x=197 y=290 w=131 h=198 members=[3]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1780259293296.png
+── recognizeHandwriting END count=1 took=793ms
+[ScanOCR]   Char[0] "C" @ 19.9% | bbox=(0.26,0.28,0.17,0.19) | probs[min=4.77e-4 max=1.99e-1 sum=1.000] | top5: C(19.9%) S(19.8%) O(11.8%) E(10.5%) G(9.9%)
+[ScanOCR]   ↳ SKIPPED (confidence 19.9% < 25% threshold)
+[ScanOCR] FINAL count=0 (raw=0) text="" rawText=""
+[Camera] OCR result: 0 characters found, rawText: ""
