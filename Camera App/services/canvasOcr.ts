@@ -2,9 +2,10 @@
  * Canvas OCR Service — Native (TFLite + EMNIST)
  *
  * Uses on-device TFLite CNN models trained on the EMNIST dataset for
- * handwriting recognition. Two models:
- *   • emnist-letters.tflite — A–Z (26 classes, label 0 = A … 25 = Z)
- *   • emnist-digits.tflite  — 0–9 (10 classes, label 0 = 0 … 9 = 9)
+ * handwriting recognition. Three models:
+ *   • emnist-letters.tflite       — A–Z (26 classes, label 0 = A … 25 = Z)
+ *   • emnist-letters-lower.tflite — a–z (26 classes, label 0 = a … 25 = z)
+ *   • emnist-digits.tflite        — 0–9 (10 classes, label 0 = 0 … 9 = 9)
  *
  * Stroke coordinates are rasterised directly onto a 28×28 grayscale grid
  * (white-on-black, matching EMNIST format) so no image capture / decode is
@@ -27,14 +28,17 @@ export interface HandwriteResult {
 
 // ─── Label maps ───────────────────────────────────────────────────
 
-const LETTER_LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-const DIGIT_LABELS  = '0123456789'.split('');
+const LETTER_LABELS       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const LOWER_LETTER_LABELS = 'abcdefghijklmnopqrstuvwxyz'.split('');
+const DIGIT_LABELS        = '0123456789'.split('');
 
 // ─── Lazy model singletons ───────────────────────────────────────
 
 let lettersModel: TensorflowModel | null = null;
+let lettersLowerModel: TensorflowModel | null = null;
 let digitsModel: TensorflowModel | null = null;
 let lettersLoadPromise: Promise<TensorflowModel> | null = null;
+let lettersLowerLoadPromise: Promise<TensorflowModel> | null = null;
 let digitsLoadPromise: Promise<TensorflowModel> | null = null;
 
 async function resolveAssetUri(moduleId: number): Promise<string> {
@@ -58,6 +62,22 @@ function getLettersModel(): Promise<TensorflowModel> {
      });
   }
   return lettersLoadPromise;
+}
+
+function getLettersLowerModel(): Promise<TensorflowModel> {
+  if (lettersLowerModel) return Promise.resolve(lettersLowerModel);
+  if (!lettersLowerLoadPromise) {
+    console.log('[TFLITE] Loading lowercase letters model…');
+    lettersLowerLoadPromise = resolveAssetUri(
+      require('../assets/emnist-letters-lower.tflite') as number,
+    ).then((uri) => loadTensorflowModel({ url: uri }, []))
+     .then((m) => { lettersLowerModel = m; return m; })
+     .catch((err) => {
+       lettersLowerLoadPromise = null;
+       throw err;
+     });
+  }
+  return lettersLowerLoadPromise;
 }
 
 function getDigitsModel(): Promise<TensorflowModel> {
@@ -229,8 +249,8 @@ export async function recognizeCanvas(
 
   const isLetters = mode.endsWith('-abc') || mode.endsWith('-abc-lower');
   const isLowercase = mode.endsWith('-abc-lower');
-  const labels    = isLetters ? LETTER_LABELS : DIGIT_LABELS;
-  console.log(`[TFLITE] Using ${isLetters ? 'letters' : 'digits'} model (${labels.length} classes)`);
+  const labels    = isLowercase ? LOWER_LETTER_LABELS : isLetters ? LETTER_LABELS : DIGIT_LABELS;
+  console.log(`[TFLITE] Using ${isLowercase ? 'lowercase letters' : isLetters ? 'letters' : 'digits'} model (${labels.length} classes)`);
 
   // ── Rasterise strokes ───────────────────────────────────────────
   const inputData = strokesToGrid(valid);
@@ -263,7 +283,7 @@ export async function recognizeCanvas(
 
   // ── TFLite inference ────────────────────────────────────────────
   try {
-    const model = isLetters ? await getLettersModel() : await getDigitsModel();
+    const model = isLowercase ? await getLettersLowerModel() : isLetters ? await getLettersModel() : await getDigitsModel();
 
     // EMNIST Letters images are stored column-major. The model was trained
     // without transposing to row-major, so we must transpose our row-major
@@ -324,13 +344,13 @@ export async function recognizeCanvas(
     // becomes horizontal, which the model confuses with "L". If the
     // drawing is essentially a vertical stroke and L/I are the top two,
     // prefer "I".
-    if (isLetters && predicted === 'L' && bboxW > 0 && bboxH > 0) {
+    if (isLetters && (predicted === 'L' || predicted === 'l') && bboxW > 0 && bboxH > 0) {
       const ar = bboxW / bboxH;
-      const iIdx = labels.indexOf('I');
+      const iChar = isLowercase ? 'i' : 'I';
+      const iIdx = labels.indexOf(iChar);
       const iProb = iIdx >= 0 ? probs[iIdx] : 0;
       if (ar < 0.25 && iProb > 0.1) {
-        console.log(`[TFLITE] ⇢ I/L fix: aspect=${ar.toFixed(2)} (very narrow), overriding L→I`);
-        const iChar = isLowercase ? 'i' : 'I';
+        console.log(`[TFLITE] ⇢ I/L fix: aspect=${ar.toFixed(2)} (very narrow), overriding ${predicted}→${iChar}`);
         return { char: iChar, confidence: iProb };
       }
     }
@@ -344,8 +364,7 @@ export async function recognizeCanvas(
     }
 
     console.log(`[TFLITE] ── Result: "${predicted}" ──`);
-    const finalChar = isLowercase ? predicted.toLowerCase() : predicted;
-    return { char: finalChar, confidence: bestProb };
+    return { char: predicted, confidence: bestProb };
   } catch (err) {
     console.warn('[TFLITE] Inference failed:', err);
     // Re-throw with a descriptive message so the UI can show what went wrong
