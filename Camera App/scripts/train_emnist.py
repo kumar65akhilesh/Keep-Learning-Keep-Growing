@@ -415,13 +415,18 @@ def load_emnist_byclass():
             return image, parsed['label']
 
         def load_from_tfrecords(file_list):
-            dataset = tf.data.TFRecordDataset(file_list)
+            dataset = tf.data.TFRecordDataset(file_list, buffer_size=8*1024*1024)
+            dataset = dataset.map(parse_fn, num_parallel_calls=tf.data.AUTOTUNE)
+            dataset = dataset.batch(10000).prefetch(2)
             images, labels = [], []
-            for raw in dataset:
-                img, lbl = parse_fn(raw)
-                images.append(img.numpy())
-                labels.append(lbl.numpy())
-            return np.array(images), np.array(labels)
+            count = 0
+            for img_batch, lbl_batch in dataset:
+                images.append(img_batch.numpy())
+                labels.append(lbl_batch.numpy())
+                count += len(img_batch)
+                print(f"\r  Loaded {count} samples...", end="", flush=True)
+            print()
+            return np.concatenate(images), np.concatenate(labels)
 
         x_train, y_train = load_from_tfrecords(train_files)
         x_test, y_test = load_from_tfrecords(test_files)
@@ -485,18 +490,37 @@ def load_emnist_digits():
 
 
 def build_model(num_classes):
-    """Build a small CNN for 28×28 grayscale character classification."""
+    """Deeper CNN with batch normalization for better generalization."""
     model = keras.Sequential([
         layers.Input(shape=(28, 28, 1)),
-        layers.Conv2D(32, 3, activation='relu', padding='same'),
+        # Block 1: 28×28 → 14×14
+        layers.Conv2D(32, 3, padding='same'),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        layers.Conv2D(32, 3, padding='same'),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
         layers.MaxPooling2D(2),
-        layers.Conv2D(64, 3, activation='relu', padding='same'),
+        layers.Dropout(0.2),
+        # Block 2: 14×14 → 7×7
+        layers.Conv2D(64, 3, padding='same'),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        layers.Conv2D(64, 3, padding='same'),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
         layers.MaxPooling2D(2),
-        layers.Conv2D(64, 3, activation='relu', padding='same'),
+        layers.Dropout(0.2),
+        # Block 3: 7×7
+        layers.Conv2D(128, 3, padding='same'),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        # Classifier
         layers.Flatten(),
-        layers.Dropout(0.3),
+        layers.Dropout(0.4),
         layers.Dense(128, activation='relu'),
-        layers.Dropout(0.3),
+        layers.BatchNormalization(),
+        layers.Dropout(0.4),
         layers.Dense(num_classes, activation='softmax'),
     ])
 
@@ -509,7 +533,9 @@ def build_model(num_classes):
 
 
 def train_and_export(name, x_train, y_train, x_test, y_test, num_classes, output_path):
-    """Train model and export to TFLite."""
+    """Train model with data augmentation and export to TFLite."""
+    from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
     print(f"\n{'='*60}")
     print(f"Training {name} model ({num_classes} classes)")
     print(f"{'='*60}")
@@ -522,21 +548,58 @@ def train_and_export(name, x_train, y_train, x_test, y_test, num_classes, output
 
     print(f"Train: {x_train.shape}, Test: {x_test.shape}")
 
+    # Data augmentation — simulates real-world handwriting variation
+    datagen = ImageDataGenerator(
+        rotation_range=10,
+        width_shift_range=0.1,
+        height_shift_range=0.1,
+        zoom_range=0.1,
+        shear_range=5,
+        fill_mode='constant',
+        cval=0.0,
+    )
+
     # Build and train
     model = build_model(num_classes)
     model.summary()
 
+    callbacks = [
+        keras.callbacks.ReduceLROnPlateau(
+            monitor='val_loss', patience=3, factor=0.5, min_lr=1e-6, verbose=1
+        ),
+        keras.callbacks.EarlyStopping(
+            monitor='val_accuracy', patience=5, restore_best_weights=True, verbose=1
+        ),
+    ]
+
+    batch_size = 512
     model.fit(
-        x_train, y_train,
+        datagen.flow(x_train, y_train, batch_size=batch_size),
         validation_data=(x_test, y_test),
-        epochs=10,
-        batch_size=128,
+        epochs=20,
+        callbacks=callbacks,
         verbose=1,
     )
 
     # Evaluate
     loss, acc = model.evaluate(x_test, y_test, verbose=0)
     print(f"\n[RESULT] {name} — Test accuracy: {acc:.4f} ({acc*100:.1f}%)")
+
+    # Per-class accuracy report
+    predictions = model.predict(x_test, verbose=0)
+    pred_classes = np.argmax(predictions, axis=1)
+    print(f"\n[PER-CLASS] {name}:")
+    for c in range(num_classes):
+        mask = y_test == c
+        if mask.sum() == 0:
+            continue
+        class_acc = (pred_classes[mask] == c).mean()
+        if num_classes == 26:
+            label = chr(c + 97) if 'owercase' in name.lower() else chr(c + 65)
+        else:
+            label = str(c)
+        count = mask.sum()
+        print(f"  {label}: {class_acc*100:.1f}% ({count} samples)")
 
     # Convert to TFLite (quantized for smaller size + faster inference)
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
