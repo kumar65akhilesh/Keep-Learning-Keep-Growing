@@ -396,10 +396,25 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     val ox = (GRID - bw * s) / 2f
                     val oy = (GRID - bh * s) / 2f
 
+                    // Compute gray range in bounding box for normalization
+                    var bboxGrayMin = 255; var bboxGrayMax = 0
+                    for (py in g.y1..g.y2) for (px in g.x1..g.x2) {
+                        val gVal = gray[py * w + px]
+                        if (gVal < bboxGrayMin) bboxGrayMin = gVal
+                        if (gVal > bboxGrayMax) bboxGrayMax = gVal
+                    }
+                    val grayRange = maxOf(1, bboxGrayMax - bboxGrayMin)
+                    lg("  grid grayscale: min=\$bboxGrayMin max=\$bboxGrayMax range=\$grayRange")
+
                     val grid = FloatArray(GRID * GRID)
                     for (py in g.y1..g.y2) for (px in g.x1..g.x2) {
-                        if (!binary[py * w + px]) continue
-                        val gv = if (inverted) gray[py * w + px] / 255f else (255 - gray[py * w + px]) / 255f
+                        // Normalize: ink → 1.0, paper → 0.0 (preserves gradients)
+                        val gv = if (inverted) {
+                            (gray[py * w + px] - bboxGrayMin).toFloat() / grayRange
+                        } else {
+                            (bboxGrayMax - gray[py * w + px]).toFloat() / grayRange
+                        }
+                        if (gv < 0.15f) continue  // suppress paper noise
                         val gx = ((px - bx) * s + ox).toInt()
                         val gy = ((py - by) * s + oy).toInt()
                         if (gx in 0 until GRID && gy in 0 until GRID) {
@@ -835,10 +850,23 @@ class HandwritingOcrModule: NSObject {
         let ox = (Float(GRID) - Float(bw) * s) / 2.0
         let oy = (Float(GRID) - Float(bh) * s) / 2.0
 
+        // Compute gray range in bounding box for normalization
+        var bboxGrayMin = 255; var bboxGrayMax = 0
+        for py in g.y1...g.y2 { for px in g.x1...g.x2 {
+          let gVal = gray[py * w + px]
+          if gVal < bboxGrayMin { bboxGrayMin = gVal }
+          if gVal > bboxGrayMax { bboxGrayMax = gVal }
+        }}
+        let grayRange = max(1, bboxGrayMax - bboxGrayMin)
+        dbg("  grid grayscale: min=\(bboxGrayMin) max=\(bboxGrayMax) range=\(grayRange)")
+
         var grid = [Float](repeating: 0, count: GRID * GRID)
         for py in g.y1...g.y2 { for px in g.x1...g.x2 {
-          guard binary[py * w + px] else { continue }
-          let gv = inverted ? Float(gray[py * w + px]) / 255.0 : Float(255 - gray[py * w + px]) / 255.0
+          // Normalize: ink → 1.0, paper → 0.0 (preserves gradients)
+          let gv: Float = inverted
+            ? Float(gray[py * w + px] - bboxGrayMin) / Float(grayRange)
+            : Float(bboxGrayMax - gray[py * w + px]) / Float(grayRange)
+          guard gv >= 0.15 else { continue }  // suppress paper noise
           let gx = Int(Float(px - bx) * s + ox)
           let gy = Int(Float(py - by) * s + oy)
           if gx >= 0 && gx < GRID && gy >= 0 && gy < GRID {
