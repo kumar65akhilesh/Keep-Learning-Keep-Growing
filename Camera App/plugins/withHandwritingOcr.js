@@ -46,14 +46,13 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
         private const val TAG = "ScanOCR"
         private const val GRID = 28
         private const val INNER = 20            // centred content area
-        // Phase 3 (pencil-on-paper tuning):
-        //   - Keep more resolution so thin pencil strokes survive.
-        //   - Smaller adaptive window (local context ≈ stroke thickness).
-        //   - Lower offset so light gray pencil pixels pass the threshold.
-        //   - Morphological close runs after binarization to bridge gaps.
+        // Phase 4 (structure-preserving tuning):
+        //   - R=2 morph close: bridges pencil gaps without merging separate arms (F/E/P).
+        //   - THRESH_OFFSET=5 gives clean binarization on low-contrast paper.
+        //   - Smaller adaptive window for local context.
         private const val MAX_WORK_W = 1280
-        private const val THRESH_OFFSET = 5     // was 8→5 (preserve light pencil curves)
-        private const val WIN_DIVISOR = 25      // was 12 (gives ~50px window)
+        private const val THRESH_OFFSET = 5     // 5 works well for A; 3 was too permissive
+        private const val WIN_DIVISOR = 25      // ~50px window
     }
 
     // Single active log file path for the current scan (debug builds only)
@@ -211,9 +210,12 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     lg("Polarity: normal (dark-on-light)")
                 }
 
-                // ── Morphological close (dilate → erode) bridges ≤ 3px stroke gaps ──
+                // ── Morphological close (dilate → erode) bridges ≤ 2px stroke gaps ──
+                // R=2 reconnects broken pencil strokes while preserving separate arms (F/E/P)
+                // R=3 was too aggressive (merged F's arms into a blob)
+                // R=1 was too weak (left strokes fragmented → only largest fragment kept)
                 run {
-                    val R = 3
+                    val R = 2
                     val dilated = BooleanArray(w * h)
                     for (y in 0 until h) for (x in 0 until w) {
                         if (binary[y * w + x]) {
