@@ -1,0 +1,154 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/40aa61c7-2e77-4b28-ba99-ff583fb73159.jpg
+EXIF orientation: 0
+Original image: 768x1024
+Working size: 768x1024 (scale=1.0)
+Gray stats: min=111 max=172 mean=153
+Adaptive thresh: winHalf=40 offset=5
+Binary: inkPixels=3000 (0.38%)
+Polarity: normal (dark-on-light)
+After morph close (R=3): inkPixels=3111
+Raw components: 35
+  raw lbl=1 x=394 y=7 w=1 h=1 px=1
+  raw lbl=2 x=760 y=77 w=1 h=2 px=2
+  raw lbl=3 x=203 y=201 w=86 h=94 px=3027
+  raw lbl=4 x=744 y=254 w=1 h=1 px=1
+  raw lbl=5 x=456 y=322 w=2 h=1 px=2
+  raw lbl=6 x=464 y=330 w=1 h=2 px=2
+  raw lbl=7 x=357 y=482 w=3 h=2 px=5
+  raw lbl=8 x=310 y=485 w=2 h=1 px=2
+  raw lbl=9 x=312 y=487 w=1 h=1 px=1
+  raw lbl=10 x=463 y=570 w=1 h=1 px=1
+  raw lbl=11 x=396 y=576 w=4 h=1 px=4
+  raw lbl=12 x=392 y=577 w=2 h=2 px=4
+  raw lbl=13 x=376 y=585 w=3 h=1 px=3
+  raw lbl=14 x=55 y=607 w=1 h=1 px=1
+  raw lbl=15 x=69 y=610 w=3 h=2 px=4
+  raw lbl=16 x=503 y=616 w=1 h=1 px=1
+  raw lbl=17 x=511 y=616 w=1 h=1 px=1
+  raw lbl=18 x=504 y=620 w=1 h=1 px=1
+  raw lbl=19 x=448 y=680 w=1 h=2 px=2
+  raw lbl=20 x=513 y=829 w=12 h=4 px=20
+  raw lbl=21 x=488 y=831 w=1 h=1 px=1
+  raw lbl=22 x=247 y=832 w=1 h=3 px=3
+  raw lbl=23 x=508 y=835 w=2 h=1 px=2
+  raw lbl=24 x=685 y=840 w=2 h=1 px=2
+  raw lbl=25 x=543 y=931 w=1 h=1 px=1
+  raw lbl=26 x=527 y=943 w=1 h=1 px=1
+  raw lbl=27 x=0 y=991 w=1 h=1 px=1
+  raw lbl=28 x=504 y=1000 w=1 h=1 px=1
+  raw lbl=29 x=466 y=1010 w=2 h=1 px=2
+  raw lbl=30 x=446 y=1011 w=2 h=1 px=2
+  raw lbl=31 x=347 y=1014 w=2 h=2 px=4
+  raw lbl=32 x=375 y=1015 w=1 h=1 px=1
+  raw lbl=33 x=384 y=1016 w=1 h=1 px=1
+  raw lbl=34 x=357 y=1019 w=3 h=1 px=3
+  raw lbl=35 x=376 y=1019 w=1 h=1 px=1
+Filter: minDim=41.0 maxDim=870.4 minPx=204 aspect=1/8..8
+  REJECT lbl=1 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=2 reason=tiny_bw_bh bw=0 bh=1 px=2
+  REJECT lbl=4 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=5 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=6 reason=tiny_bw_bh bw=0 bh=1 px=2
+  REJECT lbl=7 reason=tiny_bw_bh bw=2 bh=1 px=5
+  REJECT lbl=8 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=9 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=10 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=11 reason=tiny_bw_bh bw=3 bh=0 px=4
+  REJECT lbl=12 reason=tiny_bw_bh bw=1 bh=1 px=4
+  REJECT lbl=13 reason=tiny_bw_bh bw=2 bh=0 px=3
+  REJECT lbl=14 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=15 reason=tiny_bw_bh bw=2 bh=1 px=4
+  REJECT lbl=16 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=17 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=18 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=19 reason=tiny_bw_bh bw=0 bh=1 px=2
+  REJECT lbl=20 reason=too_small_dim(11<41) bw=11 bh=3 px=20
+  REJECT lbl=21 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=22 reason=tiny_bw_bh bw=0 bh=2 px=3
+  REJECT lbl=23 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=24 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=25 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=26 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=27 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=28 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=29 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=30 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=31 reason=tiny_bw_bh bw=1 bh=1 px=4
+  REJECT lbl=32 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=33 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=34 reason=tiny_bw_bh bw=2 bh=0 px=3
+  REJECT lbl=35 reason=tiny_bw_bh bw=0 bh=0 px=1
+After filter: 1 components
+Merge: medH=94 gapMaxX=37.6 gapMaxY=141.0
+After merge: 1 character groups
+  group#0 x=203 y=201 w=86 h=94 members=[3]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1781470338350.png
+  grid grayscale: min=125 max=169 range=44
+── recognizeHandwriting END count=1 took=864ms
+[ScanOCR] Model loaded: uppercase letters (26 classes, took 36ms)
+[ScanOCR]   Crop[0] pixel stats: 434/784 filled (55.4%), min=0.000 max=1.000 sum=166.3 avgNonZero=0.383
+[ScanOCR]   Crop[0] 28x28 grid:
+                                
+                                
+           .........            
+          ...........           
+          ...+++++...  ....     
+          ..++###++...   .      
+         ...++###++...          
+         ...++###+++...         
+         ..+++++++++...         
+        ...++++++++++...        
+        ...++++.+++++....       
+        ..+++++..++++++...      
+        ..++++++.+++++++..      
+       ...++++++.++###++...     
+       ...+###+++++####+...     
+       ..++####++++####++...    
+       ..++####+++++###++...    
+      ...++###++++++++++++...   
+      ...++++++.....++++++...   
+      ..++++++.......++++++..   
+      ..+++++.........+++++..   
+      ..+++++.........+++++..   
+      ..+++++..........++++..   
+      ..+++++...........+++..   
+      .........      ........   
+      .........       .......   
+                                
+                                
+
+[ScanOCR]   Crop[0] transposed (model input):
+                                
+                                
+                     .........  
+                 .............  
+             ..........+++++..  
+          .........+++++++++..  
+       ........+++++++++++++..  
+      ......++++++####++++++..  
+      ...+++++++++####++++++..  
+      ..++++++++++####++......  
+      ..+###+++++++##++.......  
+      ..+###++..++++++......    
+      ..+###+++...++++......    
+      ..++++++++++++++......    
+      ...+++++++++++++......    
+      .....++++++###++......    
+       ......++++####++.....    
+         ......++####+++.....   
+           ....+++###+++++....  
+        .    ...+++++++++++...  
+        .     .....+++++++++..  
+        ..     ......+++++++..  
+        .        ......+++++..  
+                   ...........  
+                     .........  
+                                
+                                
+                                
+
+[ScanOCR]   Crop[0] inference took 8ms
+[ScanOCR]   Char[0] "A" @ 93.3% | bbox=(0.26,0.20,0.11,0.09) | probs[min=6.95e-8 max=9.33e-1 sum=1.000] | top5: A(93.3%) B(2.9%) Q(2.3%) M(0.5%) R(0.4%)
+[ScanOCR]   Crop[0] full probs: A:93.3 B:2.9 C:0.0 D:0.0 E:0.0 F:0.0 G:0.1 H:0.1 I:0.0 J:0.0 K:0.0 L:0.0 M:0.5 N:0.0 O:0.3 P:0.0 Q:2.3 R:0.4 S:0.0 T:0.0 U:0.0 V:0.0 W:0.0 X:0.0 Y:0.0 Z:0.0
+[ScanOCR] FINAL count=1 (raw=1) text="A" rawText="A"
+[Camera] OCR result: 1 characters found, rawText: "A"
