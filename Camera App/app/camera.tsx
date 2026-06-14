@@ -155,7 +155,10 @@ export default function CameraScreen() {
       const cropRatio = Math.max(0.3, 0.6 - zoom * 0.4);
       const croppedUri = await centerCrop(processedUri, cropRatio);
 
-      console.log('[Camera] Preprocessed URI:', processedUri, 'crop:', (cropRatio * 100).toFixed(0) + '%');
+      const prepLog = `[Camera] Preprocess: original=${photo.width}x${photo.height}, targetWidth=1280, cropRatio=${(cropRatio * 100).toFixed(0)}%, zoom=${zoom.toFixed(2)}, mode=${mode}`;
+      console.log(prepLog);
+      try { (NativeModules as any).HandwritingOcrModule?.appendLog?.(prepLog); } catch { /* noop */ }
+      console.log('[Camera] Preprocessed URI:', processedUri, 'Cropped URI:', croppedUri);
 
       // Run OCR with mode-specific filtering
       const result = isScanHandwriteMode(mode)
