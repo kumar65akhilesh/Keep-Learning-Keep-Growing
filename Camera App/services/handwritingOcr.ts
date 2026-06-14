@@ -29,7 +29,7 @@ const { HandwritingOcrModule } = NativeModules;
 function scanLog(line: string) {
   console.log(line);
   try {
-    HandwritingOcrModule?.appendLog?.(line);
+    HandwritingOcrModule?.appendLog?.(line)?.catch?.(() => {});
   } catch {
     /* noop */
   }
