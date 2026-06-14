@@ -152,7 +152,10 @@ export default function CameraScreen() {
       });
 
       // Auto-crop to center — effective when shooting from distance
-      const cropRatio = Math.max(0.3, 0.6 - zoom * 0.4);
+      // Use gentler crop for scan-handwrite to avoid clipping characters near edges
+      const cropRatio = isScanHandwriteMode(mode)
+        ? Math.max(0.5, 0.8 - zoom * 0.3)
+        : Math.max(0.3, 0.6 - zoom * 0.4);
       const croppedUri = await centerCrop(processedUri, cropRatio);
 
       const prepLog = `[Camera] Preprocess: original=${photo.width}x${photo.height}, targetWidth=1280, cropRatio=${(cropRatio * 100).toFixed(0)}%, zoom=${zoom.toFixed(2)}, mode=${mode}`;
