@@ -398,47 +398,40 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     val ox = (GRID - bw * s) / 2f
                     val oy = (GRID - bh * s) / 2f
 
-                    // Compute gray range in bounding box for normalization
-                    var bboxGrayMin = 255; var bboxGrayMax = 0
-                    for (py in g.y1..g.y2) for (px in g.x1..g.x2) {
-                        val gVal = gray[py * w + px]
-                        if (gVal < bboxGrayMin) bboxGrayMin = gVal
-                        if (gVal > bboxGrayMax) bboxGrayMax = gVal
-                    }
-                    val grayRange = maxOf(1, bboxGrayMax - bboxGrayMin)
-                    lg("  grid grayscale: min=\$bboxGrayMin max=\$bboxGrayMax range=\$grayRange")
-
+                    // Use binary mask for grid — this matches EMNIST format:
+                    // white strokes (1.0) on black background (0.0).
+                    // The binary mask is already clean from adaptive thresholding.
+                    var inkPx = 0; var totalPx = 0
                     val grid = FloatArray(GRID * GRID)
                     for (py in g.y1..g.y2) for (px in g.x1..g.x2) {
-                        // Normalize: ink → 1.0, paper → 0.0 (preserves gradients)
-                        val gv = if (inverted) {
-                            (gray[py * w + px] - bboxGrayMin).toFloat() / grayRange
-                        } else {
-                            (bboxGrayMax - gray[py * w + px]).toFloat() / grayRange
-                        }
-                        if (gv < 0.15f) continue  // suppress paper noise
+                        totalPx++
+                        if (!binary[py * w + px]) continue  // only ink pixels
+                        inkPx++
                         val gx = ((px - bx) * s + ox).toInt()
                         val gy = ((py - by) * s + oy).toInt()
                         if (gx in 0 until GRID && gy in 0 until GRID) {
                             val gi = gy * GRID + gx
-                            grid[gi] = maxOf(grid[gi], gv)
+                            grid[gi] = 1.0f
                         }
                     }
+                    lg("  grid: inkPx=\$inkPx/\$totalPx (\${"%.1f".format(100.0 * inkPx / maxOf(1, totalPx))}%)")
 
-                    val thick = grid.copyOf()
+                    // Light anti-alias pass: soften edges to match EMNIST style
+                    val smooth = grid.copyOf()
                     for (gy in 0 until GRID) for (gx in 0 until GRID) {
-                        if (grid[gy * GRID + gx] > 0.3f) continue
-                        var mx = 0f
-                        for (dy in -2..2) for (dx in -2..2) {
+                        if (grid[gy * GRID + gx] > 0f) continue  // skip filled pixels
+                        var neighbors = 0
+                        for (dy in -1..1) for (dx in -1..1) {
+                            if (dx == 0 && dy == 0) continue
                             val nx = gx + dx; val ny = gy + dy
-                            if (nx in 0 until GRID && ny in 0 until GRID)
-                                mx = maxOf(mx, grid[ny * GRID + nx])
+                            if (nx in 0 until GRID && ny in 0 until GRID && grid[ny * GRID + nx] > 0f)
+                                neighbors++
                         }
-                        if (mx > 0.3f) thick[gy * GRID + gx] = mx * 0.35f
+                        if (neighbors >= 2) smooth[gy * GRID + gx] = 0.3f
                     }
 
                     val pxArr = JSONArray()
-                    for (v in thick) pxArr.put(v.toDouble())
+                    for (v in smooth) pxArr.put(v.toDouble())
 
                     val bbox = JSONObject()
                     bbox.put("x", bx.toDouble() / w)
