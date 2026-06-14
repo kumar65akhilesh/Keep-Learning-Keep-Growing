@@ -160,7 +160,7 @@ export default function CameraScreen() {
 
       const prepLog = `[Camera] Preprocess: original=${photo.width}x${photo.height}, targetWidth=1280, cropRatio=${(cropRatio * 100).toFixed(0)}%, zoom=${zoom.toFixed(2)}, mode=${mode}`;
       console.log(prepLog);
-      try { (NativeModules as any).HandwritingOcrModule?.appendLog?.(prepLog); } catch { /* noop */ }
+      try { (NativeModules as any).HandwritingOcrModule?.appendLog?.(prepLog)?.catch?.(() => {}); } catch { /* noop */ }
       console.log('[Camera] Preprocessed URI:', processedUri, 'Cropped URI:', croppedUri);
 
       // Run OCR with mode-specific filtering
@@ -170,7 +170,7 @@ export default function CameraScreen() {
 
       const resultLine = `[Camera] OCR result: ${result.characters.length} characters found, rawText: ${JSON.stringify(result.rawText)}`;
       console.log(resultLine);
-      try { (NativeModules as any).HandwritingOcrModule?.appendLog?.(resultLine); } catch { /* noop */ }
+      try { (NativeModules as any).HandwritingOcrModule?.appendLog?.(resultLine)?.catch?.(() => {}); } catch { /* noop */ }
 
       setCurrentResult(result);
 
