@@ -133,13 +133,14 @@ export async function recognizeHandwriting(
   // ── Step 2: Load EMNIST model ───────────────────────────────────
   const isLetters  = isLetterMode(mode);
   const isLower    = isLowercaseMode(mode);
+  const tModel = Date.now();
   const model      = isLower ? await getLettersLowerModel()
                    : isLetters ? await getLettersModel()
                    : await getDigitsModel();
   const labels     = isLower ? LOWER_LETTER_LABELS
                    : isLetters ? LETTER_LABELS
                    : DIGIT_LABELS;
-  console.log('[ScanOCR] Using', isLower ? 'lowercase letters' : isLetters ? 'uppercase letters' : 'digits', 'model');
+  scanLog(`[ScanOCR] Model loaded: ${isLower ? 'lowercase letters' : isLetters ? 'uppercase letters' : 'digits'} (${labels.length} classes, took ${Date.now() - tModel}ms)`);
 
   // ── Step 3: Run EMNIST inference on each crop ───────────────────
   const recognized: RecognizedCharacter[] = [];
@@ -148,6 +149,37 @@ export async function recognizeHandwriting(
   for (let i = 0; i < crops.length; i++) {
     const crop = crops[i];
     const pixels = new Float32Array(crop.pixels as number[]);
+
+    // ── Pixel stats for this crop (diagnose blank/saturated inputs) ──
+    let nonZero = 0, pixSum = 0, pixMin = 1, pixMax = 0;
+    for (let p = 0; p < pixels.length; p++) {
+      const v = pixels[p];
+      if (v > 0) { nonZero++; pixSum += v; }
+      if (v < pixMin) pixMin = v;
+      if (v > pixMax) pixMax = v;
+    }
+    const coverage = ((nonZero / 784) * 100).toFixed(1);
+    const avgIntensity = nonZero > 0 ? (pixSum / nonZero).toFixed(3) : '0';
+    scanLog(
+      `[ScanOCR]   Crop[${i}] pixel stats: ${nonZero}/784 filled (${coverage}%), min=${pixMin.toFixed(3)} max=${pixMax.toFixed(3)} sum=${pixSum.toFixed(1)} avgNonZero=${avgIntensity}`
+    );
+    if (nonZero < 10) {
+      scanLog(`[ScanOCR]   ⚠️ Crop[${i}] VERY FEW PIXELS — native segmentation may have failed`);
+    } else if (nonZero > 700) {
+      scanLog(`[ScanOCR]   ⚠️ Crop[${i}] VERY HIGH FILL — possible blob/noise`);
+    }
+
+    // ── 28×28 ASCII visualization (persisted to log) ──
+    let viz = `[ScanOCR]   Crop[${i}] 28x28 grid:\n`;
+    for (let y = 0; y < 28; y++) {
+      let row = '    ';
+      for (let x = 0; x < 28; x++) {
+        const v = pixels[y * 28 + x];
+        row += v > 0.7 ? '#' : v > 0.3 ? '+' : v > 0.1 ? '.' : ' ';
+      }
+      viz += row + '\n';
+    }
+    scanLog(viz);
 
     // EMNIST Letters are stored column-major → transpose row→col
     let modelInput: Float32Array;
@@ -158,10 +190,22 @@ export async function recognizeHandwriting(
           modelInput[x * 28 + y] = pixels[y * 28 + x];
         }
       }
+      // Log transposed grid too (what the model actually sees)
+      let tviz = `[ScanOCR]   Crop[${i}] transposed (model input):\n`;
+      for (let y = 0; y < 28; y++) {
+        let row = '    ';
+        for (let x = 0; x < 28; x++) {
+          const v = modelInput[y * 28 + x];
+          row += v > 0.7 ? '#' : v > 0.3 ? '+' : v > 0.1 ? '.' : ' ';
+        }
+        tviz += row + '\n';
+      }
+      scanLog(tviz);
     } else {
       modelInput = pixels;
     }
 
+    const tInfer = Date.now();
     const buf = modelInput.buffer.slice(
       modelInput.byteOffset,
       modelInput.byteOffset + modelInput.byteLength,
@@ -169,6 +213,7 @@ export async function recognizeHandwriting(
 
     const outputs = model.runSync([buf]);
     const probs   = new Float32Array(outputs[0] as ArrayBuffer);
+    scanLog(`[ScanOCR]   Crop[${i}] inference took ${Date.now() - tInfer}ms`);
 
     // Best prediction
     let bestIdx  = 0;
@@ -193,6 +238,12 @@ export async function recognizeHandwriting(
     scanLog(
       `[ScanOCR]   Char[${i}] "${finalChar}" @ ${(bestProb * 100).toFixed(1)}% | bbox=(${bb.x.toFixed(2)},${bb.y.toFixed(2)},${bb.width.toFixed(2)},${bb.height.toFixed(2)}) | probs[min=${pMin.toExponential(2)} max=${pMax.toExponential(2)} sum=${pSum.toFixed(3)}] | top5: ${top5}`
     );
+
+    // Full probability distribution for deep debugging
+    if (probs.length <= 26) {
+      const allProbs = labels.map((l, idx) => `${l}:${(probs[idx] * 100).toFixed(1)}`).join(' ');
+      scanLog(`[ScanOCR]   Crop[${i}] full probs: ${allProbs}`);
+    }
 
     // Skip low-confidence noise detections
     if (bestProb < 0.25) {
