@@ -1,2 +1,450 @@
-rm "/c/Users/kumar/Desktop/GitHub Repository Local/.git/.MERGE_MSG.swp"
-git commit --no-edit
+peech (55.0.13)
+  - [?] expo-splash-screen (55.0.18)
+  - [?] expo-sqlite (55.0.15)
+
+
+> Configure project :react-native-fast-tflite
+[NitroModules] ? NitroTflite is boosted by nitro!
+
+> Configure project :react-native-nitro-modules
+[NitroModules] ? Your app is boosted by nitro modules!
+
+> Configure project :react-native-vision-camera
+[VisionCamera] Thank you for using VisionCamera ??
+[VisionCamera] If you enjoy using VisionCamera, please consider sponsoring this project: https://github.com/sponsors/mrousavy
+[VisionCamera] node_modules found at C:\Camera App\node_modules
+[VisionCamera] VisionCamera_enableFrameProcessors is set to true!
+[VisionCamera] react-native-worklets-core found, Frame Processors are enabled!
+[VisionCamera] VisionCamera_enableCodeScanner is set to false!
+
+> Task :react-native-mlkit-ocr:compileReleaseKotlin
+w: file:///C:/Camera%20App/node_modules/react-native-mlkit-ocr/android/src/main/java/com/reactnativemlkitocr/MlkitOcrPackage.kt:13:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+
+> Task :react-native-safe-area-context:compileReleaseKotlin
+w: file:///C:/Camera%20App/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt:9:8 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt:50:54 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt:59:23 'val uiImplementation: UIImplementation!' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaViewShadowNode.kt:9:32 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaViewShadowNode.kt:110:61 'class NativeViewHierarchyOptimizer : Any' is deprecated. Deprecated in Java.
+
+> Task :app:createBundleReleaseJsAndAssets
+  Eager key: {"bundleEncoding":"utf8","dev":false,"entryFile":"C:\\Camera App\\node_modules\\expo-router\\entry.js","minify":false,"platform":"android","sourcemapUseAbsolutePath":false}
+Request key: {"bundleEncoding":"utf8","dev":false,"entryFile":"node_modules\\expo-router\\entry.js","minify":false,"platform":"android","skipServer":false,"sourcemapOutput":"android\\app\\build\\intermediates\\sourcemaps\\react\\release\\index.android.bundle.packager.map","sourcemapUseAbsolutePath":false}
+warning: Eager bundle does not match new options, bundling again.
+Starting Metro Bundler
+
+Android node_modules\expo-router\entry.js ΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ  0.0% (0/1)
+Android node_modules\expo-router\entry.js ΓûôΓûôΓûôΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ 21.3% ( 89/302)
+Android node_modules\expo-router\entry.js ΓûôΓûôΓûôΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ 21.3% (201/476)
+Android node_modules\expo-router\entry.js ΓûôΓûôΓûôΓûôΓûôΓûôΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ 40.5% (554/870)
+Android node_modules\expo-router\entry.js ΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûæΓûæΓûæ 82.8% (1039/1142)
+Android node_modules\expo-router\entry.js ΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûæ 94.7% (1379/1460)
+Android node_modules\expo-router\entry.js ΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûôΓûæ 99.9% (1646/1646)
+Android Bundled 24846ms node_modules\expo-router\entry.js (1646 modules)
+Writing bundle output to: android\app\build\generated\assets\react\release\index.android.bundle
+Writing sourcemap output to: android\app\build\intermediates\sourcemaps\react\release\index.android.bundle.packager.map
+Copying 66 asset files
+Done writing bundle output
+Done writing sourcemap output
+
+> Task :react-native-worklets-core:buildCMakeRelWithDebInfo[arm64-v8a]
+C/C++: ninja: Entering directory `C:\Camera App\node_modules\react-native-worklets-core\android\.cxx\RelWithDebInfo\6q6y2l6k\arm64-v8a'
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/cpp-adapter.cpp:6:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: 1 warning generated.
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.cpp:1:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: 1 warning generated.
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletContext.cpp:3:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: 1 warning generated.
+
+> Task :react-native-worklets-core:buildCMakeRelWithDebInfo[armeabi-v7a]
+C/C++: ninja: Entering directory `C:\Camera App\node_modules\react-native-worklets-core\android\.cxx\RelWithDebInfo\6q6y2l6k\armeabi-v7a'
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/cpp-adapter.cpp:6:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: 1 warning generated.
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.cpp:1:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: 1 warning generated.
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletContext.cpp:3:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletContext.cpp:15:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/decorators/WKTJsiSetImmediateDecorator.h:85:53: warning: format specifies type 'unsigned long' but the argument has type 'size_t' (aka 'unsigned int') [-Wformat]
+C/C++:    85 |                   printf("ctx %lu: setImmediate\n", context->getContextId());
+C/C++:       |                               ~~~                   ^~~~~~~~~~~~~~~~~~~~~~~
+C/C++:       |                               %zu
+C/C++: 2 warnings generated.
+
+> Task :react-native-worklets-core:buildCMakeRelWithDebInfo[x86]
+C/C++: ninja: Entering directory `C:\Camera App\node_modules\react-native-worklets-core\android\.cxx\RelWithDebInfo\6q6y2l6k\x86'
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/cpp-adapter.cpp:6:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: 1 warning generated.
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.cpp:1:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: 1 warning generated.
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletContext.cpp:3:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletContext.cpp:15:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/decorators/WKTJsiSetImmediateDecorator.h:85:53: warning: format specifies type 'unsigned long' but the argument has type 'size_t' (aka 'unsigned int') [-Wformat]
+C/C++:    85 |                   printf("ctx %lu: setImmediate\n", context->getContextId());
+C/C++:       |                               ~~~                   ^~~~~~~~~~~~~~~~~~~~~~~
+C/C++:       |                               %zu
+C/C++: 2 warnings generated.
+
+> Task :react-native-worklets-core:buildCMakeRelWithDebInfo[x86_64]
+C/C++: ninja: Entering directory `C:\Camera App\node_modules\react-native-worklets-core\android\.cxx\RelWithDebInfo\6q6y2l6k\x86_64'
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/cpp-adapter.cpp:6:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: 1 warning generated.
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.cpp:1:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: 1 warning generated.
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletContext.cpp:3:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/cpp/WKTJsiWorkletApi.h:14:
+C/C++: In file included from C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/sharedvalues/WKTJsiSharedValue.h:8:
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:97:22: warning: exception of type 'const std::runtime_error &' will be caught by earlier handler [-Wexceptions]
+C/C++:    97 |       } catch (const std::runtime_error &err) {
+C/C++:       |                      ^
+C/C++: C:/Camera App/node_modules/react-native-worklets-core/android/../cpp/WKTJsiDispatcher.h:94:22: note: for type 'const std::exception &'
+C/C++:    94 |       } catch (const std::exception &err) {
+C/C++:       |                      ^
+C/C++: 1 warning generated.
+
+> Task :react-native-worklets-core:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :react-native-screens:compileReleaseKotlin
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/RNScreensPackage.kt:62:9 The corresponding parameter in the supertype 'BaseReactPackage' is named 'name'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/RNScreensPackage.kt:63:9 The corresponding parameter in the supertype 'BaseReactPackage' is named 'reactContext'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/RNScreensPackage.kt:76:17 'constructor(name: String, className: String, canOverrideExistingModule: Boolean, needsEagerInit: Boolean, hasConstants: Boolean, isCxxModule: Boolean, isTurboModule: Boolean): ReactModuleInfo' is deprecated. This constructor is deprecated and will be removed in the future. Use ReactModuleInfo(String, String, boolean, boolean, boolean, boolean)].
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/Screen.kt:24:8 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/Screen.kt:54:77 Unchecked cast of '(CoordinatorLayout.Behavior<View!>?..CoordinatorLayout.Behavior<*>?)' to 'BottomSheetBehavior<Screen>'.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/Screen.kt:426:42 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenContainerViewManager.kt:6:8 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenContainerViewManager.kt:56:78 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:222:31 'var targetElevation: Float' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:225:13 'fun setHasOptionsMenu(p0: Boolean): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:404:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:411:22 'fun onPrepareOptionsMenu(p0: Menu): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:414:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:419:22 'fun onCreateOptionsMenu(p0: Menu, p1: MenuInflater): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfig.kt:441:22 'val reactNativeHost: ReactNativeHost' is deprecated. You should not use ReactNativeHost directly in the New Architecture. Use ReactHost instead.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfigShadowNode.kt:4:8 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfigShadowNode.kt:10:5 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfigViewManager.kt:9:8 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfigViewManager.kt:37:78 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackViewManager.kt:6:8 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackViewManager.kt:65:78 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:48:42 'fun replaceSystemWindowInsets(p0: Int, p1: Int, p2: Int, p3: Int): WindowInsetsCompat' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:49:39 'val systemWindowInsetLeft: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:51:39 'val systemWindowInsetRight: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:52:39 'val systemWindowInsetBottom: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreensShadowNode.kt:4:8 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreensShadowNode.kt:5:8 'class NativeViewHierarchyManager : Any' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreensShadowNode.kt:6:8 'class NativeViewHierarchyOptimizer : Any' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreensShadowNode.kt:7:8 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreensShadowNode.kt:11:5 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreensShadowNode.kt:12:63 'class NativeViewHierarchyOptimizer : Any' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreensShadowNode.kt:14:34 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreensShadowNode.kt:14:106 'class NativeViewHierarchyManager : Any' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:7:8 'object ReactFeatureFlags : Any' is deprecated. Use com.facebook.react.internal.featureflags.ReactNativeFeatureFlags instead.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:25:13 'object ReactFeatureFlags : Any' is deprecated. Use com.facebook.react.internal.featureflags.ReactNativeFeatureFlags instead.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:32:9 The corresponding parameter in the supertype 'ReactViewGroup' is named 'left'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:33:9 The corresponding parameter in the supertype 'ReactViewGroup' is named 'top'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:34:9 The corresponding parameter in the supertype 'ReactViewGroup' is named 'right'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:35:9 The corresponding parameter in the supertype 'ReactViewGroup' is named 'bottom'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:71:9 The corresponding parameter in the supertype 'RootView' is named 'childView'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:72:9 The corresponding parameter in the supertype 'RootView' is named 'ev'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:79:46 The corresponding parameter in the supertype 'RootView' is named 'ev'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:83:9 The corresponding parameter in the supertype 'RootView' is named 'childView'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:84:9 The corresponding parameter in the supertype 'RootView' is named 'ev'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:95:34 The corresponding parameter in the supertype 'RootView' is named 't'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/DimmingView.kt:63:9 The corresponding parameter in the supertype 'ReactCompoundView' is named 'touchX'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/DimmingView.kt:64:9 The corresponding parameter in the supertype 'ReactCompoundView' is named 'touchY'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/DimmingView.kt:68:9 The corresponding parameter in the supertype 'ReactCompoundViewGroup' is named 'touchX'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/DimmingView.kt:69:9 The corresponding parameter in the supertype 'ReactCompoundViewGroup' is named 'touchY'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/TabsHostViewManager.kt:37:9 The corresponding parameter in the supertype 'TabsHostViewManager' is named 'view'. This may cause problems when calling this function with named arguments.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/SafeAreaView.kt:19:8 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/SafeAreaView.kt:153:45 'fun consumeDisplayCutout(): WindowInsetsCompat' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/SafeAreaView.kt:194:58 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/SafeAreaView.kt:201:31 'val uiImplementation: UIImplementation!' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/paper/SafeAreaViewShadowNode.kt:7:8 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/paper/SafeAreaViewShadowNode.kt:8:8 'class NativeViewHierarchyOptimizer : Any' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/paper/SafeAreaViewShadowNode.kt:14:32 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/paper/SafeAreaViewShadowNode.kt:83:63 'class NativeViewHierarchyOptimizer : Any' is deprecated. Deprecated in Java.
+
+> Task :react-native-fast-tflite:buildCMakeRelWithDebInfo[arm64-v8a]
+C/C++: ninja: Entering directory `C:\Camera App\node_modules\react-native-fast-tflite\android\.cxx\RelWithDebInfo\4n1a6u3r\arm64-v8a'
+C/C++: C:/Camera App/node_modules/react-native-fast-tflite/cpp/TfliteHelpers.cpp:23:11: warning: enumeration value 'kTfLiteOutputShapeNotKnown' not handled in switch [-Wswitch]
+C/C++:    23 |   switch (status) {
+C/C++:       |           ^~~~~~
+C/C++: 1 warning generated.
+C/C++: C:/Camera App/node_modules/react-native-fast-tflite/cpp/HybridTfliteModel.cpp:95:25: warning: comparison of integers of different signs: 'int32_t' (aka 'int') and 'size_t' (aka 'unsigned long') [-Wsign-compare]
+C/C++:    95 |   for (int32_t i = 0; i < inputCount; i++) {
+C/C++:       |                       ~ ^ ~~~~~~~~~~
+C/C++: 1 warning generated.
+
+> Task :react-native-fast-tflite:buildCMakeRelWithDebInfo[armeabi-v7a]
+C/C++: ninja: Entering directory `C:\Camera App\node_modules\react-native-fast-tflite\android\.cxx\RelWithDebInfo\4n1a6u3r\armeabi-v7a'
+C/C++: C:/Camera App/node_modules/react-native-fast-tflite/cpp/TfliteHelpers.cpp:23:11: warning: enumeration value 'kTfLiteOutputShapeNotKnown' not handled in switch [-Wswitch]
+C/C++:    23 |   switch (status) {
+C/C++:       |           ^~~~~~
+C/C++: 1 warning generated.
+C/C++: C:/Camera App/node_modules/react-native-fast-tflite/cpp/HybridTfliteModel.cpp:95:25: warning: comparison of integers of different signs: 'int32_t' (aka 'int') and 'size_t' (aka 'unsigned int') [-Wsign-compare]
+C/C++:    95 |   for (int32_t i = 0; i < inputCount; i++) {
+C/C++:       |                       ~ ^ ~~~~~~~~~~
+C/C++: 1 warning generated.
+
+> Task :react-native-fast-tflite:buildCMakeRelWithDebInfo[x86]
+C/C++: ninja: Entering directory `C:\Camera App\node_modules\react-native-fast-tflite\android\.cxx\RelWithDebInfo\4n1a6u3r\x86'
+C/C++: C:/Camera App/node_modules/react-native-fast-tflite/cpp/TfliteHelpers.cpp:23:11: warning: enumeration value 'kTfLiteOutputShapeNotKnown' not handled in switch [-Wswitch]
+C/C++:    23 |   switch (status) {
+C/C++:       |           ^~~~~~
+C/C++: 1 warning generated.
+C/C++: C:/Camera App/node_modules/react-native-fast-tflite/cpp/HybridTfliteModel.cpp:95:25: warning: comparison of integers of different signs: 'int32_t' (aka 'int') and 'size_t' (aka 'unsigned int') [-Wsign-compare]
+C/C++:    95 |   for (int32_t i = 0; i < inputCount; i++) {
+C/C++:       |                       ~ ^ ~~~~~~~~~~
+C/C++: 1 warning generated.
+
+> Task :react-native-vision-camera:compileReleaseKotlin
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/MetadataProvider.kt:44:25 'fun requestSingleUpdate(p0: String, p1: LocationListener, p2: Looper?): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/utils/CamcorderProfileUtils.kt:71:42 'static fun get(p0: Int, p1: Int): CamcorderProfile!' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/utils/CamcorderProfileUtils.kt:96:42 'static fun get(p0: Int, p1: Int): CamcorderProfile!' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/core/utils/CamcorderProfileUtils.kt:121:42 'static fun get(p0: Int, p1: Int): CamcorderProfile!' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/frameprocessors/VisionCameraProxy.kt:33:56 'val jsCallInvokerHolder: CallInvokerHolder' is deprecated. Use ReactContext.getJSCallInvokerHolder instead.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraPackage.kt:9:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:4:8 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:31:5 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:32:45 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:33:47 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:34:43 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:35:43 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:36:43 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:37:41 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:38:47 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:39:50 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:40:50 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:41:60 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:42:61 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewManager.kt:43:47 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/Camera%20App/node_modules/react-native-vision-camera/android/src/main/java/com/mrousavy/camera/react/CameraViewModule.kt:72:112 'val DEFAULT: Int' is deprecated. UIManagerType.DEFAULT will be deleted in the next release of React Native. Use [LEGACY] instead.
+
+> Task :react-native-worklets:compileReleaseJavaWithJavac
+Note: C:\Camera App\node_modules\react-native-worklets\android\src\main\java\com\swmansion\worklets\WorkletsMessageQueueThreadBase.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: C:\Camera App\node_modules\react-native-worklets\android\src\main\java\com\swmansion\worklets\WorkletsPackage.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :react-native-fast-tflite:buildCMakeRelWithDebInfo[x86_64]
+C/C++: ninja: Entering directory `C:\Camera App\node_modules\react-native-fast-tflite\android\.cxx\RelWithDebInfo\4n1a6u3r\x86_64'
+C/C++: C:/Camera App/node_modules/react-native-fast-tflite/cpp/TfliteHelpers.cpp:23:11: warning: enumeration value 'kTfLiteOutputShapeNotKnown' not handled in switch [-Wswitch]
+C/C++:    23 |   switch (status) {
+C/C++:       |           ^~~~~~
+C/C++: 1 warning generated.
+C/C++: C:/Camera App/node_modules/react-native-fast-tflite/cpp/HybridTfliteModel.cpp:95:25: warning: comparison of integers of different signs: 'int32_t' (aka 'int') and 'size_t' (aka 'unsigned long') [-Wsign-compare]
+C/C++:    95 |   for (int32_t i = 0; i < inputCount; i++) {
+C/C++:       |                       ~ ^ ~~~~~~~~~~
+C/C++: 1 warning generated.
+
+> Task :expo-modules-core:compileReleaseKotlin
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/apploader/AppLoaderProvider.kt:34:52 Unchecked cast of 'Class<*>!' to 'Class<out HeadlessAppLoader>'.
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:13:8 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:21:8 'typealias ErrorManagerModule = JSLoggerModule' is deprecated. Use JSLoggerModule instead.
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:59:13 'val hostingRuntimeContext: MainRuntime' is deprecated. Use AppContext.runtimeContext instead.
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:257:21 'typealias ErrorManagerModule = JSLoggerModule' is deprecated. Use JSLoggerModule instead.
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:366:21 'val DEFAULT: Int' is deprecated. UIManagerType.DEFAULT will be deleted in the next release of React Native. Use [LEGACY] instead.
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:367:10 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/defaultmodules/NativeModulesProxyModule.kt:16:5 'fun Constants(legacyConstantsProvider: () -> Map<String, Any?>): Unit' is deprecated. Use `Constant` or `Property` instead.
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/views/ViewDefinitionBuilder.kt:464:16 'val errorManager: JSLoggerModule?' is deprecated. Use AppContext.jsLogger instead.
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/views/ViewDefinitionBuilder.kt:464:30 'fun reportExceptionToLogBox(codedException: CodedException): Unit' is deprecated. Use appContext.jsLogger.error(...) instead.
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/views/ViewManagerDefinition.kt:41:16 'val errorManager: JSLoggerModule?' is deprecated. Use AppContext.jsLogger instead.
+w: file:///C:/Camera%20App/node_modules/expo/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/views/ViewManagerDefinition.kt:41:30 'fun reportExceptionToLogBox(codedException: CodedException): Unit' is deprecated. Use appContext.jsLogger.error(...) instead.
+
+> Task :expo-modules-core:compileReleaseJavaWithJavac
+Note: C:\Camera App\node_modules\expo\node_modules\expo-modules-core\android\src\main\java\expo\modules\adapters\react\ModuleRegistryAdapter.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :expo-constants:compileReleaseKotlin
+w: file:///C:/Camera%20App/node_modules/expo-constants/android/src/main/java/expo/modules/constants/ConstantsModule.kt:13:5 'fun Constants(legacyConstantsProvider: () -> Map<String, Any?>): Unit' is deprecated. Use `Constant` or `Property` instead.
+
+> Task :expo:compileReleaseKotlin
+w: file:///C:/Camera%20App/node_modules/expo/android/src/main/java/expo/modules/ExpoModulesPackage.kt:34:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///C:/Camera%20App/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:22:8 'class ReactInstanceManager : Any' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:102:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///C:/Camera%20App/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:102:43 'class ReactInstanceManager : Any' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:103:21 'val reactInstanceManager: ReactInstanceManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/expo/android/src/main/java/expo/modules/fetch/ExpoFetchModule.kt:31:39 'constructor(reactContext: ReactContext): ForwardingCookieHandler' is deprecated. Use the default constructor.
+w: file:///C:/Camera%20App/node_modules/expo/android/src/main/java/expo/modules/fetch/NativeResponse.kt:42:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///C:/Camera%20App/node_modules/expo/android/src/main/java/expo/modules/fetch/NativeResponse.kt:44:11 'fun deallocate(): Unit' is deprecated. Use sharedObjectDidRelease() instead.
+
+> Task :react-native-reanimated:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :react-native-gesture-handler:compileReleaseKotlin
+w: file:///C:/Camera%20App/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/Extensions.kt:8:8 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/Extensions.kt:13:29 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/Extensions.kt:14:32 'class UIManagerModule : ReactContextBaseJavaModule, OnBatchCompleteListener, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/Camera%20App/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerModule.kt:173:53 This synthetic property is based on the getter function 'fun getRootViewTag(): Int' from Kotlin. In the future, synthetic properties will be available only if the base getter function came from Java. Consider replacing this property access with a 'getRootViewTag()' function call.
+
+> Task :app:processReleaseMainManifest
+C:\Camera App\android\app\src\main\AndroidManifest.xml Warning:
+        provider#expo.modules.filesystem.FileSystemFileProvider@android:authorities was tagged at AndroidManifest.xml:0 to replace other declarations but no other declaration present
+
+> Task :app:expoReleaseOverrideMaxSdkConflicts
+---------- Expo Max Sdk Override Plugin ----------
+>>> No 'android:maxSdkVersion' conflicts found
+--------------------------------------------------
+
+> Task :app:processReleaseResources FAILED
+> Task :app:mergeReleaseNativeLibs FAILED
+
+FAILURE: Build completed with 3 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:processReleaseResources'.
+> A failure occurred while executing com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask$TaskAction
+   > Android resource linking failed
+     ERROR: AAPT: C:\Camera App\android\app\build\intermediates\stable_resource_ids_file\release\processReleaseResources\stableIds.txt: error: failed writing to file: The printer is out of paper. (28).
+     
+         
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:mergeReleaseNativeLibs'.
+> A failure occurred while executing com.android.build.gradle.internal.tasks.MergeNativeLibsTask$MergeNativeLibsTaskWorkAction
+   > There is not enough space on the disk
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+3: Task failed with an exception.
+-----------
+* What went wrong:
+java.io.IOException: There is not enough space on the disk
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.0.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 1h 7m 42s
+720 actionable tasks: 562 executed, 124 from cache, 34 up-to-date
+Error: C:\Camera App\android\gradlew.bat app:assembleRelease -x lint -x test --configure-on-demand --build-cache -PreactNativeDevServerPort=8081 exited with non-zero code: 1
+Error: C:\Camera App\android\gradlew.bat app:assembleRelease -x lint -x test --configure-on-demand --build-cache -PreactNativeDevServerPort=8081 exited with non-zero code: 1
+    at ChildProcess.completionListener (C:\Camera App\node_modules\@expo\spawn-async\src\spawnAsync.ts:67:13)
+    at Object.onceWrapper (node:events:639:26)
+    at ChildProcess.emit (node:events:524:28)
+    at ChildProcess.cp.emit (C:\Camera App\node_modules\cross-spawn\lib\enoent.js:34:29)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Process.ChildProcess._handle.onexit (node:internal/child_process:304:5)
+    ...
+    at spawnAsync (C:\Camera App\node_modules\@expo\spawn-async\src\spawnAsync.ts:28:21)
+    at spawnGradleAsync (C:\Camera App\node_modules\expo\node_modules\@expo\cli\src\start\platforms\android\gradle.ts:134:28)
+    at assembleAsync (C:\Camera App\node_modules\expo\node_modules\@expo\cli\src\start\platforms\android\gradle.ts:83:16)
+    at runAndroidAsync (C:\Camera App\node_modules\expo\node_modules\@expo\cli\src\run\android\runAndroidAsync.ts:62:24)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
