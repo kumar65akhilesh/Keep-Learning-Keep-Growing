@@ -1,0 +1,88 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/8dd05ef5-2e7f-4268-a91f-38b4650c6824.jpg
+EXIF orientation: 0
+Original image: 1024x1365
+Working size: 1024x1365 (scale=1.0)
+Gray stats: min=91 max=181 mean=146
+Adaptive thresh: winHalf=54 offset=5
+Binary: inkPixels=4925 (0.35%)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=819)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=3): inkPixels=5862
+Raw components: 760
+  (skipping per-component dump; too many)
+Filter: minDim=54.6 maxDim=1160.3 minPx=273 aspect=1/8..8
+After filter: 1 components
+Merge: medH=103 gapMaxX=41.2 gapMaxY=154.5
+After merge: 1 character groups
+  group#0 x=418 y=676 w=63 h=103 members=[210]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1781969794138.png
+  grid: inkPx=3919/6489 (60.4%)
+── recognizeHandwriting END count=1 took=1386ms
+[ScanOCR] Model loaded: lowercase letters (26 classes, took 0ms)
+[ScanOCR]   Crop[0] pixel stats: 233/784 filled (29.7%), min=0.000 max=1.000 sum=195.2 avgNonZero=0.838
+[ScanOCR]   Crop[0] 28x28 grid:
+                                
+                                
+                                
+              +++++++           
+             +#######+          
+            +#########+         
+           +##########+         
+           +##########+         
+           ++#########+         
+          +###########+         
+          +###########+         
+          ++##########+         
+           ############+        
+           +###########+        
+           +############+       
+            +###########+       
+             ++#########+       
+               +########+       
+                +#######+       
+                +#######+       
+               +#######+        
+               +#######+        
+               +#######+        
+                ++####+         
+                  ++++          
+                                
+                                
+                                
+
+[ScanOCR]   Crop[0] transposed (model input):
+                                
+                                
+                                
+                                
+                                
+                                
+             +++                
+          +++##+#++             
+         +##+######+            
+        +###########+           
+       +############+           
+       +#############+  +++     
+       +##############++###+    
+       +###################+    
+       +####################+   
+       +####################+   
+       +####################+   
+        +###################+   
+         +++++++###########+    
+                ++######+++     
+                  ++++++        
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+
+[ScanOCR]   Crop[0] inference took 6ms
+[ScanOCR]   Char[0] "q" @ 73.6% | bbox=(0.41,0.50,0.06,0.08) | probs[min=1.51e-5 max=7.36e-1 sum=1.000] | top5: q(73.6%) g(22.9%) a(1.1%) s(0.8%) z(0.7%)
+[ScanOCR]   Crop[0] full probs: a:1.1 b:0.0 c:0.0 d:0.0 e:0.0 f:0.1 g:22.9 h:0.0 i:0.0 j:0.0 k:0.0 l:0.0 m:0.0 n:0.1 o:0.1 p:0.1 q:73.6 r:0.0 s:0.8 t:0.0 u:0.0 v:0.0 w:0.0 x:0.0 y:0.2 z:0.7
+[ScanOCR] FINAL count=1 (raw=1) text="q" rawText="q"
+[Camera] OCR result: 1 characters found, rawText: "q"
