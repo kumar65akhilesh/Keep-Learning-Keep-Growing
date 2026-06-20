@@ -336,19 +336,22 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 val minDim = maxOf(w, h) * 0.04
                 val maxDim = maxOf(w, h) * 0.85
                 val minPx  = (maxOf(w, h) * 0.20).toInt().coerceAtLeast(50)
-                lg("Filter: minDim=\${"%.1f".format(minDim)} maxDim=\${"%.1f".format(maxDim)} minPx=\$minPx aspect=1/8..8")
+                val edgeMargin = (maxOf(w, h) * 0.05).toInt()  // 5% edge margin
+                lg("Filter: minDim=\${"%.1f".format(minDim)} maxDim=\${"%.1f".format(maxDim)} minPx=\$minPx aspect=1/5..5 edgeMargin=\$edgeMargin")
 
                 val valid = mutableMapOf<Int, IntArray>()
                 for ((lbl, b) in bounds) {
                     val bw = b[2] - b[0]; val bh = b[3] - b[1]
                     val dim = maxOf(bw, bh)
                     val aspect = if (bh == 0) 999.0 else bw.toDouble() / bh
+                    val touchesEdge = b[0] < edgeMargin || b[1] < edgeMargin || b[2] > w - edgeMargin || b[3] > h - edgeMargin
                     val reason = when {
                         bw < 2 || bh < 2 -> "tiny_bw_bh"
                         dim < minDim -> "too_small_dim(\$dim<\${"%.0f".format(minDim)})"
                         dim > maxDim -> "too_large_dim(\$dim>\${"%.0f".format(maxDim)})"
                         b[4] < minPx -> "too_few_px(\${b[4]}<\$minPx)"
-                        aspect > 8.0 || aspect < 0.125 -> "bad_aspect(\${"%.2f".format(aspect)})"
+                        aspect > 5.0 || aspect < 0.2 -> "bad_aspect(\${"%.2f".format(aspect)})"
+                        touchesEdge -> "touches_edge(x=\${b[0]},y=\${b[1]},x2=\${b[2]},y2=\${b[3]})"
                         else -> null
                     }
                     if (reason == null) {
@@ -398,11 +401,14 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 }
                 lg("After merge: \${groups.size} character groups")
 
-                // Keep only the largest group (by pixel area) — single-letter scanning
+                // Keep only the group with most ink pixels — real characters are denser than edge noise
                 val sortedGroups = if (groups.size > 1) {
-                    val largest = groups.values.maxByOrNull { (it.x2 - it.x1 + 1) * (it.y2 - it.y1 + 1) }!!
-                    lg("Keeping largest group only: \${largest.x2-largest.x1+1}x\${largest.y2-largest.y1+1} (dropped \${groups.size - 1} smaller)")
-                    listOf(largest)
+                    val best = groups.values.maxByOrNull { g ->
+                        // Count actual ink pixels in the group's members
+                        g.members.sumOf { lbl -> valid[lbl]?.get(4) ?: 0 }
+                    }!!
+                    lg("Keeping densest group: \${best.x2-best.x1+1}x\${best.y2-best.y1+1} ink=\${best.members.sumOf { lbl -> valid[lbl]?.get(4) ?: 0 }} (dropped \${groups.size - 1} others)")
+                    listOf(best)
                 } else {
                     groups.values.sortedBy { it.x1 }
                 }
@@ -826,19 +832,22 @@ class HandwritingOcrModule: NSObject {
       let minDim = Float(max(w, h)) * 0.04
       let maxDim = Float(max(w, h)) * 0.85
       let minPx  = max(Int(Float(max(w, h)) * 0.20), 50)
-      dbg("Filter: minDim=\\(String(format: \"%.1f\", Double(minDim))) maxDim=\\(String(format: \"%.1f\", Double(maxDim))) minPx=\\(minPx) aspect=1/8..8")
+      let edgeMargin = Int(Float(max(w, h)) * 0.05)  // 5% edge margin
+      dbg("Filter: minDim=\\(String(format: \"%.1f\", Double(minDim))) maxDim=\\(String(format: \"%.1f\", Double(maxDim))) minPx=\\(minPx) aspect=1/5..5 edgeMargin=\\(edgeMargin)")
 
       var valid = [Int: [Int]]()
       for (lbl, b) in bounds {
         let bw = b[2] - b[0]; let bh = b[3] - b[1]
         let dim = max(bw, bh)
         let aspect: Double = bh == 0 ? 999.0 : Double(bw) / Double(bh)
+        let touchesEdge = b[0] < edgeMargin || b[1] < edgeMargin || b[2] > w - edgeMargin || b[3] > h - edgeMargin
         var reason: String? = nil
         if bw < 2 || bh < 2 { reason = "tiny_bw_bh" }
         else if Float(dim) < minDim { reason = "too_small_dim" }
         else if Float(dim) > maxDim { reason = "too_large_dim" }
         else if b[4] < minPx { reason = "too_few_px" }
-        else if aspect > 8.0 || aspect < 0.125 { reason = "bad_aspect" }
+        else if aspect > 5.0 || aspect < 0.2 { reason = "bad_aspect" }
+        else if touchesEdge { reason = "touches_edge" }
         if reason == nil { valid[lbl] = b }
         else if bounds.count <= 50 {
           dbg("  REJECT lbl=\\(lbl) reason=\\(reason!) bw=\\(bw) bh=\\(bh) px=\\(b[4])")
@@ -883,14 +892,17 @@ class HandwritingOcrModule: NSObject {
       }
       dbg("After merge: \\(groups.count) character groups")
 
-      // Keep only the largest group (by pixel area) — single-letter scanning
+      // Keep only the group with most ink pixels — real characters are denser than edge noise
       let sortedGroups: [(x1: Int, y1: Int, x2: Int, y2: Int, members: [Int])]
       if groups.count > 1 {
-        let largest = groups.values.max(by: { a, b in
-          (a.x2 - a.x1 + 1) * (a.y2 - a.y1 + 1) < (b.x2 - b.x1 + 1) * (b.y2 - b.y1 + 1)
+        let best = groups.values.max(by: { a, b in
+          let aInk = a.members.reduce(0) { $0 + (valid[$1]?[4] ?? 0) }
+          let bInk = b.members.reduce(0) { $0 + (valid[$1]?[4] ?? 0) }
+          return aInk < bInk
         })!
-        dbg("Keeping largest group only: \\(largest.x2-largest.x1+1)x\\(largest.y2-largest.y1+1) (dropped \\(groups.count - 1) smaller)")
-        sortedGroups = [largest]
+        let bestInk = best.members.reduce(0) { $0 + (valid[$1]?[4] ?? 0) }
+        dbg("Keeping densest group: \\(best.x2-best.x1+1)x\\(best.y2-best.y1+1) ink=\\(bestInk) (dropped \\(groups.count - 1) others)")
+        sortedGroups = [best]
       } else {
         sortedGroups = groups.values.sorted { $0.x1 < $1.x1 }
       }
