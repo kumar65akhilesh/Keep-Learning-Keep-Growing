@@ -188,31 +188,11 @@ export async function recognizeHandwriting(
       scanLog(viz);
     }
 
-    // EMNIST Letters are stored column-major → transpose row→col
-    let modelInput: Float32Array;
-    if (isLetters) {
-      modelInput = new Float32Array(784);
-      for (let y = 0; y < 28; y++) {
-        for (let x = 0; x < 28; x++) {
-          modelInput[x * 28 + y] = pixels[y * 28 + x];
-        }
-      }
-      // Log transposed grid too (what the model actually sees)
-      if (VERBOSE_LOG) {
-        let tviz = `[ScanOCR]   Crop[${i}] transposed (model input):\n`;
-        for (let y = 0; y < 28; y++) {
-          let row = '    ';
-          for (let x = 0; x < 28; x++) {
-            const v = modelInput[y * 28 + x];
-            row += v > 0.7 ? '#' : v > 0.3 ? '+' : v > 0.1 ? '.' : ' ';
-          }
-          tviz += row + '\n';
-        }
-        scanLog(tviz);
-      }
-    } else {
-      modelInput = pixels;
-    }
+    // The native module produces a row-major 28×28 grid (character in correct
+    // visual orientation). The EMNIST models were trained on row-major data
+    // (the training script transposes column-major EMNIST to row-major).
+    // Therefore: NO transpose needed — feed the grid directly to the model.
+    const modelInput = pixels;
 
     const tInfer = Date.now();
     const buf = modelInput.buffer.slice(

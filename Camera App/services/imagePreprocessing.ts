@@ -56,6 +56,7 @@ export async function preprocessImage(
 export async function centerCrop(
   uri: string,
   ratio: number,
+  square: boolean = false,
 ): Promise<string> {
   if (ratio >= 1) return uri;
   const r = Math.max(0.1, Math.min(1, ratio));
@@ -67,8 +68,17 @@ export async function centerCrop(
   });
   const w = info.width;
   const h = info.height;
-  const cropW = Math.round(w * r);
-  const cropH = Math.round(h * r);
+
+  let cropW: number, cropH: number;
+  if (square) {
+    // Square crop: use the shorter dimension × ratio
+    const side = Math.round(Math.min(w, h) * r);
+    cropW = side;
+    cropH = side;
+  } else {
+    cropW = Math.round(w * r);
+    cropH = Math.round(h * r);
+  }
   const originX = Math.round((w - cropW) / 2);
   const originY = Math.round((h - cropH) / 2);
 
@@ -79,6 +89,9 @@ export async function centerCrop(
   );
   return result.uri;
 }
+
+/**
+ * Crop a region from an image (for isolating a detected character).
  *
  * @param uri - Source image URI
  * @param region - Crop region in pixels
