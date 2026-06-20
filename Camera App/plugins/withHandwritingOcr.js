@@ -210,6 +210,57 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     lg("Polarity: normal (dark-on-light)")
                 }
 
+                // ── Ruled-line removal (morphological opening with wide horizontal kernel) ──
+                // Detects horizontal lines spanning ≥80% of image width using
+                // morphological opening (erode then dilate with a 1×kernelW kernel).
+                // Only applies if >5 distinct lines found (i.e., ruled/notebook paper).
+                run {
+                    val kernelW = (w * 0.8).toInt()
+                    // Horizontal erosion: pixel survives only if entire kernel is ink
+                    val eroded = BooleanArray(w * h)
+                    for (y in 0 until h) {
+                        var runLen = 0
+                        for (x in 0 until w) {
+                            if (binary[y * w + x]) { runLen++ } else { runLen = 0 }
+                            if (runLen >= kernelW) {
+                                // Mark the full kernel span as eroded
+                                for (dx in 0 until kernelW) eroded[y * w + (x - dx)] = true
+                            }
+                        }
+                    }
+                    // Horizontal dilation: expand eroded result by kernelW/2 in each direction
+                    val lineMask = BooleanArray(w * h)
+                    val halfK = kernelW / 2
+                    for (y in 0 until h) {
+                        for (x in 0 until w) {
+                            if (eroded[y * w + x]) {
+                                for (dx in -halfK..halfK) {
+                                    val nx = x + dx
+                                    if (nx in 0 until w) lineMask[y * w + nx] = true
+                                }
+                            }
+                        }
+                    }
+                    // Count distinct horizontal lines (group contiguous rows with ≥10px gap)
+                    val lineRows = (0 until h).filter { y -> (0 until w).any { x -> lineMask[y * w + x] } }
+                    var lineCount = 0
+                    var prevRow = -20
+                    for (row in lineRows) {
+                        if (row - prevRow > 10) lineCount++
+                        prevRow = row
+                    }
+                    lg("Line removal: detected \$lineCount ruled lines (kernelW=\$kernelW)")
+                    if (lineCount > 5) {
+                        var removed = 0
+                        for (i in binary.indices) {
+                            if (lineMask[i] && binary[i]) { binary[i] = false; removed++ }
+                        }
+                        lg("Line removal: subtracted \$removed ink pixels from \$lineCount lines")
+                    } else {
+                        lg("Line removal: skipped (\$lineCount ≤ 5 lines, not ruled paper)")
+                    }
+                }
+
                 // ── Morphological close (dilate → erode) bridges ≤ 2px stroke gaps ──
                 // R=2 reconnects broken pencil strokes while preserving separate arms (F/E/P)
                 // R=3 was too aggressive (merged F's arms into a blob)
@@ -654,6 +705,57 @@ class HandwritingOcrModule: NSObject {
         dbg("After invert: inkPixels=\\(inkCount) (\\(String(format: \"%.2f\", 100.0 * Double(inkCount) / Double(totalPx)))%)")
       } else {
         dbg("Polarity: normal (dark-on-light)")
+      }
+
+      // ── Ruled-line removal (morphological opening with wide horizontal kernel) ──
+      // Detects horizontal lines spanning ≥80% of image width.
+      // Only applies if >5 distinct lines found (ruled/notebook paper).
+      do {
+        let kernelW = Int(Double(w) * 0.8)
+        // Horizontal erosion: pixel survives only if full kernel span is ink
+        var eroded = [Bool](repeating: false, count: w * h)
+        for y in 0..<h {
+          var runLen = 0
+          for x in 0..<w {
+            if binary[y * w + x] { runLen += 1 } else { runLen = 0 }
+            if runLen >= kernelW {
+              for dx in 0..<kernelW { eroded[y * w + (x - dx)] = true }
+            }
+          }
+        }
+        // Horizontal dilation: expand by kernelW/2 in each direction
+        var lineMask = [Bool](repeating: false, count: w * h)
+        let halfK = kernelW / 2
+        for y in 0..<h {
+          for x in 0..<w {
+            if eroded[y * w + x] {
+              for dx in -halfK...halfK {
+                let nx = x + dx
+                if nx >= 0 && nx < w { lineMask[y * w + nx] = true }
+              }
+            }
+          }
+        }
+        // Count distinct horizontal lines (group rows with >10px gap)
+        var lineCount = 0
+        var prevRow = -20
+        for y in 0..<h {
+          let hasLine = (0..<w).contains { x in lineMask[y * w + x] }
+          if hasLine {
+            if y - prevRow > 10 { lineCount += 1 }
+            prevRow = y
+          }
+        }
+        dbg("Line removal: detected \\(lineCount) ruled lines (kernelW=\\(kernelW))")
+        if lineCount > 5 {
+          var removed = 0
+          for i in 0..<binary.count {
+            if lineMask[i] && binary[i] { binary[i] = false; removed += 1 }
+          }
+          dbg("Line removal: subtracted \\(removed) ink pixels from \\(lineCount) lines")
+        } else {
+          dbg("Line removal: skipped (\\(lineCount) ≤ 5 lines, not ruled paper)")
+        }
       }
 
       // ── Morphological close (dilate → erode) bridges ≤ 3px stroke gaps ──
