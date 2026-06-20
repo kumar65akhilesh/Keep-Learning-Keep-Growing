@@ -355,9 +355,9 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 }
 
                 // ── Filter noise (Phase 3 — pencil-friendly) ─────────────
-                val minDim = maxOf(w, h) * 0.04
+                val minDim = maxOf(w, h) * 0.03
                 val maxDim = maxOf(w, h) * 0.85
-                val minPx  = (maxOf(w, h) * 0.20).toInt().coerceAtLeast(50)
+                val minPx  = (maxOf(w, h) * 0.15).toInt().coerceAtLeast(40)
                 val edgeMargin = (maxOf(w, h) * 0.05).toInt()  // 5% edge margin
                 lg("Filter: minDim=\${"%.1f".format(minDim)} maxDim=\${"%.1f".format(maxDim)} minPx=\$minPx aspect=1/5..5 edgeMargin=\$edgeMargin")
 
@@ -388,7 +388,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 val keys = valid.keys.toList()
                 val heights = keys.map { valid[it]!![3] - valid[it]!![1] + 1 }.sorted()
                 val medH = if (heights.isEmpty()) 0 else heights[heights.size / 2]
-                val gapMaxX = medH * 0.4
+                val gapMaxX = medH * 0.6
                 val gapMaxY = medH * 1.5
                 lg("Merge: medH=\$medH gapMaxX=\${"%.1f".format(gapMaxX)} gapMaxY=\${"%.1f".format(gapMaxY)}")
 
@@ -434,6 +434,29 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 } else {
                     groups.values.sortedBy { it.x1 }
                 }
+
+                // ── Recovery pass: reclaim rejected fragments near the chosen group ──
+                // Fragments that were too small individually but fall within/near the
+                // group's bounding box are likely real parts of the character.
+                for (g in sortedGroups) {
+                    val pad = maxOf(g.x2 - g.x1, g.y2 - g.y1) / 3  // 33% padding
+                    val rx1 = g.x1 - pad; val ry1 = g.y1 - pad
+                    val rx2 = g.x2 + pad; val ry2 = g.y2 + pad
+                    for ((lbl, b) in bounds) {
+                        if (valid.containsKey(lbl)) continue  // already accepted
+                        if (b[4] < 5) continue  // truly tiny noise (< 5 pixels)
+                        val bw = b[2] - b[0]; val bh = b[3] - b[1]
+                        if (bw < 2 && bh < 2) continue  // single-pixel dots
+                        val cx = (b[0] + b[2]) / 2; val cy = (b[1] + b[3]) / 2
+                        if (cx in rx1..rx2 && cy in ry1..ry2) {
+                            g.members.add(lbl)
+                            g.x1 = minOf(g.x1, b[0]); g.y1 = minOf(g.y1, b[1])
+                            g.x2 = maxOf(g.x2, b[2]); g.y2 = maxOf(g.y2, b[3])
+                            lg("  RECOVER lbl=\$lbl (\${bw}x\${bh}, \${b[4]}px) into group")
+                        }
+                    }
+                }
+
                 for ((idx, g) in sortedGroups.withIndex()) {
                     lg("  group#\$idx x=\${g.x1} y=\${g.y1} w=\${g.x2-g.x1+1} h=\${g.y2-g.y1+1} members=\${g.members}")
                 }
@@ -508,6 +531,18 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                         }
                         if (neighbors >= 2) smooth[gy * GRID + gx] = 0.3f
                     }
+
+                    // Log 28×28 grid as ASCII art (in debug log file only)
+                    val sb = StringBuilder("  28x28 grid:\\n")
+                    for (gy in 0 until GRID) {
+                        sb.append("    ")
+                        for (gx in 0 until GRID) {
+                            val v = smooth[gy * GRID + gx]
+                            sb.append(if (v > 0.7f) '#' else if (v > 0.1f) '.' else ' ')
+                        }
+                        sb.append('\\n')
+                    }
+                    lg(sb.toString())
 
                     val pxArr = JSONArray()
                     for (v in smooth) pxArr.put(v.toDouble())
@@ -870,9 +905,9 @@ class HandwritingOcrModule: NSObject {
       }
 
       // ── Filter noise (Phase 3 — pencil-friendly) ───────────────────
-      let minDim = Float(max(w, h)) * 0.04
+      let minDim = Float(max(w, h)) * 0.03
       let maxDim = Float(max(w, h)) * 0.85
-      let minPx  = max(Int(Float(max(w, h)) * 0.20), 50)
+      let minPx  = max(Int(Float(max(w, h)) * 0.15), 40)
       let edgeMargin = Int(Float(max(w, h)) * 0.05)  // 5% edge margin
       dbg("Filter: minDim=\\(String(format: \"%.1f\", Double(minDim))) maxDim=\\(String(format: \"%.1f\", Double(maxDim))) minPx=\\(minPx) aspect=1/5..5 edgeMargin=\\(edgeMargin)")
 
@@ -900,7 +935,7 @@ class HandwritingOcrModule: NSObject {
       let keys = Array(valid.keys)
       let heights = keys.map { valid[$0]![3] - valid[$0]![1] + 1 }.sorted()
       let medH = heights.isEmpty ? 0 : heights[heights.count / 2]
-      let gapMaxX = Double(medH) * 0.4
+      let gapMaxX = Double(medH) * 0.6
       let gapMaxY = Double(medH) * 1.5
       dbg("Merge: medH=\\(medH) gapMaxX=\\(String(format: \"%.1f\", gapMaxX)) gapMaxY=\\(String(format: \"%.1f\", gapMaxY))")
 
@@ -947,7 +982,30 @@ class HandwritingOcrModule: NSObject {
       } else {
         sortedGroups = groups.values.sorted { $0.x1 < $1.x1 }
       }
-      for (idx, g) in sortedGroups.enumerated() {
+      // ── Recovery pass: reclaim rejected fragments near chosen group ──
+      var finalGroups = sortedGroups.map { g -> (x1: g.x1, y1: g.y1, x2: g.x2, y2: g.y2, members: g.members) }
+      for i in 0..<finalGroups.count {
+        let pad = max(finalGroups[i].x2 - finalGroups[i].x1, finalGroups[i].y2 - finalGroups[i].y1) / 3
+        let rx1 = finalGroups[i].x1 - pad; let ry1 = finalGroups[i].y1 - pad
+        let rx2 = finalGroups[i].x2 + pad; let ry2 = finalGroups[i].y2 + pad
+        for (lbl, b) in bounds {
+          if valid[lbl] != nil { continue }  // already accepted
+          if b[4] < 5 { continue }  // truly tiny noise
+          let bw = b[2] - b[0]; let bh = b[3] - b[1]
+          if bw < 2 && bh < 2 { continue }
+          let cx = (b[0] + b[2]) / 2; let cy = (b[1] + b[3]) / 2
+          if cx >= rx1 && cx <= rx2 && cy >= ry1 && cy <= ry2 {
+            var g = finalGroups[i]
+            g.members.append(lbl)
+            g.x1 = min(g.x1, b[0]); g.y1 = min(g.y1, b[1])
+            g.x2 = max(g.x2, b[2]); g.y2 = max(g.y2, b[3])
+            finalGroups[i] = g
+            dbg("  RECOVER lbl=\\(lbl) (\\(bw)x\\(bh), \\(b[4])px) into group")
+          }
+        }
+      }
+
+      for (idx, g) in finalGroups.enumerated() {
         dbg("  group#\\(idx) x=\\(g.x1) y=\\(g.y1) w=\\(g.x2-g.x1+1) h=\\(g.y2-g.y1+1) members=\\(g.members.count)")
       }
 
@@ -963,7 +1021,7 @@ class HandwritingOcrModule: NSObject {
           let v: UInt8 = binary[y * w + x] ? 0 : 255
           pixels[i] = v; pixels[i+1] = v; pixels[i+2] = v; pixels[i+3] = 255
         }}
-        for g in sortedGroups {
+        for g in finalGroups {
           for x in g.x1...g.x2 {
             for yy in [g.y1, g.y2] where yy >= 0 && yy < h {
               let i = (yy * w + x) * 4
@@ -992,7 +1050,7 @@ class HandwritingOcrModule: NSObject {
 
       // ── Build 28×28 EMNIST grids per group ─────────────────────
       var results = [[String: Any]]()
-      for g in sortedGroups {
+      for g in finalGroups {
         let bx = g.x1; let by = g.y1
         let bw = g.x2 - bx + 1; let bh = g.y2 - by + 1
         let maxRange = Float(max(bw, bh))
