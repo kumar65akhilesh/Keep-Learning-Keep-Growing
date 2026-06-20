@@ -153,9 +153,10 @@ export default function CameraScreen() {
       });
 
       // Auto-crop to center — effective when shooting from distance
-      // Use gentler crop for scan-handwrite to avoid clipping characters near edges
+      // Tight crop for scan-handwrite: keep only the center region matching the guide frame
+      // This eliminates edge noise/shadows before native segmentation ever sees them
       const cropRatio = isScanHandwriteMode(mode)
-        ? Math.max(0.5, 0.8 - zoom * 0.3)
+        ? Math.max(0.3, 0.45 - zoom * 0.15)
         : Math.max(0.3, 0.6 - zoom * 0.4);
       const croppedUri = await centerCrop(processedUri, cropRatio);
 
@@ -318,7 +319,7 @@ export default function CameraScreen() {
           <View style={styles.scanGuide}>
             <View style={styles.scanGuideFrame}>
               <Text style={styles.scanGuideText}>
-                📝 Place writing inside the frame
+                📝 Place one letter here
               </Text>
             </View>
           </View>
