@@ -288,7 +288,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                         binary[y * w + x] = ok
                         if (ok) closed++
                     }
-                    lg("After morph close (R=3): inkPixels=\$closed")
+                    lg("After morph close (R=2): inkPixels=\$closed")
                 }
 
                 // ── Connected-component labelling (8-connected BFS) ──
@@ -764,9 +764,9 @@ class HandwritingOcrModule: NSObject {
         }
       }
 
-      // ── Morphological close (dilate → erode) bridges ≤ 3px stroke gaps ──
+      // ── Morphological close (dilate → erode) bridges ≤ 2px stroke gaps ──
       do {
-        let R = 3
+        let R = 2
         var dilated = [Bool](repeating: false, count: w * h)
         for y in 0..<h { for x in 0..<w {
           if binary[y * w + x] {
@@ -788,7 +788,7 @@ class HandwritingOcrModule: NSObject {
           binary[y * w + x] = ok
           if ok { closed += 1 }
         }}
-        dbg("After morph close (R=3): inkPixels=\\(closed)")
+        dbg("After morph close (R=2): inkPixels=\\(closed)")
       }
 
       // ── Connected-component labelling (8-connected BFS) ────────
@@ -959,46 +959,40 @@ class HandwritingOcrModule: NSObject {
         let ox = (Float(GRID) - Float(bw) * s) / 2.0
         let oy = (Float(GRID) - Float(bh) * s) / 2.0
 
-        // Compute gray range in bounding box for normalization
-        var bboxGrayMin = 255; var bboxGrayMax = 0
-        for py in g.y1...g.y2 { for px in g.x1...g.x2 {
-          let gVal = gray[py * w + px]
-          if gVal < bboxGrayMin { bboxGrayMin = gVal }
-          if gVal > bboxGrayMax { bboxGrayMax = gVal }
-        }}
-        let grayRange = max(1, bboxGrayMax - bboxGrayMin)
-        dbg("  grid grayscale: min=\(bboxGrayMin) max=\(bboxGrayMax) range=\(grayRange)")
-
+        // Use binary mask for grid — matches EMNIST format and Android behaviour:
+        // white strokes (1.0) on black background (0.0).
+        var inkPx = 0; var totalGridPx = 0
         var grid = [Float](repeating: 0, count: GRID * GRID)
         for py in g.y1...g.y2 { for px in g.x1...g.x2 {
-          // Normalize: ink → 1.0, paper → 0.0 (preserves gradients)
-          let gv: Float = inverted
-            ? Float(gray[py * w + px] - bboxGrayMin) / Float(grayRange)
-            : Float(bboxGrayMax - gray[py * w + px]) / Float(grayRange)
-          guard gv >= 0.15 else { continue }  // suppress paper noise
+          totalGridPx += 1
+          guard binary[py * w + px] else { continue }  // only ink pixels
+          inkPx += 1
           let gx = Int(Float(px - bx) * s + ox)
           let gy = Int(Float(py - by) * s + oy)
           if gx >= 0 && gx < GRID && gy >= 0 && gy < GRID {
             let gi = gy * GRID + gx
-            grid[gi] = max(grid[gi], gv)
+            grid[gi] = 1.0
           }
         }}
+        dbg("  grid: inkPx=\(inkPx)/\(totalGridPx) (\(String(format: \"%.1f\", 100.0 * Double(inkPx) / Double(max(1, totalGridPx))))%)")
 
-        var thick = grid
+        // Light anti-alias pass: soften edges to match EMNIST style
+        var smooth = grid
         for gy in 0..<GRID { for gx in 0..<GRID {
-          if grid[gy * GRID + gx] > 0.3 { continue }
-          var mx: Float = 0
-          for dy in -2...2 { for dx in -2...2 {
+          if grid[gy * GRID + gx] > 0 { continue }  // skip filled pixels
+          var neighbors = 0
+          for dy in -1...1 { for dx in -1...1 {
+            if dx == 0 && dy == 0 { continue }
             let nx = gx + dx; let ny = gy + dy
-            if nx >= 0 && nx < GRID && ny >= 0 && ny < GRID {
-              mx = max(mx, grid[ny * GRID + nx])
+            if nx >= 0 && nx < GRID && ny >= 0 && ny < GRID && grid[ny * GRID + nx] > 0 {
+              neighbors += 1
             }
           }}
-          if mx > 0.3 { thick[gy * GRID + gx] = mx * 0.35 }
+          if neighbors >= 2 { smooth[gy * GRID + gx] = 0.3 }
         }}
 
         let charDict: [String: Any] = [
-          "pixels": thick.map { Double($0) },
+          "pixels": smooth.map { Double($0) },
           "boundingBox": [
             "x": Double(bx) / Double(w),
             "y": Double(by) / Double(h),
