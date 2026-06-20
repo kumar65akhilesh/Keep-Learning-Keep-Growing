@@ -172,6 +172,24 @@ const MODE_CARDS: ModeCard[] = [
       miniColor: '#FFD60A',
     },
   },
+  {
+    mode: 'scan-handwrite-123',
+    title: 'Scan Numbers',
+    subtitle: 'Read handwritten numbers',
+    preview: '1 2 3 4 5',
+    bgColor: '#FFF3E0',
+    borderColor: Colors.orange,
+    route: '/camera',
+    tileImage: require('../assets/tile-scan-handwrite.png'),
+    cartoon: {
+      bg: '#FF9E00',
+      icon: 'scan',
+      iconColor: '#fff',
+      accent: '🔢',
+      miniIcon: 'calculator',
+      miniColor: '#38A169',
+    },
+  },
 ];
 
 /** Cartoon icon badge — layered circle with icon, sparkle, and mini-icon */

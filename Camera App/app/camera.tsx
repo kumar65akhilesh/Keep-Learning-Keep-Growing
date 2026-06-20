@@ -17,6 +17,7 @@ import { Colors, Fonts, Spacing, BorderRadius, Shadows } from '../constants/them
 import { CaptureButton } from '../components/camera/CaptureButton';
 import { LiveResultStrip } from '../components/camera/LiveResultStrip';
 import { OcrOverlay } from '../components/camera/OcrOverlay';
+import { ScanGuideFrame } from '../components/camera/ScanGuideFrame';
 import { useOcrStore } from '../store/ocrStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { recognizeFromUri } from '../services/ocr';
@@ -303,12 +304,21 @@ export default function CameraScreen() {
           previewHeight={PREVIEW_HEIGHT}
         />
 
-        {/* Scan-handwrite guide overlay */}
+        {/* Scan-handwrite guide frame */}
+        {isScanHandwriteMode(mode) && (
+          <ScanGuideFrame
+            previewWidth={SCREEN_WIDTH - Spacing.lg * 2}
+            previewHeight={PREVIEW_HEIGHT}
+            cropRatio={Math.max(0.5, 0.8 - zoom * 0.3)}
+          />
+        )}
+
+        {/* Scan-handwrite guide text */}
         {isScanHandwriteMode(mode) && (
           <View style={styles.scanGuide}>
             <View style={styles.scanGuideFrame}>
               <Text style={styles.scanGuideText}>
-                📝 Hold phone flat over the paper
+                📝 Place writing inside the frame
               </Text>
             </View>
           </View>
