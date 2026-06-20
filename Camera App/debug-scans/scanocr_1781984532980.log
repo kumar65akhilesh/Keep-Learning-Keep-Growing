@@ -1,0 +1,27 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/e9d68267-c530-4014-b8f1-15febd641afa.jpg
+EXIF orientation: 0
+Original image: 576x576
+Working size: 576x576 (scale=1.0)
+Gray stats: min=91 max=167 mean=152
+Adaptive thresh: winHalf=23 offset=5
+Binary: inkPixels=5994 (1.81%)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=460)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=2): inkPixels=6494
+Raw components: 160
+  (skipping per-component dump; too many)
+Filter: minDim=23.0 maxDim=489.6 minPx=115 aspect=1/5..5 edgeMargin=28
+After filter: 1 components
+Merge: medH=136 gapMaxX=54.4 gapMaxY=204.0
+After merge: 1 character groups
+  group#0 x=184 y=194 w=107 h=136 members=[41]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1781984532980.png
+  grid: inkPx=6188/14552 (42.5%)
+── recognizeHandwriting END count=1 took=326ms
+[ScanOCR] Model loaded: uppercase letters (26 classes, took 0ms)
+[ScanOCR]   Crop[0] pixel stats: 289/784 filled (36.9%), min=0.000 max=1.000 sum=216.2 avgNonZero=0.748
+[ScanOCR]   Crop[0] inference took 10ms
+[ScanOCR]   Char[0] "E" @ 100.0% | bbox=(0.32,0.34,0.19,0.24) | probs[min=4.51e-14 max=1.00e+0 sum=1.000] | top5: E(100.0%) G(0.0%) F(0.0%) B(0.0%) R(0.0%)
+[ScanOCR] FINAL count=1 (raw=1) text="E" rawText="E"
+[Camera] OCR result: 1 characters found, rawText: "E"

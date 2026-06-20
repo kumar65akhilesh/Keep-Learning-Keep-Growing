@@ -1,0 +1,32 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/9b7046f5-a2ea-4f0a-9d9f-7389ab365939.jpg
+EXIF orientation: 0
+Original image: 432x432
+Working size: 432x432 (scale=1.0)
+Gray stats: min=114 max=176 mean=153
+Adaptive thresh: winHalf=17 offset=5
+Binary: inkPixels=2758 (1.48%)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=345)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=2): inkPixels=4112
+Raw components: 86
+  (skipping per-component dump; too many)
+Filter: minDim=17.3 maxDim=367.2 minPx=86 aspect=1/5..5 edgeMargin=21
+After filter: 5 components
+Merge: medH=28 gapMaxX=11.2 gapMaxY=42.0
+  MERGE lbl=31 + lbl=38 dx=10 dy=0
+  MERGE lbl=31 + lbl=47 dx=0 dy=10
+  MERGE lbl=47 + lbl=68 dx=0 dy=10
+  MERGE lbl=47 + lbl=71 dx=2 dy=19
+  MERGE lbl=68 + lbl=71 dx=7 dy=0
+After merge: 1 character groups
+  group#0 x=120 y=178 w=158 h=120 members=[31, 38, 47, 68, 71]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1781984470601.png
+  grid: inkPx=3831/18960 (20.2%)
+── recognizeHandwriting END count=1 took=181ms
+[ScanOCR] Model loaded: uppercase letters (26 classes, took 0ms)
+[ScanOCR]   Crop[0] pixel stats: 238/784 filled (30.4%), min=0.000 max=1.000 sum=170.1 avgNonZero=0.715
+[ScanOCR]   Crop[0] inference took 9ms
+[ScanOCR]   Char[0] "I" @ 99.0% | bbox=(0.28,0.41,0.37,0.28) | probs[min=3.25e-7 max=9.90e-1 sum=1.000] | top5: I(99.0%) F(0.6%) J(0.3%) E(0.0%) L(0.0%)
+[ScanOCR] FINAL count=1 (raw=1) text="I" rawText="I"
+[Camera] OCR result: 1 characters found, rawText: "I"

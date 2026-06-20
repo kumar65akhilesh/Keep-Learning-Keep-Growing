@@ -1,0 +1,19 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/de5294ee-3846-45e2-9513-0f5e9a9a8e58.jpg
+EXIF orientation: 0
+Original image: 432x432
+Working size: 432x432 (scale=1.0)
+Gray stats: min=117 max=179 mean=154
+Adaptive thresh: winHalf=17 offset=5
+Binary: inkPixels=1476 (0.79%)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=345)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=2): inkPixels=1983
+Raw components: 77
+  (skipping per-component dump; too many)
+Filter: minDim=17.3 maxDim=367.2 minPx=86 aspect=1/5..5 edgeMargin=21
+After filter: 2 components
+Merge: medH=55 gapMaxX=22.0 gapMaxY=82.5
+  MERGE lbl=36 + lbl=45 dx=1 dy=0
+After merge: 1 character groups
+  group#0 x=169 y=214 w=82 h=58 members=[36, 45]
