@@ -1,0 +1,34 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/0c019d91-ad0e-4d93-907e-cc72b40f6779.jpg
+EXIF orientation: 0
+Original image: 576x576
+Working size: 576x576 (scale=1.0)
+Gray stats: min=118 max=171 mean=143
+Adaptive thresh: winHalf=23 offset=5
+Binary: inkPixels=1737 (0.52%)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=460)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=2): inkPixels=2806
+Raw components: 365
+  (skipping per-component dump; too many)
+Filter: minDim=23.0 maxDim=489.6 minPx=115 aspect=1/5..5 edgeMargin=28
+After filter: 5 components
+Merge: medH=29 gapMaxX=11.6 gapMaxY=43.5
+  MERGE lbl=83 + lbl=107 dx=11 dy=10
+  MERGE lbl=83 + lbl=112 dx=0 dy=14
+  MERGE lbl=107 + lbl=112 dx=11 dy=0
+  MERGE lbl=107 + lbl=148 dx=0 dy=22
+  MERGE lbl=107 + lbl=149 dx=0 dy=23
+  MERGE lbl=112 + lbl=149 dx=0 dy=20
+  MERGE lbl=148 + lbl=149 dx=4 dy=0
+After merge: 1 character groups
+  group#0 x=184 y=218 w=74 h=128 members=[83, 107, 112, 148, 149]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1781980083047.png
+  grid: inkPx=2201/9472 (23.2%)
+── recognizeHandwriting END count=1 took=260ms
+[ScanOCR] Model loaded: uppercase letters (26 classes, took 0ms)
+[ScanOCR]   Crop[0] pixel stats: 222/784 filled (28.3%), min=0.000 max=1.000 sum=153.4 avgNonZero=0.691
+[ScanOCR]   Crop[0] inference took 36ms
+[ScanOCR]   Char[0] "D" @ 49.4% | bbox=(0.32,0.38,0.13,0.22) | probs[min=4.21e-7 max=4.94e-1 sum=1.000] | top5: D(49.4%) A(31.1%) B(15.1%) M(1.7%) Q(1.0%)
+[ScanOCR] FINAL count=1 (raw=1) text="D" rawText="D"
+[Camera] OCR result: 1 characters found, rawText: "D"
