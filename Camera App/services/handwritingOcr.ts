@@ -35,6 +35,11 @@ function scanLog(line: string) {
   }
 }
 
+// ─── Verbose debug logging (set to true for deep debugging only) ──
+// When false, suppresses 28×28 ASCII grids and full probability arrays
+// that flood LogBox and trigger "Text strings must be rendered" warnings.
+const VERBOSE_LOG = false;
+
 // ─── Label maps ───────────────────────────────────────────────────
 
 const LETTER_LABELS       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -169,17 +174,19 @@ export async function recognizeHandwriting(
       scanLog(`[ScanOCR]   ⚠️ Crop[${i}] VERY HIGH FILL — possible blob/noise`);
     }
 
-    // ── 28×28 ASCII visualization (persisted to log) ──
-    let viz = `[ScanOCR]   Crop[${i}] 28x28 grid:\n`;
-    for (let y = 0; y < 28; y++) {
-      let row = '    ';
-      for (let x = 0; x < 28; x++) {
-        const v = pixels[y * 28 + x];
-        row += v > 0.7 ? '#' : v > 0.3 ? '+' : v > 0.1 ? '.' : ' ';
+    // ── 28×28 ASCII visualization (only when verbose logging enabled) ──
+    if (VERBOSE_LOG) {
+      let viz = `[ScanOCR]   Crop[${i}] 28x28 grid:\n`;
+      for (let y = 0; y < 28; y++) {
+        let row = '    ';
+        for (let x = 0; x < 28; x++) {
+          const v = pixels[y * 28 + x];
+          row += v > 0.7 ? '#' : v > 0.3 ? '+' : v > 0.1 ? '.' : ' ';
+        }
+        viz += row + '\n';
       }
-      viz += row + '\n';
+      scanLog(viz);
     }
-    scanLog(viz);
 
     // EMNIST Letters are stored column-major → transpose row→col
     let modelInput: Float32Array;
@@ -191,16 +198,18 @@ export async function recognizeHandwriting(
         }
       }
       // Log transposed grid too (what the model actually sees)
-      let tviz = `[ScanOCR]   Crop[${i}] transposed (model input):\n`;
-      for (let y = 0; y < 28; y++) {
-        let row = '    ';
-        for (let x = 0; x < 28; x++) {
-          const v = modelInput[y * 28 + x];
-          row += v > 0.7 ? '#' : v > 0.3 ? '+' : v > 0.1 ? '.' : ' ';
+      if (VERBOSE_LOG) {
+        let tviz = `[ScanOCR]   Crop[${i}] transposed (model input):\n`;
+        for (let y = 0; y < 28; y++) {
+          let row = '    ';
+          for (let x = 0; x < 28; x++) {
+            const v = modelInput[y * 28 + x];
+            row += v > 0.7 ? '#' : v > 0.3 ? '+' : v > 0.1 ? '.' : ' ';
+          }
+          tviz += row + '\n';
         }
-        tviz += row + '\n';
+        scanLog(tviz);
       }
-      scanLog(tviz);
     } else {
       modelInput = pixels;
     }
@@ -240,7 +249,7 @@ export async function recognizeHandwriting(
     );
 
     // Full probability distribution for deep debugging
-    if (probs.length <= 26) {
+    if (VERBOSE_LOG && probs.length <= 26) {
       const allProbs = labels.map((l, idx) => `${l}:${(probs[idx] * 100).toFixed(1)}`).join(' ');
       scanLog(`[ScanOCR]   Crop[${i}] full probs: ${allProbs}`);
     }
