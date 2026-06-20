@@ -281,6 +281,11 @@ def load_emnist_byclass():
             x_train, y_train = extract_training_samples('byclass')
             x_test, y_test = extract_test_samples('byclass')
 
+        # emnist package returns raw column-major images — transpose to row-major
+        # so the model learns correctly-oriented characters (matching native module output).
+        x_train = x_train.reshape(-1, 28, 28).transpose(0, 2, 1).reshape(-1, 28, 28)
+        x_test = x_test.reshape(-1, 28, 28).transpose(0, 2, 1).reshape(-1, 28, 28)
+
         print(f"  ByClass Train: {x_train.shape}, labels range: {y_train.min()}-{y_train.max()}")
         print(f"  ByClass Test:  {x_test.shape},  labels range: {y_test.min()}-{y_test.max()}")
         return x_train, y_train, x_test, y_test
