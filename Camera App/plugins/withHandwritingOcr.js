@@ -439,19 +439,22 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 // Fragments that were too small individually but fall within/near the
                 // group's bounding box are likely real parts of the character.
                 for (g in sortedGroups) {
-                    val pad = maxOf(g.x2 - g.x1, g.y2 - g.y1) / 3  // 33% padding
+                    val pad = maxOf(g.x2 - g.x1, g.y2 - g.y1) / 4  // 25% padding
                     val rx1 = g.x1 - pad; val ry1 = g.y1 - pad
                     val rx2 = g.x2 + pad; val ry2 = g.y2 + pad
+                    var recovered = 0
                     for ((lbl, b) in bounds) {
                         if (valid.containsKey(lbl)) continue  // already accepted
-                        if (b[4] < 5) continue  // truly tiny noise (< 5 pixels)
+                        if (b[4] < 10) continue  // noise (< 10 pixels)
                         val bw = b[2] - b[0]; val bh = b[3] - b[1]
-                        if (bw < 2 && bh < 2) continue  // single-pixel dots
+                        if (bw < 3 && bh < 3) continue  // tiny dots
+                        if (recovered >= 8) break  // limit recovery to avoid noise flood
                         val cx = (b[0] + b[2]) / 2; val cy = (b[1] + b[3]) / 2
                         if (cx in rx1..rx2 && cy in ry1..ry2) {
                             g.members.add(lbl)
                             g.x1 = minOf(g.x1, b[0]); g.y1 = minOf(g.y1, b[1])
                             g.x2 = maxOf(g.x2, b[2]); g.y2 = maxOf(g.y2, b[3])
+                            recovered++
                             lg("  RECOVER lbl=\$lbl (\${bw}x\${bh}, \${b[4]}px) into group")
                         }
                     }
@@ -500,14 +503,16 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     val ox = (GRID - bw * s) / 2f
                     val oy = (GRID - bh * s) / 2f
 
-                    // Use binary mask for grid — this matches EMNIST format:
-                    // white strokes (1.0) on black background (0.0).
-                    // The binary mask is already clean from adaptive thresholding.
+                    // Use member-label-filtered binary mask for grid.
+                    // Only draw pixels belonging to the group's member components,
+                    // NOT all binary pixels in the bounding box (which includes noise).
+                    val memberSet = g.members.toHashSet()
                     var inkPx = 0; var totalPx = 0
                     val grid = FloatArray(GRID * GRID)
                     for (py in g.y1..g.y2) for (px in g.x1..g.x2) {
                         totalPx++
-                        if (!binary[py * w + px]) continue  // only ink pixels
+                        val lbl = labels[py * w + px]
+                        if (lbl == 0 || lbl !in memberSet) continue  // only member pixels
                         inkPx++
                         val gx = ((px - bx) * s + ox).toInt()
                         val gy = ((py - by) * s + oy).toInt()
@@ -517,6 +522,21 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                         }
                     }
                     lg("  grid: inkPx=\$inkPx/\$totalPx (\${"%.1f".format(100.0 * inkPx / maxOf(1, totalPx))}%)")
+
+                    // Grid cleaning: remove isolated pixels (< 2 filled neighbors)
+                    // These are noise dots that create false features in the 28x28 grid.
+                    var cleaned = 0
+                    for (gy in 0 until GRID) for (gx in 0 until GRID) {
+                        if (grid[gy * GRID + gx] <= 0f) continue
+                        var nb = 0
+                        for (dy in -1..1) for (dx in -1..1) {
+                            if (dx == 0 && dy == 0) continue
+                            val nx = gx + dx; val ny = gy + dy
+                            if (nx in 0 until GRID && ny in 0 until GRID && grid[ny * GRID + nx] > 0f) nb++
+                        }
+                        if (nb < 2) { grid[gy * GRID + gx] = 0f; cleaned++ }
+                    }
+                    if (cleaned > 0) lg("  grid cleaned: removed \$cleaned isolated pixels")
 
                     // Light anti-alias pass: soften edges to match EMNIST style
                     val smooth = grid.copyOf()
@@ -985,14 +1005,16 @@ class HandwritingOcrModule: NSObject {
       // ── Recovery pass: reclaim rejected fragments near chosen group ──
       var finalGroups = sortedGroups.map { g -> (x1: g.x1, y1: g.y1, x2: g.x2, y2: g.y2, members: g.members) }
       for i in 0..<finalGroups.count {
-        let pad = max(finalGroups[i].x2 - finalGroups[i].x1, finalGroups[i].y2 - finalGroups[i].y1) / 3
+        let pad = max(finalGroups[i].x2 - finalGroups[i].x1, finalGroups[i].y2 - finalGroups[i].y1) / 4  // 25% padding
         let rx1 = finalGroups[i].x1 - pad; let ry1 = finalGroups[i].y1 - pad
         let rx2 = finalGroups[i].x2 + pad; let ry2 = finalGroups[i].y2 + pad
+        var recovered = 0
         for (lbl, b) in bounds {
           if valid[lbl] != nil { continue }  // already accepted
-          if b[4] < 5 { continue }  // truly tiny noise
+          if b[4] < 10 { continue }  // noise (< 10 pixels)
           let bw = b[2] - b[0]; let bh = b[3] - b[1]
-          if bw < 2 && bh < 2 { continue }
+          if bw < 3 && bh < 3 { continue }  // tiny dots
+          if recovered >= 8 { break }  // limit recovery
           let cx = (b[0] + b[2]) / 2; let cy = (b[1] + b[3]) / 2
           if cx >= rx1 && cx <= rx2 && cy >= ry1 && cy <= ry2 {
             var g = finalGroups[i]
@@ -1000,6 +1022,7 @@ class HandwritingOcrModule: NSObject {
             g.x1 = min(g.x1, b[0]); g.y1 = min(g.y1, b[1])
             g.x2 = max(g.x2, b[2]); g.y2 = max(g.y2, b[3])
             finalGroups[i] = g
+            recovered += 1
             dbg("  RECOVER lbl=\\(lbl) (\\(bw)x\\(bh), \\(b[4])px) into group")
           }
         }
@@ -1058,13 +1081,15 @@ class HandwritingOcrModule: NSObject {
         let ox = (Float(GRID) - Float(bw) * s) / 2.0
         let oy = (Float(GRID) - Float(bh) * s) / 2.0
 
-        // Use binary mask for grid — matches EMNIST format and Android behaviour:
-        // white strokes (1.0) on black background (0.0).
+        // Use member-label-filtered binary mask for grid.
+        // Only draw pixels belonging to the group's member components.
+        let memberSet = Set(g.members)
         var inkPx = 0; var totalGridPx = 0
         var grid = [Float](repeating: 0, count: GRID * GRID)
         for py in g.y1...g.y2 { for px in g.x1...g.x2 {
           totalGridPx += 1
-          guard binary[py * w + px] else { continue }  // only ink pixels
+          let lbl = labels[py * w + px]
+          guard lbl > 0 && memberSet.contains(lbl) else { continue }  // only member pixels
           inkPx += 1
           let gx = Int(Float(px - bx) * s + ox)
           let gy = Int(Float(py - by) * s + oy)
@@ -1074,6 +1099,20 @@ class HandwritingOcrModule: NSObject {
           }
         }}
         dbg("  grid: inkPx=\(inkPx)/\(totalGridPx) (\(String(format: \"%.1f\", 100.0 * Double(inkPx) / Double(max(1, totalGridPx))))%)")
+
+        // Grid cleaning: remove isolated pixels (< 2 filled neighbors)
+        var cleaned = 0
+        for gy in 0..<GRID { for gx in 0..<GRID {
+          if grid[gy * GRID + gx] <= 0 { continue }
+          var nb = 0
+          for dy in -1...1 { for dx in -1...1 {
+            if dx == 0 && dy == 0 { continue }
+            let nx = gx + dx; let ny = gy + dy
+            if nx >= 0 && nx < GRID && ny >= 0 && ny < GRID && grid[ny * GRID + nx] > 0 { nb += 1 }
+          }}
+          if nb < 2 { grid[gy * GRID + gx] = 0; cleaned += 1 }
+        }}
+        if cleaned > 0 { dbg("  grid cleaned: removed \(cleaned) isolated pixels") }
 
         // Light anti-alias pass: soften edges to match EMNIST style
         var smooth = grid
