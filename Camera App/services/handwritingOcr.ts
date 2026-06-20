@@ -188,11 +188,19 @@ export async function recognizeHandwriting(
       scanLog(viz);
     }
 
-    // The native module produces a row-major 28×28 grid (character in correct
-    // visual orientation). The EMNIST models were trained on row-major data
-    // (the training script transposes column-major EMNIST to row-major).
-    // Therefore: NO transpose needed — feed the grid directly to the model.
-    const modelInput = pixels;
+    // ── Transpose (row-major → column-major) ──
+    // The native module produces a row-major 28×28 grid (correct visual orientation).
+    // However, the EMNIST model was trained via load_emnist_byclass() Strategy 1
+    // (emnist pip package) which does NOT transpose raw EMNIST column-major data.
+    // The model therefore learned to recognize characters in column-major layout.
+    // We must transpose our row-major grid to match the training format.
+    const transposed = new Float32Array(784);
+    for (let y = 0; y < 28; y++) {
+      for (let x = 0; x < 28; x++) {
+        transposed[x * 28 + y] = pixels[y * 28 + x];
+      }
+    }
+    const modelInput = transposed;
 
     const tInfer = Date.now();
     const buf = modelInput.buffer.slice(
