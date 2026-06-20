@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
-import { Colors, BorderRadius } from '../../constants/theme';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Colors, BorderRadius, Fonts } from '../../constants/theme';
 
 interface ScanGuideFrameProps {
   previewWidth: number;
@@ -83,6 +83,12 @@ export function ScanGuideFrame({ previewWidth, previewHeight, cropRatio }: ScanG
         {/* Corner markers — bottom-right */}
         <View style={[styles.corner, styles.cornerBR]} />
         <View style={[styles.corner, styles.cornerBR_H]} />
+
+        {/* Orientation labels — help kids hold paper correctly */}
+        <Text style={[styles.orientLabel, styles.labelTop]}>↑ top</Text>
+        <Text style={[styles.orientLabel, styles.labelBottom]}>↓ bottom</Text>
+        <Text style={[styles.orientLabel, styles.labelLeft]}>←</Text>
+        <Text style={[styles.orientLabel, styles.labelRight]}>→</Text>
       </Animated.View>
     </View>
   );
@@ -160,5 +166,33 @@ const styles = StyleSheet.create({
     right: -BORDER_WIDTH,
     width: CORNER_LENGTH,
     height: CORNER_THICKNESS,
+  },
+  // Orientation labels
+  orientLabel: {
+    position: 'absolute',
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+    fontFamily: Fonts.family.semiBold,
+    textAlign: 'center',
+  },
+  labelTop: {
+    top: 4,
+    alignSelf: 'center',
+    left: 0,
+    right: 0,
+  },
+  labelBottom: {
+    bottom: 4,
+    alignSelf: 'center',
+    left: 0,
+    right: 0,
+  },
+  labelLeft: {
+    left: 4,
+    top: '45%' as any,
+  },
+  labelRight: {
+    right: 4,
+    top: '45%' as any,
   },
 });
