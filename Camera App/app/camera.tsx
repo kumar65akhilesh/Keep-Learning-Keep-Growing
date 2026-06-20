@@ -158,7 +158,7 @@ export default function CameraScreen() {
       const cropRatio = isScanHandwriteMode(mode)
         ? Math.max(0.3, 0.45 - zoom * 0.15)
         : Math.max(0.3, 0.6 - zoom * 0.4);
-      const croppedUri = await centerCrop(processedUri, cropRatio);
+      const croppedUri = await centerCrop(processedUri, cropRatio, isScanHandwriteMode(mode));
 
       const prepLog = `[Camera] Preprocess: original=${photo.width}x${photo.height}, targetWidth=1280, cropRatio=${(cropRatio * 100).toFixed(0)}%, zoom=${zoom.toFixed(2)}, mode=${mode}`;
       console.log(prepLog);
@@ -310,7 +310,7 @@ export default function CameraScreen() {
           <ScanGuideFrame
             previewWidth={SCREEN_WIDTH - Spacing.lg * 2}
             previewHeight={PREVIEW_HEIGHT}
-            cropRatio={Math.max(0.5, 0.8 - zoom * 0.3)}
+            cropRatio={Math.max(0.3, 0.45 - zoom * 0.15)}
           />
         )}
 
