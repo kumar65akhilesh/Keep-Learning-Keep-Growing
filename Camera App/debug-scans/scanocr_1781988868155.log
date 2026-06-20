@@ -1,0 +1,73 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/9b0e6c13-1dc1-4a3f-870b-cabf95b023a4.jpg
+EXIF orientation: 0
+Original image: 576x576
+Working size: 576x576 (scale=1.0)
+Gray stats: min=128 max=172 mean=152
+Adaptive thresh: winHalf=23 offset=5
+Binary: inkPixels=1042 (0.31%)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=460)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=2): inkPixels=2163
+Raw components: 24
+  raw lbl=1 x=231 y=194 w=1 h=1 px=1
+  raw lbl=2 x=223 y=196 w=1 h=1 px=1
+  raw lbl=3 x=219 y=198 w=1 h=5 px=5
+  raw lbl=4 x=232 y=200 w=21 h=21 px=183
+  raw lbl=5 x=231 y=202 w=1 h=1 px=1
+  raw lbl=6 x=221 y=203 w=1 h=1 px=1
+  raw lbl=7 x=222 y=206 w=2 h=1 px=2
+  raw lbl=8 x=228 y=207 w=2 h=1 px=2
+  raw lbl=9 x=217 y=209 w=4 h=7 px=13
+  raw lbl=10 x=253 y=212 w=6 h=4 px=15
+  raw lbl=11 x=250 y=216 w=2 h=1 px=2
+  raw lbl=12 x=221 y=222 w=1 h=1 px=1
+  raw lbl=13 x=223 y=223 w=1 h=1 px=1
+  raw lbl=14 x=218 y=232 w=1 h=1 px=1
+  raw lbl=15 x=178 y=246 w=88 h=91 px=1920
+  raw lbl=16 x=216 y=247 w=1 h=3 px=3
+  raw lbl=17 x=211 y=250 w=2 h=1 px=2
+  raw lbl=18 x=476 y=284 w=1 h=1 px=1
+  raw lbl=19 x=265 y=296 w=3 h=1 px=3
+  raw lbl=20 x=248 y=312 w=1 h=1 px=1
+  raw lbl=21 x=231 y=391 w=1 h=1 px=1
+  raw lbl=22 x=240 y=487 w=1 h=1 px=1
+  raw lbl=23 x=296 y=558 w=1 h=1 px=1
+  raw lbl=24 x=248 y=575 w=1 h=1 px=1
+Filter: minDim=23.0 maxDim=489.6 minPx=115 aspect=1/5..5 edgeMargin=28
+  REJECT lbl=1 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=2 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=3 reason=tiny_bw_bh bw=0 bh=4 px=5
+  REJECT lbl=4 reason=too_small_dim(20<23) bw=20 bh=20 px=183
+  REJECT lbl=5 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=6 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=7 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=8 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=9 reason=too_small_dim(6<23) bw=3 bh=6 px=13
+  REJECT lbl=10 reason=too_small_dim(5<23) bw=5 bh=3 px=15
+  REJECT lbl=11 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=12 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=13 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=14 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=16 reason=tiny_bw_bh bw=0 bh=2 px=3
+  REJECT lbl=17 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=18 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=19 reason=tiny_bw_bh bw=2 bh=0 px=3
+  REJECT lbl=20 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=21 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=22 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=23 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=24 reason=tiny_bw_bh bw=0 bh=0 px=1
+After filter: 1 components
+Merge: medH=91 gapMaxX=36.4 gapMaxY=136.5
+After merge: 1 character groups
+  group#0 x=178 y=246 w=88 h=91 members=[15]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1781988868155.png
+  grid: inkPx=1927/8008 (24.1%)
+── recognizeHandwriting END count=1 took=321ms
+[ScanOCR] Model loaded: uppercase letters (26 classes, took 1ms)
+[ScanOCR]   Crop[0] pixel stats: 229/784 filled (29.2%), min=0.000 max=1.000 sum=174.4 avgNonZero=0.762
+[ScanOCR]   Crop[0] inference took 6ms
+[ScanOCR]   Char[0] "D" @ 28.3% | bbox=(0.31,0.43,0.15,0.16) | probs[min=1.21e-5 max=2.83e-1 sum=1.000] | top5: D(28.3%) H(17.5%) A(16.5%) J(13.9%) Y(7.2%)
+[ScanOCR] FINAL count=1 (raw=1) text="D" rawText="D"
+[Camera] OCR result: 1 characters found, rawText: "D"
