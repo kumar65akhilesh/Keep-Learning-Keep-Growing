@@ -1,0 +1,31 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/d1e37a26-5f88-4091-b854-83138a452fcf.jpg
+EXIF orientation: 0
+Original image: 576x768
+Working size: 576x768 (scale=1.0)
+Gray stats: min=107 max=168 mean=151
+Adaptive thresh: winHalf=30 offset=5
+Binary: inkPixels=5984 (1.35%)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=460)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=3): inkPixels=8407
+Raw components: 59
+  (skipping per-component dump; too many)
+Filter: minDim=30.7 maxDim=652.8 minPx=153 aspect=1/5..5 edgeMargin=38
+After filter: 4 components
+Merge: medH=96 gapMaxX=38.4 gapMaxY=144.0
+  MERGE lbl=13 + lbl=26 dx=0 dy=0
+  MERGE lbl=13 + lbl=31 dx=0 dy=5
+  MERGE lbl=17 + lbl=26 dx=0 dy=6
+  MERGE lbl=26 + lbl=31 dx=24 dy=0
+After merge: 1 character groups
+  group#0 x=154 y=239 w=188 h=217 members=[13, 17, 26, 31]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1781976566096.png
+  grid: inkPx=8003/40796 (19.6%)
+── recognizeHandwriting END count=1 took=339ms
+[ScanOCR] Model loaded: uppercase letters (26 classes, took 0ms)
+[ScanOCR]   Crop[0] pixel stats: 265/784 filled (33.8%), min=0.000 max=1.000 sum=190.1 avgNonZero=0.717
+[ScanOCR]   Crop[0] inference took 8ms
+[ScanOCR]   Char[0] "A" @ 88.7% | bbox=(0.27,0.31,0.33,0.28) | probs[min=1.05e-8 max=8.87e-1 sum=1.000] | top5: A(88.7%) H(11.2%) M(0.1%) R(0.0%) Q(0.0%)
+[ScanOCR] FINAL count=1 (raw=1) text="A" rawText="A"
+[Camera] OCR result: 1 characters found, rawText: "A"

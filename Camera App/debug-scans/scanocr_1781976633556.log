@@ -1,0 +1,32 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/ac9e22cf-54d2-499c-a248-36121f3bbca9.jpg
+EXIF orientation: 0
+Original image: 576x432
+Working size: 576x432 (scale=1.0)
+Gray stats: min=92 max=172 mean=151
+Adaptive thresh: winHalf=23 offset=5
+Binary: inkPixels=3416 (1.37%)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=460)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=3): inkPixels=5277
+Raw components: 83
+  (skipping per-component dump; too many)
+Filter: minDim=23.0 maxDim=489.6 minPx=115 aspect=1/5..5 edgeMargin=28
+After filter: 4 components
+Merge: medH=60 gapMaxX=24.0 gapMaxY=90.0
+  MERGE lbl=14 + lbl=20 dx=16 dy=0
+  MERGE lbl=14 + lbl=25 dx=0 dy=0
+  MERGE lbl=20 + lbl=25 dx=0 dy=0
+  MERGE lbl=20 + lbl=33 dx=0 dy=24
+  MERGE lbl=25 + lbl=33 dx=3 dy=0
+After merge: 1 character groups
+  group#0 x=189 y=67 w=164 h=114 members=[14, 20, 25, 33]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1781976633556.png
+  grid: inkPx=5162/18696 (27.6%)
+── recognizeHandwriting END count=1 took=224ms
+[ScanOCR] Model loaded: uppercase letters (26 classes, took 0ms)
+[ScanOCR]   Crop[0] pixel stats: 233/784 filled (29.7%), min=0.000 max=1.000 sum=171.4 avgNonZero=0.736
+[ScanOCR]   Crop[0] inference took 9ms
+[ScanOCR]   Char[0] "F" @ 36.1% | bbox=(0.33,0.16,0.28,0.26) | probs[min=1.93e-6 max=3.61e-1 sum=1.000] | top5: F(36.1%) S(16.5%) G(12.4%) E(10.3%) Q(9.2%)
+[ScanOCR] FINAL count=1 (raw=1) text="F" rawText="F"
+[Camera] OCR result: 1 characters found, rawText: "F"
