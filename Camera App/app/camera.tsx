@@ -337,7 +337,8 @@ export default function CameraScreen() {
         {/* Zoom level indicator */}
         <Animated.View style={[styles.zoomIndicator, { opacity: zoomOpacity }]}>
           <Text style={styles.zoomText}>{(1 + zoom * 9).toFixed(1)}×</Text>
-        </Animated.View>      </View>
+        </Animated.View>
+      </View>
 
       {/* Live result strip */}
       <LiveResultStrip
