@@ -198,6 +198,28 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 }
                 lg("Binary: inkPixels=\$inkCount (\${"%.2f".format(100.0 * inkCount / (w*h))}%)")
 
+                // ── Crease/shadow rejection ───────────────────────────
+                // Paper creases are only slightly darker than surrounding paper and pass
+                // adaptive thresholding. Real ink is significantly darker. We reject
+                // "weak" ink pixels whose grayscale value is above a threshold (i.e.,
+                // too light to be real ink).
+                // weakThresh = grayMax - 30% of range → pixels brighter than this are creases.
+                run {
+                    val grayRange = grayMax - grayMin
+                    val weakThresh = grayMax - (grayRange * 0.30).toInt()
+                    var removed = 0
+                    for (i in binary.indices) {
+                        if (binary[i] && gray[i] > weakThresh) {
+                            binary[i] = false
+                            removed++
+                        }
+                    }
+                    inkCount -= removed
+                    if (removed > 0) {
+                        lg("Crease rejection: removed \$removed weak pixels (thresh=\$weakThresh, range=\$grayRange)")
+                    }
+                }
+
                 // ── Auto-polarity detection (chalkboard/light-on-dark) ──
                 val totalPx = w * h
                 val inverted = inkCount > totalPx * 0.40
@@ -700,6 +722,25 @@ class HandwritingOcrModule: NSObject {
         }
       }
       dbg("Binary: inkPixels=\\(inkCount) (\\(String(format: \"%.2f\", 100.0 * Double(inkCount) / Double(w * h)))%)")
+
+      // ── Crease/shadow rejection ─────────────────────────────────
+      // Paper creases are only slightly darker than surrounding paper. Real ink
+      // is significantly darker. Reject pixels brighter than top 30% of range.
+      do {
+        let grayRange = grayMax - grayMin
+        let weakThresh = grayMax - Int(Double(grayRange) * 0.30)
+        var removed = 0
+        for i in 0..<binary.count {
+          if binary[i] && gray[i] > weakThresh {
+            binary[i] = false
+            removed += 1
+          }
+        }
+        inkCount -= removed
+        if removed > 0 {
+          dbg("Crease rejection: removed \\(removed) weak pixels (thresh=\\(weakThresh), range=\\(grayRange))")
+        }
+      }
 
       // ── Auto-polarity detection (chalkboard/light-on-dark) ─────
       let totalPx = w * h
