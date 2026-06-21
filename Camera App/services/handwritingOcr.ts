@@ -188,8 +188,13 @@ export async function recognizeHandwriting(
       scanLog(viz);
     }
 
-    // Use pixels directly — model trained on correctly-oriented (row-major) data
-    const modelInput = pixels;
+    // Transpose row-major (native) → column-major (model expects column-major EMNIST layout)
+    const modelInput = new Float32Array(784);
+    for (let r = 0; r < 28; r++) {
+      for (let c = 0; c < 28; c++) {
+        modelInput[c * 28 + r] = pixels[r * 28 + c];
+      }
+    }
 
     const tInfer = Date.now();
     const buf = modelInput.buffer.slice(
