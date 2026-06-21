@@ -16,6 +16,7 @@ Usage:
 
 import os
 import sys
+import time
 
 def install_deps():
     """Install required packages if not present."""
@@ -539,11 +540,19 @@ def build_model(num_classes):
 
 def train_and_export(name, x_train, y_train, x_test, y_test, num_classes, output_path):
     """Train model with data augmentation and export to TFLite."""
-    from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
     print(f"\n{'='*60}")
     print(f"Training {name} model ({num_classes} classes)")
     print(f"{'='*60}")
+
+    # Subsample large datasets for speed (>200K samples has diminishing returns)
+    MAX_TRAIN = 200000
+    if len(x_train) > MAX_TRAIN:
+        print(f"  Subsampling {len(x_train)} → {MAX_TRAIN} training samples for speed")
+        rng = np.random.default_rng(42)
+        idx = rng.choice(len(x_train), MAX_TRAIN, replace=False)
+        x_train = x_train[idx]
+        y_train = y_train[idx]
 
     # Preprocess
     x_train = x_train.astype('float32') / 255.0
@@ -552,17 +561,6 @@ def train_and_export(name, x_train, y_train, x_test, y_test, num_classes, output
     x_test = x_test.reshape(-1, 28, 28, 1)
 
     print(f"Train: {x_train.shape}, Test: {x_test.shape}")
-
-    # Data augmentation — simulates real-world handwriting variation
-    datagen = ImageDataGenerator(
-        rotation_range=10,
-        width_shift_range=0.1,
-        height_shift_range=0.1,
-        zoom_range=0.1,
-        shear_range=5,
-        fill_mode='constant',
-        cval=0.0,
-    )
 
     # Build and train
     model = build_model(num_classes)
@@ -577,11 +575,32 @@ def train_and_export(name, x_train, y_train, x_test, y_test, num_classes, output
         ),
     ]
 
-    batch_size = 512
+    # Use tf.data pipeline with augmentation (Keras 3 compatible)
+    batch_size = 1024
+
+    # Augmentation via Keras preprocessing layers
+    augmentation = keras.Sequential([
+        layers.RandomRotation(10/360, fill_mode='constant', fill_value=0.0),
+        layers.RandomTranslation(0.1, 0.1, fill_mode='constant', fill_value=0.0),
+        layers.RandomZoom((-0.1, 0.1), fill_mode='constant', fill_value=0.0),
+    ])
+
+    train_ds = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+    train_ds = train_ds.shuffle(50000, reshuffle_each_iteration=True)
+    train_ds = train_ds.batch(batch_size)
+    train_ds = train_ds.map(
+        lambda x, y: (augmentation(x, training=True), y),
+        num_parallel_calls=tf.data.AUTOTUNE
+    )
+    train_ds = train_ds.prefetch(tf.data.AUTOTUNE)
+
+    val_ds = tf.data.Dataset.from_tensor_slices((x_test, y_test))
+    val_ds = val_ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+
     model.fit(
-        datagen.flow(x_train, y_train, batch_size=batch_size),
-        validation_data=(x_test, y_test),
-        epochs=20,
+        train_ds,
+        validation_data=val_ds,
+        epochs=15,
         callbacks=callbacks,
         verbose=1,
     )
@@ -622,50 +641,66 @@ def train_and_export(name, x_train, y_train, x_test, y_test, num_classes, output
 
 
 def main():
+    import multiprocessing as mp
+
     print("=" * 60)
     print("EMNIST Model Training for Little Letters App")
     print("=" * 60)
+    print(f"[INFO] CPU count: {mp.cpu_count()}")
+    print(f"[INFO] TensorFlow {tf.__version__} (CPU mode)")
+    print(f"[INFO] Strategy: optimized sequential (batch=1024, subsample=200K, epochs≤15)")
+    print()
 
-    # Train Uppercase Letters model (A-Z) from ByClass — pure uppercase only
+    t_start = time.time()
+
+    # ── Load datasets (shared step — must happen before forking) ──
+    print("[STEP 1/3] Loading datasets...")
+    t_load = time.time()
     byclass_data = load_emnist_byclass()
-    x_train, y_train, x_test, y_test, n_classes = _filter_uppercase(*byclass_data)
-    assert n_classes == 26, f"Uppercase model must have 26 classes, got {n_classes}!"
-    print(f"[CHECK] Uppercase dataset: {n_classes} classes ✓")
+    x_upper, y_upper, xt_upper, yt_upper, nc_upper = _filter_uppercase(*byclass_data)
+    x_lower, y_lower, xt_lower, yt_lower, nc_lower = _filter_lowercase(*byclass_data)
+    x_digits, y_digits, xt_digits, yt_digits, nc_digits = load_emnist_digits()
+    print(f"  Datasets loaded in {time.time() - t_load:.1f}s")
+    print(f"  Uppercase: {x_upper.shape[0]} train, {xt_upper.shape[0]} test")
+    print(f"  Lowercase: {x_lower.shape[0]} train, {xt_lower.shape[0]} test")
+    print(f"  Digits:    {x_digits.shape[0]} train, {xt_digits.shape[0]} test")
+
+    # ── Train sequentially but with optimized settings ──
+    # (multiprocessing.Pool with TF has issues on Windows — spawn overhead)
+    # Instead: train sequentially with speed optimizations (subsampling, larger batch, fewer epochs)
+    print("\n[STEP 2/3] Training models...")
+    t_train = time.time()
+
     upper_acc = train_and_export(
-        "Uppercase Letters (A-Z)", x_train, y_train, x_test, y_test, n_classes, LETTERS_TFLITE
+        "Uppercase Letters (A-Z)", x_upper, y_upper, xt_upper, yt_upper, nc_upper, LETTERS_TFLITE
     )
-
-    # Verify exported uppercase model has 26 output classes
-    interpreter = tf.lite.Interpreter(model_path=LETTERS_TFLITE)
-    interpreter.allocate_tensors()
-    out_shape = interpreter.get_output_details()[0]['shape']
-    assert out_shape[-1] == 26, f"Letters .tflite has {out_shape[-1]} outputs, expected 26!"
-    print(f"[CHECK] Letters .tflite output shape: {out_shape} ✓")
-
-    # Train Lowercase Letters model (a-z) from ByClass — pure lowercase only
-    x_train, y_train, x_test, y_test, n_classes = _filter_lowercase(*byclass_data)
-    assert n_classes == 26, f"Lowercase model must have 26 classes, got {n_classes}!"
-    print(f"[CHECK] Lowercase dataset: {n_classes} classes ✓")
     lower_acc = train_and_export(
-        "Lowercase Letters (a-z)", x_train, y_train, x_test, y_test, n_classes, LETTERS_LOWER_TFLITE
+        "Lowercase Letters (a-z)", x_lower, y_lower, xt_lower, yt_lower, nc_lower, LETTERS_LOWER_TFLITE
     )
-
-    # Verify exported lowercase model has 26 output classes
-    interpreter = tf.lite.Interpreter(model_path=LETTERS_LOWER_TFLITE)
-    interpreter.allocate_tensors()
-    out_shape = interpreter.get_output_details()[0]['shape']
-    assert out_shape[-1] == 26, f"Letters-lower .tflite has {out_shape[-1]} outputs, expected 26!"
-    print(f"[CHECK] Letters-lower .tflite output shape: {out_shape} ✓")
-
-    # Train Digits model (0-9)
-    x_train, y_train, x_test, y_test, n_classes = load_emnist_digits()
-    assert n_classes == 10, f"Digits model must have 10 classes, got {n_classes}!"
     digits_acc = train_and_export(
-        "Digits (0-9)", x_train, y_train, x_test, y_test, n_classes, DIGITS_TFLITE
+        "Digits (0-9)", x_digits, y_digits, xt_digits, yt_digits, nc_digits, DIGITS_TFLITE
     )
 
+    print(f"\n  All models trained in {time.time() - t_train:.1f}s")
+
+    # ── Verify exported models ──
+    print("\n[STEP 3/3] Verifying exported models...")
+    for path, expected, label in [
+        (LETTERS_TFLITE, 26, "Uppercase"),
+        (LETTERS_LOWER_TFLITE, 26, "Lowercase"),
+        (DIGITS_TFLITE, 10, "Digits"),
+    ]:
+        interpreter = tf.lite.Interpreter(model_path=path)
+        interpreter.allocate_tensors()
+        out_shape = interpreter.get_output_details()[0]['shape']
+        assert out_shape[-1] == expected, f"{label} .tflite has {out_shape[-1]} outputs, expected {expected}!"
+        size_kb = os.path.getsize(path) / 1024
+        print(f"  ✓ {label}: {out_shape}, {size_kb:.0f} KB")
+
+    total_time = time.time() - t_start
     print("\n" + "=" * 60)
     print("DONE!")
+    print(f"  Total time: {total_time/60:.1f} minutes")
     print(f"  Uppercase accuracy: {upper_acc*100:.1f}%")
     print(f"  Lowercase accuracy: {lower_acc*100:.1f}%")
     print(f"  Digits accuracy:    {digits_acc*100:.1f}%")
@@ -673,6 +708,12 @@ def main():
     print(f"  Output: {LETTERS_LOWER_TFLITE}")
     print(f"  Output: {DIGITS_TFLITE}")
     print("=" * 60)
+
+    if upper_acc < 0.93 or lower_acc < 0.90:
+        print("\n⚠️  WARNING: Accuracy below target. Consider:")
+        print("  - Removing subsampling (increase MAX_TRAIN)")
+        print("  - Increasing epochs (currently 15)")
+        print("  - Running on a GPU machine")
 
 
 if __name__ == '__main__':
