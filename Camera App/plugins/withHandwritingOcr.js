@@ -445,9 +445,11 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     var recovered = 0
                     for ((lbl, b) in bounds) {
                         if (valid.containsKey(lbl)) continue  // already accepted
-                        if (b[4] < 10) continue  // noise (< 10 pixels)
+                        if (b[4] < 30) continue  // noise (< 30 pixels)
                         val bw = b[2] - b[0]; val bh = b[3] - b[1]
                         if (bw < 3 && bh < 3) continue  // tiny dots
+                        val area = maxOf(1, bw * bh); val fillRatio = b[4].toFloat() / area
+                        if (fillRatio < 0.25f) continue  // sparse noise blob
                         if (recovered >= 8) break  // limit recovery to avoid noise flood
                         val cx = (b[0] + b[2]) / 2; val cy = (b[1] + b[3]) / 2
                         if (cx in rx1..rx2 && cy in ry1..ry2) {
@@ -523,8 +525,7 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                     }
                     lg("  grid: inkPx=\$inkPx/\$totalPx (\${"%.1f".format(100.0 * inkPx / maxOf(1, totalPx))}%)")
 
-                    // Grid cleaning: remove isolated pixels (< 2 filled neighbors)
-                    // These are noise dots that create false features in the 28x28 grid.
+                    // Grid cleaning pass 1: remove isolated pixels (< 2 filled neighbors)
                     var cleaned = 0
                     for (gy in 0 until GRID) for (gx in 0 until GRID) {
                         if (grid[gy * GRID + gx] <= 0f) continue
@@ -535,6 +536,30 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                             if (nx in 0 until GRID && ny in 0 until GRID && grid[ny * GRID + nx] > 0f) nb++
                         }
                         if (nb < 2) { grid[gy * GRID + gx] = 0f; cleaned++ }
+                    }
+                    // Grid cleaning pass 2: remove small clusters (flood-fill, remove if <= 3 pixels)
+                    val visited = BooleanArray(GRID * GRID)
+                    for (gy in 0 until GRID) for (gx in 0 until GRID) {
+                        val gi = gy * GRID + gx
+                        if (grid[gi] <= 0f || visited[gi]) continue
+                        val cluster = mutableListOf(gi)
+                        val queue = ArrayDeque<Int>()
+                        queue.add(gi); visited[gi] = true
+                        while (queue.isNotEmpty()) {
+                            val ci = queue.removeFirst()
+                            val cy2 = ci / GRID; val cx2 = ci % GRID
+                            for (dy in -1..1) for (dx in -1..1) {
+                                if (dx == 0 && dy == 0) continue
+                                val nx = cx2 + dx; val ny = cy2 + dy
+                                if (nx in 0 until GRID && ny in 0 until GRID) {
+                                    val ni = ny * GRID + nx
+                                    if (grid[ni] > 0f && !visited[ni]) {
+                                        visited[ni] = true; cluster.add(ni); queue.add(ni)
+                                    }
+                                }
+                            }
+                        }
+                        if (cluster.size <= 3) { for (ci in cluster) grid[ci] = 0f; cleaned += cluster.size }
                     }
                     if (cleaned > 0) lg("  grid cleaned: removed \$cleaned isolated pixels")
 
@@ -1011,9 +1036,11 @@ class HandwritingOcrModule: NSObject {
         var recovered = 0
         for (lbl, b) in bounds {
           if valid[lbl] != nil { continue }  // already accepted
-          if b[4] < 10 { continue }  // noise (< 10 pixels)
+          if b[4] < 30 { continue }  // noise (< 30 pixels)
           let bw = b[2] - b[0]; let bh = b[3] - b[1]
           if bw < 3 && bh < 3 { continue }  // tiny dots
+          let area = max(1, bw * bh); let fillRatio = Float(b[4]) / Float(area)
+          if fillRatio < 0.25 { continue }  // sparse noise blob
           if recovered >= 8 { break }  // limit recovery
           let cx = (b[0] + b[2]) / 2; let cy = (b[1] + b[3]) / 2
           if cx >= rx1 && cx <= rx2 && cy >= ry1 && cy <= ry2 {
@@ -1100,7 +1127,7 @@ class HandwritingOcrModule: NSObject {
         }}
         dbg("  grid: inkPx=\(inkPx)/\(totalGridPx) (\(String(format: \"%.1f\", 100.0 * Double(inkPx) / Double(max(1, totalGridPx))))%)")
 
-        // Grid cleaning: remove isolated pixels (< 2 filled neighbors)
+        // Grid cleaning pass 1: remove isolated pixels (< 2 filled neighbors)
         var cleaned = 0
         for gy in 0..<GRID { for gx in 0..<GRID {
           if grid[gy * GRID + gx] <= 0 { continue }
@@ -1111,6 +1138,29 @@ class HandwritingOcrModule: NSObject {
             if nx >= 0 && nx < GRID && ny >= 0 && ny < GRID && grid[ny * GRID + nx] > 0 { nb += 1 }
           }}
           if nb < 2 { grid[gy * GRID + gx] = 0; cleaned += 1 }
+        }}
+        // Grid cleaning pass 2: remove small clusters (flood-fill, remove if <= 3 pixels)
+        var visited2 = [Bool](repeating: false, count: GRID * GRID)
+        for gy in 0..<GRID { for gx in 0..<GRID {
+          let gi = gy * GRID + gx
+          if grid[gi] <= 0 || visited2[gi] { continue }
+          var cluster = [gi]
+          var queue = [gi]; visited2[gi] = true
+          while !queue.isEmpty {
+            let ci = queue.removeFirst()
+            let cy2 = ci / GRID; let cx2 = ci % GRID
+            for dy in -1...1 { for dx in -1...1 {
+              if dx == 0 && dy == 0 { continue }
+              let nx = cx2 + dx; let ny = cy2 + dy
+              if nx >= 0 && nx < GRID && ny >= 0 && ny < GRID {
+                let ni = ny * GRID + nx
+                if grid[ni] > 0 && !visited2[ni] {
+                  visited2[ni] = true; cluster.append(ni); queue.append(ni)
+                }
+              }
+            }}
+          }
+          if cluster.count <= 3 { for ci in cluster { grid[ci] = 0 }; cleaned += cluster.count }
         }}
         if cleaned > 0 { dbg("  grid cleaned: removed \(cleaned) isolated pixels") }
 
