@@ -1,0 +1,66 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/2fc2b0ea-eeb5-4886-bd82-4cb2f60a65cd.jpg
+EXIF orientation: 0
+Original image: 576x576
+Working size: 576x576 (scale=1.0)
+Gray stats: min=72 max=202 mean=120
+Adaptive thresh: winHalf=23 offset=5
+Binary: inkPixels=4898 (1.48%)
+Crease rejection: removed 3 weak pixels (thresh=163, range=130)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=460)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=2): inkPixels=9109
+Raw components: 386
+  (skipping per-component dump; too many)
+Filter: minDim=17.3 maxDim=489.6 minPx=86 aspect=1/5..5 edgeMargin=28
+After filter: 11 components
+Merge: medH=25 gapMaxX=15.0 gapMaxY=37.5
+  MERGE lbl=30 + lbl=64 dx=0 dy=0
+  MERGE lbl=41 + lbl=57 dx=6 dy=0
+  MERGE lbl=44 + lbl=61 dx=4 dy=0
+  MERGE lbl=44 + lbl=66 dx=6 dy=0
+  MERGE lbl=52 + lbl=61 dx=4 dy=0
+  MERGE lbl=120 + lbl=124 dx=14 dy=0
+  MERGE lbl=120 + lbl=138 dx=0 dy=0
+After merge: 4 character groups
+Keeping densest group: 123x127 ink=4399 (dropped 3 others)
+  group#0 x=161 y=178 w=123 h=127 members=[120, 124, 138]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1782688116486.png
+  grid: inkPx=4399/15621 (28.2%)
+  28x28 grid:
+                                
+                                
+                                
+                    ...         
+                   .###.        
+         ...      .#####.       
+        .###.     .#####.       
+       .####.     .#####.       
+       .#####.    .#####.       
+       .#####.    .#####.       
+       .#####.   .#####..       
+        .####. ..####..##.      
+        .####..#####...##.      
+        .####..#####..####.     
+       .#####..####. .####.     
+       .#####..####. .####.     
+        .####. ....  .#####.    
+        .####.       .#####.    
+        .####.        .####.    
+        .####.        .####.    
+        .####.        .#####.   
+         .##.          .####.   
+          ..           .####.   
+                       .####.   
+                        ....    
+                                
+                                
+                                
+
+── recognizeHandwriting END count=1 took=255ms
+[ScanOCR] Model loaded: uppercase letters (26 classes, took 0ms)
+[ScanOCR]   Crop[0] pixel stats: 273/784 filled (34.8%), min=0.000 max=1.000 sum=202.3 avgNonZero=0.741
+[ScanOCR]   Crop[0] inference took 6ms
+[ScanOCR]   Char[0] "M" @ 99.6% | bbox=(0.28,0.31,0.21,0.22) | probs[min=3.67e-11 max=9.96e-1 sum=1.000] | top5: M(99.6%) H(0.3%) W(0.1%) K(0.0%) N(0.0%)
+[ScanOCR] FINAL count=1 (raw=1) text="M" rawText="M"
+[Camera] OCR result: 1 characters found, rawText: "M"

@@ -1,0 +1,57 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/7c9d25d8-9b08-4db0-a4ad-701b54f3c8d3.jpg
+EXIF orientation: 0
+Original image: 432x432
+Working size: 432x432 (scale=1.0)
+Gray stats: min=66 max=162 mean=128
+Adaptive thresh: winHalf=17 offset=5
+Binary: inkPixels=1941 (1.04%)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=345)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=2): inkPixels=2426
+Raw components: 213
+  (skipping per-component dump; too many)
+Filter: minDim=13.0 maxDim=367.2 minPx=64 aspect=1/5..5 edgeMargin=21
+After filter: 1 components
+Merge: medH=59 gapMaxX=35.4 gapMaxY=88.5
+After merge: 1 character groups
+  group#0 x=212 y=89 w=75 h=59 members=[39]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1782687915741.png
+  grid: inkPx=1677/4425 (37.9%)
+  28x28 grid:
+                                
+                                
+                                
+                                
+                                
+                                
+                     ..#..      
+                   ..#####.     
+                  .#######.     
+                 .#########.    
+                .##########.    
+          ....  .####...###.    
+         .####..####.  .###.    
+        .####..#####.  .####.   
+        .###.  .####.  .####.   
+       .####.  .###.   .####.   
+       .###..  .###.   .####.   
+       .####....###....#####.   
+       .###################.    
+       .##################.     
+       ###################.     
+       .###...............      
+        ...                     
+                                
+                                
+                                
+                                
+                                
+
+── recognizeHandwriting END count=1 took=158ms
+[ScanOCR] Model loaded: uppercase letters (26 classes, took 0ms)
+[ScanOCR]   Crop[0] pixel stats: 253/784 filled (32.3%), min=0.000 max=1.000 sum=192.1 avgNonZero=0.759
+[ScanOCR]   Crop[0] inference took 53ms
+[ScanOCR]   Char[0] "B" @ 51.9% | bbox=(0.49,0.21,0.17,0.14) | probs[min=1.35e-7 max=5.19e-1 sum=1.000] | top5: B(51.9%) Q(20.0%) D(12.5%) O(8.2%) A(4.5%)
+[ScanOCR] FINAL count=1 (raw=1) text="B" rawText="B"
+[Camera] OCR result: 1 characters found, rawText: "B"
