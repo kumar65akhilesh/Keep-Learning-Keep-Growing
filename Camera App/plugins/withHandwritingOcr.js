@@ -423,13 +423,26 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 }
                 lg("After merge: \${groups.size} character groups")
 
-                // Keep only the group with most ink pixels — real characters are denser than edge noise
+                // Keep one group using center-priority scoring:
+                // 1) Prefer groups near the image center (guide target area)
+                // 2) Use ink pixels as a tie-breaker
                 val sortedGroups = if (groups.size > 1) {
-                    val best = groups.values.maxByOrNull { g ->
-                        // Count actual ink pixels in the group's members
-                        g.members.sumOf { lbl -> valid[lbl]?.get(4) ?: 0 }
-                    }!!
-                    lg("Keeping densest group: \${best.x2-best.x1+1}x\${best.y2-best.y1+1} ink=\${best.members.sumOf { lbl -> valid[lbl]?.get(4) ?: 0 }} (dropped \${groups.size - 1} others)")
+                  val imgCx = (w - 1) / 2.0
+                  val imgCy = (h - 1) / 2.0
+                  val maxDist = Math.hypot(imgCx, imgCy).coerceAtLeast(1.0)
+                  val best = groups.values.maxByOrNull { g ->
+                    val ink = g.members.sumOf { lbl -> valid[lbl]?.get(4) ?: 0 }
+                    val gCx = (g.x1 + g.x2) / 2.0
+                    val gCy = (g.y1 + g.y2) / 2.0
+                    val distNorm = (Math.hypot(gCx - imgCx, gCy - imgCy) / maxDist).coerceIn(0.0, 1.0)
+                    val centerScore = 1.0 - distNorm
+                    centerScore * 10000.0 + ink.toDouble()
+                  }!!
+                  val bestInk = best.members.sumOf { lbl -> valid[lbl]?.get(4) ?: 0 }
+                  val bestCx = (best.x1 + best.x2) / 2.0
+                  val bestCy = (best.y1 + best.y2) / 2.0
+                  val bestDistNorm = (Math.hypot(bestCx - imgCx, bestCy - imgCy) / maxDist).coerceIn(0.0, 1.0)
+                  lg("Keeping center-priority group: \${best.x2-best.x1+1}x\${best.y2-best.y1+1} ink=\$bestInk centerDist=\${"%.3f".format(bestDistNorm)} (dropped \${groups.size - 1} others)")
                     listOf(best)
                 } else {
                     groups.values.sortedBy { it.x1 }
@@ -1023,16 +1036,32 @@ class HandwritingOcrModule: NSObject {
       }
       dbg("After merge: \\(groups.count) character groups")
 
-      // Keep only the group with most ink pixels — real characters are denser than edge noise
+      // Keep one group using center-priority scoring:
+      // 1) Prefer groups near the image center (guide target area)
+      // 2) Use ink pixels as a tie-breaker
       let sortedGroups: [(x1: Int, y1: Int, x2: Int, y2: Int, members: [Int])]
       if groups.count > 1 {
+        let imgCx = Double(w - 1) / 2.0
+        let imgCy = Double(h - 1) / 2.0
+        let maxDist = max(1.0, hypot(imgCx, imgCy))
         let best = groups.values.max(by: { a, b in
           let aInk = a.members.reduce(0) { $0 + (valid[$1]?[4] ?? 0) }
           let bInk = b.members.reduce(0) { $0 + (valid[$1]?[4] ?? 0) }
-          return aInk < bInk
+          let aCx = Double(a.x1 + a.x2) / 2.0
+          let aCy = Double(a.y1 + a.y2) / 2.0
+          let bCx = Double(b.x1 + b.x2) / 2.0
+          let bCy = Double(b.y1 + b.y2) / 2.0
+          let aDistNorm = min(1.0, max(0.0, hypot(aCx - imgCx, aCy - imgCy) / maxDist))
+          let bDistNorm = min(1.0, max(0.0, hypot(bCx - imgCx, bCy - imgCy) / maxDist))
+          let aScore = (1.0 - aDistNorm) * 10000.0 + Double(aInk)
+          let bScore = (1.0 - bDistNorm) * 10000.0 + Double(bInk)
+          return aScore < bScore
         })!
         let bestInk = best.members.reduce(0) { $0 + (valid[$1]?[4] ?? 0) }
-        dbg("Keeping densest group: \\(best.x2-best.x1+1)x\\(best.y2-best.y1+1) ink=\\(bestInk) (dropped \\(groups.count - 1) others)")
+        let bestCx = Double(best.x1 + best.x2) / 2.0
+        let bestCy = Double(best.y1 + best.y2) / 2.0
+        let bestDistNorm = min(1.0, max(0.0, hypot(bestCx - imgCx, bestCy - imgCy) / maxDist))
+        dbg("Keeping center-priority group: \(best.x2-best.x1+1)x\(best.y2-best.y1+1) ink=\(bestInk) centerDist=\(String(format: \"%.3f\", bestDistNorm)) (dropped \(groups.count - 1) others)")
         sortedGroups = [best]
       } else {
         sortedGroups = groups.values.sorted { $0.x1 < $1.x1 }
