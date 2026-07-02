@@ -17,6 +17,7 @@ Usage:
 import os
 import sys
 import time
+import argparse
 
 def install_deps():
     """Install required packages if not present."""
@@ -44,6 +45,8 @@ os.makedirs(ASSETS_DIR, exist_ok=True)
 LETTERS_TFLITE = os.path.join(ASSETS_DIR, "emnist-letters.tflite")
 LETTERS_LOWER_TFLITE = os.path.join(ASSETS_DIR, "emnist-letters-lower.tflite")
 DIGITS_TFLITE = os.path.join(ASSETS_DIR, "emnist-digits.tflite")
+
+LOWER_LABELS = 'abcdefghijklmnopqrstuvwxyz'
 
 # ─── EMNIST Letters ───────────────────────────────────────────────
 
@@ -489,6 +492,143 @@ def _filter_lowercase(x_train, y_train, x_test, y_test):
     return x_train, y_train, x_test, y_test, 26
 
 
+def _load_image_28x28_grayscale(path):
+    """
+    Load one image file as a normalized 28x28 grayscale array (uint8).
+    Output convention matches EMNIST preprocessing: white ink on black background.
+    """
+    raw = tf.io.read_file(path)
+    img = tf.io.decode_image(raw, channels=1, expand_animations=False)
+    img = tf.image.resize_with_pad(img, 28, 28)
+    img = tf.cast(img, tf.float32) / 255.0
+    arr = img.numpy().squeeze()
+
+    # Most user photos are dark-ink-on-light-paper; invert to white-on-black.
+    if arr.mean() > 0.5:
+        arr = 1.0 - arr
+
+    # Stretch dynamic range when possible.
+    amin = float(arr.min())
+    amax = float(arr.max())
+    if amax > amin:
+        arr = (arr - amin) / (amax - amin)
+
+    return (arr * 255.0).astype(np.uint8)
+
+
+def load_custom_lowercase_dataset(root_dir, val_split=0.2, seed=42):
+    """
+    Load a custom lowercase dataset from folder structure:
+      root_dir/
+        a/*.png|jpg|jpeg
+        b/*.png|jpg|jpeg
+        ...
+        z/*.png|jpg|jpeg
+
+    Returns train/test arrays in the same shape/style as EMNIST arrays.
+    """
+    exts = ('.png', '.jpg', '.jpeg')
+    rng = np.random.default_rng(seed)
+
+    per_class = {}
+    for idx, ch in enumerate(LOWER_LABELS):
+        d = os.path.join(root_dir, ch)
+        if not os.path.isdir(d):
+            continue
+        files = [
+            os.path.join(d, f)
+            for f in os.listdir(d)
+            if f.lower().endswith(exts)
+        ]
+        if files:
+            per_class[idx] = files
+
+    if not per_class:
+        raise RuntimeError(
+            f"No custom lowercase samples found in {root_dir}. "
+            "Expected subfolders a..z with image files."
+        )
+
+    x_train, y_train, x_test, y_test = [], [], [], []
+    print(f"[INFO] Loading custom lowercase samples from {root_dir}")
+
+    for idx in range(26):
+        files = per_class.get(idx, [])
+        if not files:
+            print(f"  [WARN] Missing class '{LOWER_LABELS[idx]}' in custom dataset")
+            continue
+
+        files = np.array(files)
+        rng.shuffle(files)
+
+        n = len(files)
+        n_val = max(1, int(round(n * val_split))) if n > 1 else 0
+        val_files = files[:n_val]
+        train_files = files[n_val:]
+        if len(train_files) == 0 and len(val_files) > 0:
+            train_files = val_files[:1]
+            val_files = val_files[1:]
+
+        for p in train_files:
+            x_train.append(_load_image_28x28_grayscale(p))
+            y_train.append(idx)
+        for p in val_files:
+            x_test.append(_load_image_28x28_grayscale(p))
+            y_test.append(idx)
+
+        print(
+            f"  class {LOWER_LABELS[idx]}: total={n}, "
+            f"train={len(train_files)}, test={len(val_files)}"
+        )
+
+    if not x_train:
+        raise RuntimeError("Custom lowercase dataset produced empty training set")
+
+    x_train = np.stack(x_train)
+    y_train = np.array(y_train, dtype=np.int64)
+    x_test = np.stack(x_test) if x_test else np.zeros((0, 28, 28), dtype=np.uint8)
+    y_test = np.array(y_test, dtype=np.int64) if y_test else np.zeros((0,), dtype=np.int64)
+
+    print(
+        f"[INFO] Custom lowercase loaded: train={x_train.shape[0]} test={x_test.shape[0]}"
+    )
+    return x_train, y_train, x_test, y_test
+
+
+def blend_lowercase_data(
+    emnist_train_x,
+    emnist_train_y,
+    emnist_test_x,
+    emnist_test_y,
+    custom_train_x,
+    custom_train_y,
+    custom_test_x,
+    custom_test_y,
+    custom_weight=1.0,
+):
+    """Blend EMNIST lowercase with custom lowercase samples.
+
+    custom_weight controls how strongly custom samples are emphasized.
+    - 1.0 => add once
+    - 2.0 => duplicate custom train once (2x presence)
+    """
+    repeats = max(1, int(round(custom_weight)))
+    rep_x = np.concatenate([custom_train_x] * repeats, axis=0)
+    rep_y = np.concatenate([custom_train_y] * repeats, axis=0)
+
+    x_train = np.concatenate([emnist_train_x, rep_x], axis=0)
+    y_train = np.concatenate([emnist_train_y, rep_y], axis=0)
+
+    if custom_test_x.shape[0] > 0:
+        x_test = np.concatenate([emnist_test_x, custom_test_x], axis=0)
+        y_test = np.concatenate([emnist_test_y, custom_test_y], axis=0)
+    else:
+        x_test = emnist_test_x
+        y_test = emnist_test_y
+
+    return x_train, y_train, x_test, y_test
+
+
 def load_emnist_digits():
     """Load MNIST digits dataset (0-9). We'll filter to 1-9 in the app."""
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
@@ -643,12 +783,42 @@ def train_and_export(name, x_train, y_train, x_test, y_test, num_classes, output
 def main():
     import multiprocessing as mp
 
+    parser = argparse.ArgumentParser(description="Train EMNIST/TFLite models for Little Letters")
+    parser.add_argument(
+        "--custom-lower-dir",
+        type=str,
+        default="",
+        help="Optional path to custom lowercase dataset (subfolders a..z with images)",
+    )
+    parser.add_argument(
+        "--custom-lower-val-split",
+        type=float,
+        default=0.2,
+        help="Validation split for custom lowercase dataset (default: 0.2)",
+    )
+    parser.add_argument(
+        "--custom-lower-weight",
+        type=float,
+        default=2.0,
+        help="Relative weight for custom lowercase training samples (default: 2.0)",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed used for custom split/shuffle (default: 42)",
+    )
+    args = parser.parse_args()
+
     print("=" * 60)
     print("EMNIST Model Training for Little Letters App")
     print("=" * 60)
     print(f"[INFO] CPU count: {mp.cpu_count()}")
     print(f"[INFO] TensorFlow {tf.__version__} (CPU mode)")
     print(f"[INFO] Strategy: optimized sequential (batch=1024, subsample=200K, epochs≤15)")
+    if args.custom_lower_dir:
+        print(f"[INFO] Custom lowercase dataset: {args.custom_lower_dir}")
+        print(f"[INFO] Custom lowercase weight: {args.custom_lower_weight}")
     print()
 
     t_start = time.time()
@@ -660,6 +830,28 @@ def main():
     x_upper, y_upper, xt_upper, yt_upper, nc_upper = _filter_uppercase(*byclass_data)
     x_lower, y_lower, xt_lower, yt_lower, nc_lower = _filter_lowercase(*byclass_data)
     x_digits, y_digits, xt_digits, yt_digits, nc_digits = load_emnist_digits()
+
+    if args.custom_lower_dir:
+        c_train_x, c_train_y, c_test_x, c_test_y = load_custom_lowercase_dataset(
+            args.custom_lower_dir,
+            val_split=args.custom_lower_val_split,
+            seed=args.seed,
+        )
+        x_lower, y_lower, xt_lower, yt_lower = blend_lowercase_data(
+            x_lower,
+            y_lower,
+            xt_lower,
+            yt_lower,
+            c_train_x,
+            c_train_y,
+            c_test_x,
+            c_test_y,
+            custom_weight=args.custom_lower_weight,
+        )
+        print(
+            f"  Lowercase after blend: {x_lower.shape[0]} train, {xt_lower.shape[0]} test"
+        )
+
     print(f"  Datasets loaded in {time.time() - t_load:.1f}s")
     print(f"  Uppercase: {x_upper.shape[0]} train, {xt_upper.shape[0]} test")
     print(f"  Lowercase: {x_lower.shape[0]} train, {xt_lower.shape[0]} test")
