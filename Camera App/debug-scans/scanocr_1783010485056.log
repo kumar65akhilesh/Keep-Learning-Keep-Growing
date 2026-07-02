@@ -1,0 +1,152 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/2f24e819-4321-4a5a-8402-35f403d0cdba.jpg
+EXIF orientation: 0
+Original image: 720x720
+Working size: 720x720 (scale=1.0)
+Gray stats: min=0 max=196 mean=153
+Adaptive thresh: winHalf=28 offset=5
+Binary: inkPixels=23513 (4.54%)
+Crease rejection: removed 6288 weak pixels (thresh=138, range=196)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=576)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=2): inkPixels=22352
+Raw components: 49
+  raw lbl=1 x=658 y=15 w=62 h=25 px=633
+  raw lbl=2 x=567 y=30 w=86 h=26 px=805
+  raw lbl=3 x=13 y=38 w=19 h=35 px=365
+  raw lbl=4 x=487 y=49 w=76 h=21 px=628
+  raw lbl=5 x=665 y=56 w=34 h=28 px=549
+  raw lbl=6 x=701 y=57 w=19 h=19 px=238
+  raw lbl=7 x=593 y=71 w=60 h=27 px=832
+  raw lbl=8 x=18 y=74 w=3 h=2 px=6
+  raw lbl=9 x=3 y=78 w=3 h=5 px=12
+  raw lbl=10 x=545 y=88 w=35 h=11 px=178
+  raw lbl=11 x=424 y=92 w=104 h=32 px=1441
+  raw lbl=12 x=715 y=99 w=5 h=13 px=42
+  raw lbl=13 x=45 y=102 w=31 h=15 px=304
+  raw lbl=14 x=395 y=104 w=14 h=25 px=202
+  raw lbl=15 x=0 y=106 w=39 h=14 px=441
+  raw lbl=16 x=214 y=113 w=182 h=35 px=2488
+  raw lbl=17 x=180 y=133 w=19 h=7 px=96
+  raw lbl=18 x=89 y=134 w=31 h=26 px=350
+  raw lbl=19 x=123 y=141 w=4 h=11 px=24
+  raw lbl=20 x=355 y=168 w=2 h=1 px=2
+  raw lbl=21 x=58 y=187 w=59 h=15 px=589
+  raw lbl=22 x=0 y=190 w=49 h=17 px=406
+  raw lbl=23 x=63 y=223 w=51 h=16 px=434
+  raw lbl=24 x=0 y=227 w=55 h=17 px=477
+  raw lbl=25 x=58 y=259 w=60 h=18 px=568
+  raw lbl=26 x=0 y=267 w=51 h=19 px=425
+  raw lbl=27 x=80 y=298 w=28 h=15 px=284
+  raw lbl=28 x=0 y=301 w=72 h=23 px=636
+  raw lbl=29 x=86 y=336 w=20 h=16 px=254
+  raw lbl=30 x=0 y=340 w=78 h=24 px=791
+  raw lbl=31 x=317 y=349 w=51 h=41 px=772
+  raw lbl=32 x=91 y=377 w=11 h=16 px=92
+  raw lbl=33 x=0 y=380 w=83 h=25 px=815
+  raw lbl=34 x=79 y=423 w=19 h=13 px=152
+  raw lbl=35 x=18 y=426 w=53 h=23 px=492
+  raw lbl=36 x=0 y=434 w=10 h=15 px=112
+  raw lbl=37 x=84 y=462 w=9 h=17 px=89
+  raw lbl=38 x=162 y=462 w=1 h=1 px=1
+  raw lbl=39 x=33 y=468 w=43 h=22 px=414
+  raw lbl=40 x=0 y=476 w=25 h=15 px=266
+  raw lbl=41 x=0 y=510 w=88 h=26 px=1068
+  raw lbl=42 x=0 y=555 w=86 h=28 px=1143
+  raw lbl=43 x=4 y=605 w=73 h=26 px=1032
+  raw lbl=44 x=90 y=654 w=2 h=1 px=2
+  raw lbl=45 x=69 y=655 w=3 h=6 px=14
+  raw lbl=46 x=10 y=656 w=62 h=24 px=836
+  raw lbl=47 x=88 y=668 w=4 h=2 px=5
+  raw lbl=48 x=69 y=702 w=3 h=3 px=4
+  raw lbl=49 x=14 y=706 w=50 h=14 px=543
+Filter: minDim=21.6 maxDim=612.0 minPx=108 aspect=1/5..5 edgeMargin=36
+  REJECT lbl=1 reason=touches_edge(x=658,y=15,x2=719,y2=39) bw=61 bh=24 px=633
+  REJECT lbl=2 reason=touches_edge(x=567,y=30,x2=652,y2=55) bw=85 bh=25 px=805
+  REJECT lbl=3 reason=touches_edge(x=13,y=38,x2=31,y2=72) bw=18 bh=34 px=365
+  REJECT lbl=5 reason=touches_edge(x=665,y=56,x2=698,y2=83) bw=33 bh=27 px=549
+  REJECT lbl=6 reason=too_small_dim(18<22) bw=18 bh=18 px=238
+  REJECT lbl=8 reason=tiny_bw_bh bw=2 bh=1 px=6
+  REJECT lbl=9 reason=too_small_dim(4<22) bw=2 bh=4 px=12
+  REJECT lbl=12 reason=too_small_dim(12<22) bw=4 bh=12 px=42
+  REJECT lbl=15 reason=touches_edge(x=0,y=106,x2=38,y2=119) bw=38 bh=13 px=441
+  REJECT lbl=16 reason=bad_aspect(5.32) bw=181 bh=34 px=2488
+  REJECT lbl=17 reason=too_small_dim(18<22) bw=18 bh=6 px=96
+  REJECT lbl=19 reason=too_small_dim(10<22) bw=3 bh=10 px=24
+  REJECT lbl=20 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=22 reason=touches_edge(x=0,y=190,x2=48,y2=206) bw=48 bh=16 px=406
+  REJECT lbl=24 reason=touches_edge(x=0,y=227,x2=54,y2=243) bw=54 bh=16 px=477
+  REJECT lbl=26 reason=touches_edge(x=0,y=267,x2=50,y2=285) bw=50 bh=18 px=425
+  REJECT lbl=28 reason=touches_edge(x=0,y=301,x2=71,y2=323) bw=71 bh=22 px=636
+  REJECT lbl=29 reason=too_small_dim(19<22) bw=19 bh=15 px=254
+  REJECT lbl=30 reason=touches_edge(x=0,y=340,x2=77,y2=363) bw=77 bh=23 px=791
+  REJECT lbl=32 reason=too_small_dim(15<22) bw=10 bh=15 px=92
+  REJECT lbl=33 reason=touches_edge(x=0,y=380,x2=82,y2=404) bw=82 bh=24 px=815
+  REJECT lbl=34 reason=too_small_dim(18<22) bw=18 bh=12 px=152
+  REJECT lbl=35 reason=touches_edge(x=18,y=426,x2=70,y2=448) bw=52 bh=22 px=492
+  REJECT lbl=36 reason=too_small_dim(14<22) bw=9 bh=14 px=112
+  REJECT lbl=37 reason=too_small_dim(16<22) bw=8 bh=16 px=89
+  REJECT lbl=38 reason=tiny_bw_bh bw=0 bh=0 px=1
+  REJECT lbl=39 reason=touches_edge(x=33,y=468,x2=75,y2=489) bw=42 bh=21 px=414
+  REJECT lbl=40 reason=touches_edge(x=0,y=476,x2=24,y2=490) bw=24 bh=14 px=266
+  REJECT lbl=41 reason=touches_edge(x=0,y=510,x2=87,y2=535) bw=87 bh=25 px=1068
+  REJECT lbl=42 reason=touches_edge(x=0,y=555,x2=85,y2=582) bw=85 bh=27 px=1143
+  REJECT lbl=43 reason=touches_edge(x=4,y=605,x2=76,y2=630) bw=72 bh=25 px=1032
+  REJECT lbl=44 reason=tiny_bw_bh bw=1 bh=0 px=2
+  REJECT lbl=45 reason=too_small_dim(5<22) bw=2 bh=5 px=14
+  REJECT lbl=46 reason=touches_edge(x=10,y=656,x2=71,y2=679) bw=61 bh=23 px=836
+  REJECT lbl=47 reason=tiny_bw_bh bw=3 bh=1 px=5
+  REJECT lbl=48 reason=too_small_dim(2<22) bw=2 bh=2 px=4
+  REJECT lbl=49 reason=touches_edge(x=14,y=706,x2=63,y2=719) bw=49 bh=13 px=543
+After filter: 12 components
+Merge: medH=21 gapMaxX=12.6 gapMaxY=31.5
+  MERGE lbl=4 + lbl=10 dx=0 dy=19
+  MERGE lbl=4 + lbl=11 dx=0 dy=23
+  MERGE lbl=18 + lbl=21 dx=0 dy=28
+  MERGE lbl=21 + lbl=23 dx=0 dy=22
+  MERGE lbl=23 + lbl=25 dx=0 dy=21
+  MERGE lbl=25 + lbl=27 dx=0 dy=22
+After merge: 6 character groups
+Keeping densest group: 156x75 ink=2247 (dropped 5 others)
+  RECOVER lbl=2 (85x25, 805px) into group
+  group#0 x=424 y=30 w=229 h=94 members=[4, 10, 11, 2]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1783010485056.png
+  grid: inkPx=3052/21526 (14.2%)
+  grid cleaned: removed 5 isolated pixels
+  28x28 grid:
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                      ....#.    
+                 ....#.#####    
+             ....##########.    
+            .########......     
+            .###.....           
+            .....               
+        ....#####.              
+       .#########.              
+       .#######.#.              
+       .##...#..                
+        ..                      
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+
+── recognizeHandwriting END count=1 took=710ms
+[ScanOCR] Model loaded: lowercase letters (26 classes, took 0ms)
+[ScanOCR]   Crop[0] pixel stats: 104/784 filled (13.3%), min=0.000 max=1.000 sum=68.3 avgNonZero=0.657
+[ScanOCR]   Crop[0] inference took 8ms
+[ScanOCR]   Char[0] "f" @ 56.7% | bbox=(0.59,0.04,0.32,0.13) | probs[min=8.24e-6 max=5.67e-1 sum=1.000] | top5: f(56.7%) t(17.5%) z(7.4%) s(6.9%) j(4.8%)
+[ScanOCR] FINAL count=1 (raw=1) text="f" rawText="f"
+[Camera] OCR result: 1 characters found, rawText: "f"

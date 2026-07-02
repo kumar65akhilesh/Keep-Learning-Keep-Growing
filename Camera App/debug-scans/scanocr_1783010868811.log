@@ -1,0 +1,58 @@
+── recognizeHandwriting START uri=file:///data/user/0/com.letterlens.app/cache/ImageManipulator/a3276447-389e-4146-82cb-ebb38e642874.jpg
+EXIF orientation: 0
+Original image: 720x720
+Working size: 720x720 (scale=1.0)
+Gray stats: min=104 max=168 mean=145
+Adaptive thresh: winHalf=28 offset=5
+Binary: inkPixels=4058 (0.78%)
+Crease rejection: removed 17 weak pixels (thresh=149, range=64)
+Polarity: normal (dark-on-light)
+Line removal: detected 0 ruled lines (kernelW=576)
+Line removal: skipped (0 ≤ 5 lines, not ruled paper)
+After morph close (R=2): inkPixels=4824
+Raw components: 737
+  (skipping per-component dump; too many)
+Filter: minDim=21.6 maxDim=612.0 minPx=108 aspect=1/5..5 edgeMargin=36
+After filter: 1 components
+Merge: medH=114 gapMaxX=68.4 gapMaxY=171.0
+After merge: 1 character groups
+  group#0 x=269 y=230 w=52 h=114 members=[216]
+Debug overlay saved: /storage/emulated/0/Android/data/com.letterlens.app/files/scanocr_debug_1783010868811.png
+  grid: inkPx=2566/5928 (43.3%)
+  28x28 grid:
+                                
+                                
+                                
+              ...               
+             .###.              
+            .####.              
+            .####.              
+            .####.              
+            .#####...           
+            .########.          
+            .#########.         
+            .#####.####         
+            .#####.###.         
+            .#########.         
+            .########.          
+            .#######.           
+            .######.            
+            ..####.             
+            .#####.             
+            .#####.             
+            .#####.             
+             .####.             
+             .###.              
+             .###.              
+              ...               
+                                
+                                
+                                
+
+── recognizeHandwriting END count=1 took=383ms
+[ScanOCR] Model loaded: lowercase letters (26 classes, took 0ms)
+[ScanOCR]   Crop[0] pixel stats: 163/784 filled (20.8%), min=0.000 max=1.000 sum=128.0 avgNonZero=0.785
+[ScanOCR]   Crop[0] inference took 8ms
+[ScanOCR]   Char[0] "p" @ 75.8% | bbox=(0.37,0.32,0.07,0.16) | probs[min=7.64e-6 max=7.58e-1 sum=1.000] | top5: p(75.8%) r(16.7%) f(3.3%) b(2.8%) l(0.3%)
+[ScanOCR] FINAL count=1 (raw=1) text="p" rawText="p"
+[Camera] OCR result: 1 characters found, rawText: "p"
