@@ -135,7 +135,7 @@ export default function CameraScreen() {
 
       // Take the photo
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.85,
+        quality: isScanHandwriteMode(mode) ? 1 : 0.85,
         skipProcessing: false,
       });
 
@@ -148,8 +148,9 @@ export default function CameraScreen() {
 
       // Preprocess for better OCR accuracy
       const processedUri = await preprocessImage(photo.uri, {
-        targetWidth: 1280,
-        quality: 0.9,
+        targetWidth: isScanHandwriteMode(mode) ? 1600 : 1280,
+        quality: isScanHandwriteMode(mode) ? 1 : 0.9,
+        format: isScanHandwriteMode(mode) ? 'png' : 'jpeg',
       });
 
       // Auto-crop to center — effective when shooting from distance
@@ -160,7 +161,7 @@ export default function CameraScreen() {
         : Math.max(0.3, 0.6 - zoom * 0.4);
       const croppedUri = await centerCrop(processedUri, cropRatio, isScanHandwriteMode(mode));
 
-      const prepLog = `[Camera] Preprocess: original=${photo.width}x${photo.height}, targetWidth=1280, cropRatio=${(cropRatio * 100).toFixed(0)}%, zoom=${zoom.toFixed(2)}, mode=${mode}`;
+      const prepLog = `[Camera] Preprocess: original=${photo.width}x${photo.height}, targetWidth=${isScanHandwriteMode(mode) ? 1600 : 1280}, format=${isScanHandwriteMode(mode) ? 'png' : 'jpeg'}, cropRatio=${(cropRatio * 100).toFixed(0)}%, zoom=${zoom.toFixed(2)}, mode=${mode}`;
       console.log(prepLog);
       try { (NativeModules as any).HandwritingOcrModule?.appendLog?.(prepLog)?.catch?.(() => {}); } catch { /* noop */ }
       console.log('[Camera] Preprocessed URI:', processedUri, 'Cropped URI:', croppedUri);
