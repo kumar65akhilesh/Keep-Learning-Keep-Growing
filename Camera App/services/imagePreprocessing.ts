@@ -14,6 +14,8 @@ interface PreprocessOptions {
   grayscale?: boolean;
   /** Compression quality (0-1) */
   quality?: number;
+  /** Output format (JPEG default, PNG for lossless OCR path) */
+  format?: 'jpeg' | 'png';
 }
 
 /**
@@ -31,6 +33,7 @@ export async function preprocessImage(
   const {
     targetWidth = 1024,
     quality = 0.9,
+    format = 'jpeg',
   } = options;
 
   const actions: ImageManipulator.Action[] = [
@@ -39,7 +42,7 @@ export async function preprocessImage(
 
   const result = await ImageManipulator.manipulateAsync(uri, actions, {
     compress: quality,
-    format: ImageManipulator.SaveFormat.JPEG,
+    format: format === 'png' ? ImageManipulator.SaveFormat.PNG : ImageManipulator.SaveFormat.JPEG,
   });
 
   return result.uri;
