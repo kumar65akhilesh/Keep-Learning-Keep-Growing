@@ -194,6 +194,16 @@ export default function ResultScreen() {
           <Text style={styles.summaryLabel}>Found text:</Text>
           <Text style={styles.summaryText}>{recognizedText}</Text>
         </View>
+
+        <View style={styles.mainBackButtonWrap}>
+          <ActionButton
+            label="Back to Camera"
+            icon="arrow-back"
+            variant="primary"
+            onPress={handleRetry}
+            fullWidth
+          />
+        </View>
       </ScrollView>
 
       {/* Action buttons */}
@@ -308,6 +318,9 @@ const styles = StyleSheet.create({
     fontSize: Fonts.size.xxl,
     color: Colors.charcoal,
     letterSpacing: 4,
+  },
+  mainBackButtonWrap: {
+    marginTop: Spacing.lg,
   },
   actionsContainer: {
     padding: Spacing.lg,
