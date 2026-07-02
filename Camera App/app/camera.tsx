@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Modal,
   Alert,
   Dimensions,
   Platform,
@@ -58,6 +59,7 @@ export default function CameraScreen() {
   const [flash, setFlash] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [zoom, setZoom] = useState(0);
+  const [tipsVisible, setTipsVisible] = useState(false);
   const zoomOpacity = useRef(new Animated.Value(0)).current;
   const zoomHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastPinchDist = useRef<number | null>(null);
@@ -341,6 +343,17 @@ export default function CameraScreen() {
         </Animated.View>
       </View>
 
+      {isScanHandwriteMode(mode) && (
+        <View style={styles.captureHelpContainer}>
+          <Text style={styles.captureHelpText}>
+            Get a clear, sharp image for the scanner to work efficiently. A blurred image can lead to incorrect results.
+          </Text>
+          <TouchableOpacity onPress={() => setTipsVisible(true)} accessibilityRole="button" accessibilityLabel="Open capture tips">
+            <Text style={styles.captureHelpLink}>Tips</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Live result strip */}
       <LiveResultStrip
         characters={liveCharacters}
@@ -373,6 +386,35 @@ export default function CameraScreen() {
           <Text style={styles.controlLabel}>Flash</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={tipsVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTipsVisible(false)}
+      >
+        <View style={styles.tipsOverlay}>
+          <View style={styles.tipsCard}>
+            <Text style={styles.tipsTitle}>Capture Tips</Text>
+            <Text style={styles.tipsItem}>• Put one letter inside the camera box.</Text>
+            <Text style={styles.tipsItem}>• Use printed lowercase letters. Cursive letters can be misread.</Text>
+            <Text style={styles.tipsItem}>• Keep the phone parallel to the page.</Text>
+            <Text style={styles.tipsItem}>• If the image is blurry, tilt the camera slightly to make it sharp.</Text>
+            <Text style={styles.tipsItem}>• Use bright even light and avoid shadows.</Text>
+            <Text style={styles.tipsItem}>• Use a plain white, even background. Other objects can distract reading.</Text>
+            <Text style={styles.tipsItem}>• Keep the page flat.</Text>
+
+            <TouchableOpacity
+              style={styles.tipsCloseButton}
+              onPress={() => setTipsVisible(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Close capture tips"
+            >
+              <Text style={styles.tipsCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Loading overlay during capture */}
       {isCapturing && (
@@ -482,6 +524,70 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   zoomText: {
+    fontFamily: Fonts.family.bold,
+    fontSize: Fonts.size.sm,
+    color: Colors.white,
+  },
+  captureHelpContainer: {
+    marginTop: Spacing.md,
+    marginHorizontal: Spacing.lg,
+    backgroundColor: '#FFF7E8',
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#F8D48B',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  captureHelpText: {
+    fontFamily: Fonts.family.semiBold,
+    fontSize: Fonts.size.sm,
+    color: Colors.charcoal,
+    lineHeight: 20,
+  },
+  captureHelpLink: {
+    marginTop: Spacing.xs,
+    fontFamily: Fonts.family.bold,
+    fontSize: Fonts.size.sm,
+    color: Colors.skyBlue,
+    textDecorationLine: 'underline',
+    alignSelf: 'flex-start',
+  },
+  tipsOverlay: {
+    flex: 1,
+    backgroundColor: Colors.overlay,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.xl,
+  },
+  tipsCard: {
+    width: '100%',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    ...Shadows.lg,
+  },
+  tipsTitle: {
+    fontFamily: Fonts.family.extraBold,
+    fontSize: Fonts.size.lg,
+    color: Colors.charcoal,
+    marginBottom: Spacing.md,
+  },
+  tipsItem: {
+    fontFamily: Fonts.family.regular,
+    fontSize: Fonts.size.md,
+    color: Colors.darkGray,
+    lineHeight: 22,
+    marginBottom: Spacing.sm,
+  },
+  tipsCloseButton: {
+    marginTop: Spacing.md,
+    alignSelf: 'flex-end',
+    backgroundColor: Colors.skyBlue,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  tipsCloseText: {
     fontFamily: Fonts.family.bold,
     fontSize: Fonts.size.sm,
     color: Colors.white,
