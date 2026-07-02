@@ -439,23 +439,33 @@ class HandwritingOcrModule(reactContext: ReactApplicationContext) :
                 // Fragments that were too small individually but fall within/near the
                 // group's bounding box are likely real parts of the character.
                 for (g in sortedGroups) {
+                  val baseWidth = g.x2 - g.x1 + 1
+                  val baseHeight = g.y2 - g.y1 + 1
                     val pad = maxOf(g.x2 - g.x1, g.y2 - g.y1) / 4  // 25% padding
                     val rx1 = g.x1 - pad; val ry1 = g.y1 - pad
                     val rx2 = g.x2 + pad; val ry2 = g.y2 + pad
                     var recovered = 0
                     for ((lbl, b) in bounds) {
                         if (valid.containsKey(lbl)) continue  // already accepted
-                        if (b[4] < 30) continue  // noise (< 30 pixels)
+                    if (b[4] < 80) continue  // noise (< 80 pixels)
                         val bw = b[2] - b[0]; val bh = b[3] - b[1]
                         if (bw < 3 && bh < 3) continue  // tiny dots
                         val area = maxOf(1, bw * bh); val fillRatio = b[4].toFloat() / area
                         if (fillRatio < 0.25f) continue  // sparse noise blob
-                        if (recovered >= 8) break  // limit recovery to avoid noise flood
+                    if (recovered >= 3) break  // limit recovery to avoid noise flood
                         val cx = (b[0] + b[2]) / 2; val cy = (b[1] + b[3]) / 2
                         if (cx in rx1..rx2 && cy in ry1..ry2) {
+                      val nextX1 = minOf(g.x1, b[0]); val nextY1 = minOf(g.y1, b[1])
+                      val nextX2 = maxOf(g.x2, b[2]); val nextY2 = maxOf(g.y2, b[3])
+                      val nextWidth = nextX2 - nextX1 + 1
+                      val nextHeight = nextY2 - nextY1 + 1
+                      if (nextWidth > (baseWidth * 3) / 2 || nextHeight > (baseHeight * 3) / 2) {
+                        lg("  SKIP RECOVER lbl=\$lbl expansion=\${nextWidth}x\${nextHeight} base=\${baseWidth}x\${baseHeight}")
+                        continue
+                      }
                             g.members.add(lbl)
-                            g.x1 = minOf(g.x1, b[0]); g.y1 = minOf(g.y1, b[1])
-                            g.x2 = maxOf(g.x2, b[2]); g.y2 = maxOf(g.y2, b[3])
+                      g.x1 = nextX1; g.y1 = nextY1
+                      g.x2 = nextX2; g.y2 = nextY2
                             recovered++
                             lg("  RECOVER lbl=\$lbl (\${bw}x\${bh}, \${b[4]}px) into group")
                         }
@@ -1030,24 +1040,34 @@ class HandwritingOcrModule: NSObject {
       // ── Recovery pass: reclaim rejected fragments near chosen group ──
       var finalGroups = sortedGroups.map { g -> (x1: g.x1, y1: g.y1, x2: g.x2, y2: g.y2, members: g.members) }
       for i in 0..<finalGroups.count {
+        let baseWidth = finalGroups[i].x2 - finalGroups[i].x1 + 1
+        let baseHeight = finalGroups[i].y2 - finalGroups[i].y1 + 1
         let pad = max(finalGroups[i].x2 - finalGroups[i].x1, finalGroups[i].y2 - finalGroups[i].y1) / 4  // 25% padding
         let rx1 = finalGroups[i].x1 - pad; let ry1 = finalGroups[i].y1 - pad
         let rx2 = finalGroups[i].x2 + pad; let ry2 = finalGroups[i].y2 + pad
         var recovered = 0
         for (lbl, b) in bounds {
           if valid[lbl] != nil { continue }  // already accepted
-          if b[4] < 30 { continue }  // noise (< 30 pixels)
+          if b[4] < 80 { continue }  // noise (< 80 pixels)
           let bw = b[2] - b[0]; let bh = b[3] - b[1]
           if bw < 3 && bh < 3 { continue }  // tiny dots
           let area = max(1, bw * bh); let fillRatio = Float(b[4]) / Float(area)
           if fillRatio < 0.25 { continue }  // sparse noise blob
-          if recovered >= 8 { break }  // limit recovery
+          if recovered >= 3 { break }  // limit recovery
           let cx = (b[0] + b[2]) / 2; let cy = (b[1] + b[3]) / 2
           if cx >= rx1 && cx <= rx2 && cy >= ry1 && cy <= ry2 {
             var g = finalGroups[i]
+            let nextX1 = min(g.x1, b[0]); let nextY1 = min(g.y1, b[1])
+            let nextX2 = max(g.x2, b[2]); let nextY2 = max(g.y2, b[3])
+            let nextWidth = nextX2 - nextX1 + 1
+            let nextHeight = nextY2 - nextY1 + 1
+            if nextWidth > (baseWidth * 3) / 2 || nextHeight > (baseHeight * 3) / 2 {
+              dbg("  SKIP RECOVER lbl=\\(lbl) expansion=\\(nextWidth)x\\(nextHeight) base=\\(baseWidth)x\\(baseHeight)")
+              continue
+            }
             g.members.append(lbl)
-            g.x1 = min(g.x1, b[0]); g.y1 = min(g.y1, b[1])
-            g.x2 = max(g.x2, b[2]); g.y2 = max(g.y2, b[3])
+            g.x1 = nextX1; g.y1 = nextY1
+            g.x2 = nextX2; g.y2 = nextY2
             finalGroups[i] = g
             recovered += 1
             dbg("  RECOVER lbl=\\(lbl) (\\(bw)x\\(bh), \\(b[4])px) into group")
