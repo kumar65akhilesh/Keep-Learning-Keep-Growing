@@ -1,6 +1,6 @@
 # � Little Letters
 
-A playful, kid-friendly mobile app for young learners to **read** and **write** letters (A–Z) and numbers (1–9). Built with React Native (Expo SDK 55) and Google ML Kit for on-device OCR. Uses a high-pitched child-like TTS voice.
+A playful, kid-friendly mobile app for young learners to **read** and **write** letters (A–Z, a–z) and numbers (1–9). Built with React Native (Expo SDK 55), Google ML Kit for on-device OCR, and TFLite EMNIST CNN models for handwriting recognition. Uses a high-pitched child-like TTS voice.
 
 ## ✨ Features
 
@@ -11,8 +11,8 @@ Each tile has a **cartoon illustration background** with a layered cartoon badge
 | Tile | What it does |
 |------|-----------|
 | 📖 **Read ABC** | Opens the camera to scan printed/handwritten **letters**. ML Kit OCR detects text, filters to A–Z only, and shows results as colorful tappable cards. |
-| ✏️ **Trace ABC** | Guided **stroke-by-stroke** tracing. Kids follow dotted guide paths for each stroke of every letter (A→Z). Auto-evaluates on finger-lift with proximity-based scoring. Speaks "Nice!" between strokes and "Good job!" on completion. |
-| 🖊️ **Handwrite ABC** | Opens a blank drawing canvas. Kids write a letter freely, then tap "Recognize". The app identifies what was written and speaks it aloud. |
+| ✏️ **Trace ABC** | Guided **stroke-by-stroke** tracing. Kids follow dotted guide paths for each stroke of every letter. Supports both **Capital Letters** (A→Z) and **Small Letters** (a→z) via a case picker. Auto-evaluates on finger-lift with proximity-based scoring. Speaks "Nice!" between strokes and "Good job!" on completion. |
+| 🖊️ **Handwrite ABC** | Opens a blank drawing canvas. Kids write a letter freely, then tap "Recognize". Supports uppercase and lowercase via a case picker. Uses on-device **TFLite EMNIST** model for recognition and speaks the result aloud. |
 | 🔢 **Read 123** | Opens the camera to scan and recognize **numbers** (1–9 only). Same OCR flow as Read ABC but filtered to digits. |
 | ✏️ **Trace 123** | Guided stroke-by-stroke tracing for numbers 1–9. Same guided system as Trace ABC but cycles through digits. |
 | 🖊️ **Handwrite 123** | Freehand number writing → recognition. Same flow as Handwrite ABC but for digits. |
@@ -23,7 +23,8 @@ Each tile has a **cartoon illustration background** with a layered cartoon badge
 - **Live Camera Preview** — Point camera at text; detected characters highlighted with bounding boxes (native only)
 - **Capture & Recognize** — Take a photo for detailed recognition with star-based confidence ratings (1–5 stars)
 - **Stroke-by-Stroke Tracing** — Guided canvas shows dotted guide paths per stroke. Evaluates user drawing using proximity sampling (60% of 50 guide samples must be within 12% of canvas size). Auto-advances through strokes; speaks encouragement.
-- **Handwriting Recognition** — Blank canvas to draw freely, then tap Recognize to identify the character
+- **Handwriting Recognition** — Blank canvas to draw freely, then tap Recognize. Uses on-device TFLite CNN models (EMNIST Letters 26-class for A–Z, EMNIST Digits 10-class for 0–9) with stroke rasterisation to 28×28 grid. Includes I/L disambiguation post-processing.
+- **Capital & Lowercase Support** — Trace ABC and Handwrite ABC show a case picker (Capital Letters / Small Letters). Lowercase mode uses dedicated stroke path definitions and outputs lowercase characters.
 - **Text-to-Speech** — Child-like voice (high pitch 1.5). Tap any card to hear it. Spell-out mode reads characters one by one with pauses. Stop button cancels immediately (including mid-spell)
 - **Phonetic Pronunciations** — Ambiguous letters use "the letter A/E/I/O/U/R/Y" for clarity
 - **Copy to Clipboard** — One-tap copy of all recognized characters as a string
@@ -55,16 +56,30 @@ Each tile has a **cartoon illustration background** with a layered cartoon badge
 ```typescript
 type RecognitionMode =
   | 'read-abc' | 'trace-abc' | 'handwrite-abc'
-  | 'read-123' | 'trace-123' | 'handwrite-123';
+  | 'read-123' | 'trace-123' | 'handwrite-123'
+  | 'trace-abc-lower' | 'handwrite-abc-lower';
 ```
 
 - `read-*` modes → Camera screen → OCR → Result screen
 - `trace-*` modes → Guided stroke-by-stroke tracing canvas
 - `handwrite-*` modes → Blank canvas → Draw → Recognize button → Result
+- `*-lower` suffix → Lowercase variant (uses same EMNIST model, converts output to lowercase)
+
+### Handwriting Recognition (`services/canvasOcr.ts`)
+
+On-device inference using TFLite EMNIST models:
+1. User strokes are **rasterised** onto a 28×28 Float32 grid (white-on-black)
+2. Grid is fitted into a 20×20 centred area with 4px padding (matching EMNIST normalisation)
+3. For letters, the grid is **transposed** (EMNIST Letters are stored column-major)
+4. Model outputs 26 (letters) or 10 (digits) class probabilities
+5. Post-processing: I/L disambiguation for narrow vertical strokes
+6. Lowercase mode returns `predicted.toLowerCase()`
+
+Models: `assets/emnist-letters.tflite` (26 classes A–Z) and `assets/emnist-digits.tflite` (10 classes 0–9).
 
 ### Tracing System (`utils/strokePaths.ts`)
 
-Each character (A–Z, 1–9) is defined as an ordered array of **strokes**. Each stroke is an array of normalised `[x, y]` waypoints in 0–1 coordinate space:
+Each character (A–Z, a–z, 1–9) is defined as an ordered array of **strokes**. Each stroke is an array of normalised `{x, y}` waypoints in 0–1 coordinate space:
 
 ```typescript
 const A: CharacterStrokes = [
@@ -78,7 +93,7 @@ The tracing screen (`app/tracing.tsx`) uses `sampleStroke()` to generate 50 even
 
 ### Mode-Based Filtering (`utils/characterFilter.ts`)
 
-`isLetterMode(mode)` checks if mode ends in `-abc`; `isReadMode(mode)` checks if it starts with `read-`; `isTraceMode(mode)` checks for `trace-`; `isHandwriteMode(mode)` checks for `handwrite-`. The `filterByMode()` function applies regex (`/^[A-Za-z]$/` or `/^[1-9]$/`) to raw ML Kit results, keeping only matching characters.
+`isLetterMode(mode)` checks if mode ends in `-abc` or `-abc-lower`; `isLowercaseMode(mode)` checks for `-abc-lower` suffix; `isReadMode(mode)` checks if it starts with `read-`; `isTraceMode(mode)` checks for `trace-`; `isHandwriteMode(mode)` checks for `handwrite-`. The `filterByMode()` function applies regex (`/^[A-Za-z]$/` or `/^[1-9]$/`) to raw ML Kit results, keeping only matching characters.
 
 ### TTS (`services/tts.ts`)
 
@@ -100,7 +115,9 @@ camera-ocr-app/
 │   ├── result.tsx                # Recognized characters display + actions
 │   ├── history.tsx               # Past scan records list
 │   └── settings.tsx              # App preferences
-├── assets/                       # Static images
+├── assets/                       # Static images & ML models
+│   ├── emnist-letters.tflite     # TFLite CNN model for A–Z (26 classes)
+│   ├── emnist-digits.tflite      # TFLite CNN model for 0–9 (10 classes)
 │   ├── icon.png                  # App icon (owl with magnifying glass)
 │   ├── adaptive-icon.png         # Android adaptive icon
 │   ├── splash-icon.png           # Splash screen (owl at 80% canvas)
@@ -128,6 +145,8 @@ camera-ocr-app/
 │   ├── generate-tiles.js         # Generates 6 tile background PNGs using sharp + SVG
 │   └── generate-readme-html.js   # Converts README.md → README.html via marked
 ├── services/
+│   ├── canvasOcr.ts             # TFLite EMNIST handwriting recognition (native)
+│   ├── canvasOcr.web.ts         # Canvas OCR stub (web)
 │   ├── ocr.ts                   # ML Kit OCR wrapper + mode filtering (native)
 │   ├── ocr.web.ts               # OCR stub returning empty results (web)
 │   ├── tts.ts                   # Text-to-speech with child voice + cancellation
@@ -144,9 +163,10 @@ camera-ocr-app/
 │   ├── ocr.ts                   # RecognitionMode, RecognizedCharacter, OcrResult, etc.
 │   └── index.ts                 # Re-exports
 ├── utils/
-│   ├── characterFilter.ts      # isLetterMode, isReadMode, isTraceMode, isHandwriteMode, filterByMode
+│   ├── characterFilter.ts      # isLetterMode, isLowercaseMode, isReadMode, isTraceMode, isHandwriteMode, filterByMode
 │   ├── charPatterns.ts          # Legacy 5×7 bitmap patterns (unused, kept for reference)
-│   ├── strokePaths.ts           # Normalised stroke definitions for A–Z, 1–9
+│   ├── strokePaths.ts           # Normalised stroke definitions for A–Z, a–z, 1–9
+│   ├── strokeRecognizer.ts      # Template-based stroke recogniser (fallback)
 │   └── debounce.ts              # debounce & throttle utilities
 ├── __tests__/                    # Unit tests
 │   ├── services/
@@ -238,6 +258,39 @@ npx expo start --dev-client --port 3030
 
 ```bash
 npx expo prebuild --clean
+
+## 🧪 Custom Lowercase (Cursive) Training
+
+You can train the lowercase model with a small custom dataset (including cursive) and blend it with EMNIST.
+
+### Folder format
+
+Create one subfolder per lowercase class under a root folder:
+
+```text
+my-lowercase-dataset/
+  a/
+  b/
+  c/
+  ...
+  z/
+```
+
+Put `.png`, `.jpg`, or `.jpeg` images in each class folder.
+
+### Train command
+
+```bash
+python scripts/train_emnist.py \
+  --custom-lower-dir "C:\\path\\to\\my-lowercase-dataset" \
+  --custom-lower-val-split 0.2 \
+  --custom-lower-weight 2.0
+```
+
+Notes:
+- `--custom-lower-weight 2.0` emphasizes your custom samples in lowercase training.
+- This keeps the existing uppercase/digits flow unchanged and only strengthens lowercase behavior.
+- Use printed + cursive samples for the letters currently failing (for example `a, s, r, b, i`).
 npx expo run:ios
 
 # Then start Metro
@@ -351,6 +404,7 @@ npx jest __tests__/utils  # Specific folder
 | `expo-clipboard` | ~55.0.11 | Copy to clipboard |
 | `expo-sqlite` | ~55.0.13 | Local SQLite history (native) |
 | `expo-image-manipulator` | ~55.0.13 | Image preprocessing |
+| `react-native-fast-tflite` | ^1.8.0 | TFLite model inference (EMNIST handwriting) |
 | `expo-router` | ~55.0.10 | File-based navigation |
 | `zustand` | ^5.0.12 | State management |
 | `react-native-reanimated` | ~4.3.0 | Animations |
@@ -380,8 +434,10 @@ npx jest __tests__/utils  # Specific folder
 
 ### Current State (Working)
 - [x] 6-mode home screen with cartoon badge icons and tile background illustrations
+- [x] Capital/lowercase case picker for Trace ABC and Handwrite ABC
 - [x] Camera screen with demo mode (web) / ML Kit OCR (native)
-- [x] Stroke-by-stroke guided tracing (proximity-based evaluation, auto-advance)
+- [x] Stroke-by-stroke guided tracing for A–Z, a–z, and 1–9 (proximity-based evaluation, auto-advance)
+- [x] TFLite EMNIST handwriting recognition (letters + digits) with stroke rasterisation
 - [x] Handwriting recognition with blank canvas and Recognize button
 - [x] Result screen with letter cards, star ratings, TTS, copy, save
 - [x] History screen with search, delete, re-open
@@ -391,7 +447,6 @@ npx jest __tests__/utils  # Specific folder
 - [x] Web preview works at localhost:3000
 
 ### TODO / Future Enhancements
-- [ ] **Handwriting recognition model** — Replace random demo recognition with a TFLite CNN model for real handwritten character identification
 - [ ] **Sound effects** — Add fun sounds on recognition success (currently silent)
 - [ ] **Persistent web storage** — Use IndexedDB or localStorage instead of in-memory for web history
 - [ ] **Gamification** — Track progress per letter, award badges, show completion percentage
@@ -399,6 +454,13 @@ npx jest __tests__/utils  # Specific folder
 - [ ] **Animations** — Add Reanimated-powered transitions for card reveals and tracing success
 
 ## 📝 Changelog
+
+### v1.1.0 (May 2026)
+- **Lowercase letter support** — Trace and Handwrite modes now support both Capital and Small letters via a case picker modal
+- **TFLite EMNIST handwriting recognition** — On-device CNN models for letters (A–Z, 26 classes) and digits (0–9, 10 classes) with stroke rasterisation, I/L disambiguation, and confidence logging
+- **Lowercase stroke paths** — Full a–z definitions with proper descenders (g, j, p, q, y), dots (i, j), and curves (l)
+- **Target character reference** — Faded letter shown above tracing canvas for visual guidance
+- **Mode-based case output** — Lowercase mode returns lowercase characters from the same EMNIST model
 
 ### v1.0.0 (April 2026)
 - Initial release with 6 modes (Read/Trace/Handwrite × ABC/123)
